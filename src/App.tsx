@@ -784,6 +784,7 @@ export default function App() {
                 await load();
               } else {
                 await addReminder(snapshot.text, datetime);
+                navigate("reminders");
               }
             } catch (e) {
               console.error("confirm failed", e);
