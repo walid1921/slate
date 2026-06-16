@@ -16,7 +16,7 @@
         "label": "main",
         "title": "Slate",
         "width": 640,
-        "height": 440,
+        "height": 520,
         "resizable": true,
         "decorations": false,
         "transparent": true,
