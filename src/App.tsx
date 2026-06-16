@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
 import { useReminderStore } from "./reminderStore";
+import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import RemindersPage from "./components/RemindersPage";
@@ -221,6 +222,7 @@ function TodoRow({
 export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
+  const { notes } = useNotesStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -580,7 +582,7 @@ export default function App() {
               {view === "reminders"
                 ? `${allReminders.filter((r) => !r.notified).length} upcoming`
                 : view === "notes"
-                ? "0 notes"
+                ? `${notes.length} note${notes.length !== 1 ? "s" : ""}`
                 : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
             </span>
             <div className="flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
