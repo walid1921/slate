@@ -225,7 +225,7 @@ function TodoRow({
 export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
-  const { notes } = useNotesStore();
+  const { notes, add: addNote } = useNotesStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -245,6 +245,7 @@ export default function App() {
   const COMMANDS = [
     { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
     { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
+    { prefix: "/nt ", label: "/nt", desc: "Create a new note" },
   ];
 
   const showCmdPalette = inputVal === "/" || inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal));
@@ -344,6 +345,14 @@ export default function App() {
         if (val.startsWith("/rm ") || val === "/rm") {
           const text = val.slice(4).trim();
           if (text) { setPendingModal({ type: "reminder", text }); setInputVal(""); setQuery(""); }
+          return;
+        }
+        if (val.startsWith("/nt ") || val === "/nt") {
+          const title = val.slice(4).trim();
+          addNote(title || "Untitled", "");
+          setView("notes");
+          setInputVal("");
+          setQuery("");
           return;
         }
         add(val);
