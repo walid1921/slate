@@ -20,7 +20,7 @@ body {
 #root {
   width: 100vw;
   height: 100vh;
-  background: rgba(20, 20, 22, 0.45);
+  background: rgba(20, 20, 22, 0.6);
   border-radius: 12px;
   overflow: hidden;
   outline: 1px solid rgba(255, 255, 255, 0.08);

@@ -14,9 +14,13 @@ export async function getDb(): Promise<Database> {
       done       INTEGER NOT NULL DEFAULT 0,
       priority   TEXT    NOT NULL DEFAULT 'none',
       due_date   TEXT,
+      position   INTEGER NOT NULL DEFAULT 0,
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  // Migrations for older DBs
+  await _db.execute(`ALTER TABLE todos ADD COLUMN position   INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await _db.execute(`ALTER TABLE todos ADD COLUMN deleted_at TEXT`).catch(() => {});
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS meta (

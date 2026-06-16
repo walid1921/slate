@@ -5,7 +5,6 @@ use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 fn show_window(window: &WebviewWindow) {
     let _ = window.show();
     let _ = window.set_focus();
-    // Emit event so frontend can trigger focus-input animation
     let _ = window.emit("window-shown", ());
 }
 

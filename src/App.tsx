@@ -2,6 +2,21 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const PRIORITY_COLOR: Record<Priority, string> = {
   none: "bg-white/10 text-white/40",
@@ -48,6 +63,9 @@ function TodoRow({
   const [editingDate, setEditingDate] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: todo.id });
+
   useEffect(() => {
     if (editingDate && dateRef.current) dateRef.current.focus();
   }, [editingDate]);
@@ -64,15 +82,37 @@ function TodoRow({
 
   return (
     <div
+      ref={setNodeRef}
       tabIndex={-1}
       onFocus={onFocus}
       onMouseEnter={() => setShowMeta(true)}
       onMouseLeave={() => setShowMeta(false)}
+      style={{
+        minHeight: 52,
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 50 : "auto",
+      }}
       className={`group flex items-center gap-3 px-5 cursor-default transition-colors rounded-lg mx-1.5 ${
         focused ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
       }`}
-      style={{ minHeight: 52 }}
     >
+      {/* Drag handle */}
+      <div
+        {...attributes}
+        {...listeners}
+        className={`shrink-0 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/50 transition-opacity ${
+          showMeta || focused ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
+          <circle cx="3" cy="2.5" r="1.2" /><circle cx="7" cy="2.5" r="1.2" />
+          <circle cx="3" cy="7" r="1.2" /><circle cx="7" cy="7" r="1.2" />
+          <circle cx="3" cy="11.5" r="1.2" /><circle cx="7" cy="11.5" r="1.2" />
+        </svg>
+      </div>
+
       {/* Checkbox */}
       <button
         onClick={() => toggle(todo.id)}
@@ -170,16 +210,50 @@ function TodoRow({
 }
 
 export default function App() {
-  const { todos, query, loading, setQuery, load, add } = useTodoStore();
+  const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
 
   // Load todos on mount
   useEffect(() => {
     load();
   }, [load]);
+
+  const openTrash = useCallback(() => {
+    loadTrash();
+    setSelected(new Set());
+    setShowTrash(true);
+  }, [loadTrash]);
+
+  const closeTrash = useCallback(() => {
+    setShowTrash(false);
+    setSelected(new Set());
+  }, []);
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelected((s) => {
+      const next = new Set(s);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelected(new Set(trash.map((t) => t.id)));
+  }, [trash]);
+
+  const deleteSelected = useCallback(async () => {
+    if (selected.size === trash.length) {
+      await deleteAllPermanently();
+    } else {
+      for (const id of selected) await deletePermanently(id);
+    }
+    setSelected(new Set());
+  }, [selected, trash.length, deletePermanently, deleteAllPermanently]);
 
   // Listen for window-shown event to auto-focus input + animate in
   useEffect(() => {
@@ -195,6 +269,22 @@ export default function App() {
 
   const filtered = todos.filter((t) =>
     query ? t.text.toLowerCase().includes(query.toLowerCase()) : true
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const oldIndex = todos.findIndex((t) => t.id === active.id);
+      const newIndex = todos.findIndex((t) => t.id === over.id);
+      const newOrder = arrayMove(todos, oldIndex, newIndex);
+      useTodoStore.getState().reorder(newOrder.map((t) => t.id));
+    },
+    [todos]
   );
 
   const handleKeyDown = useCallback(
@@ -263,7 +353,7 @@ export default function App() {
 
   return (
     <div
-      className={`w-full h-full flex flex-col overflow-hidden transition-opacity duration-200 ${
+      className={`relative w-full h-full flex flex-col overflow-hidden transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -320,14 +410,18 @@ export default function App() {
             {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
           </div>
         ) : (
-          filtered.map((todo, i) => (
-            <TodoRow
-              key={todo.id}
-              todo={todo}
-              focused={focusedIdx === i}
-              onFocus={() => setFocusedIdx(i)}
-            />
-          ))
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              {filtered.map((todo, i) => (
+                <TodoRow
+                  key={todo.id}
+                  todo={todo}
+                  focused={focusedIdx === i}
+                  onFocus={() => setFocusedIdx(i)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
@@ -341,8 +435,105 @@ export default function App() {
         <span className="text-[11px] text-white/25">
           {todos.filter((t) => !t.done).length} task{todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining
         </span>
-        <span className="ml-auto text-[11px] text-white/15">↑↓ · ␣ toggle · ⌫ delete · ⎋ close</span>
+        <button
+          onClick={openTrash}
+          className="ml-auto flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/50 transition-colors"
+        >
+          <svg width="11" height="12" viewBox="0 0 11 12" fill="none">
+            <path d="M1 3h9M4 3V2h3v1M2 3l.5 7h6l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Trash
+        </button>
       </div>
+
+      {/* Trash panel — slides over the main view */}
+      {showTrash && (
+        <div className="absolute inset-0 flex flex-col" style={{ background: "rgba(20,20,22,0.6)", borderRadius: 12, zIndex: 10 }}>
+          {/* Trash header */}
+          <div className="flex items-center px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 38 }}>
+            <button onClick={closeTrash} className="text-white/40 hover:text-white/70 transition-colors mr-3">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">Trash</span>
+            {trash.length > 0 && (
+              <div className="ml-auto flex items-center gap-3">
+                <button
+                  onClick={selected.size === trash.length ? () => setSelected(new Set()) : selectAll}
+                  className="text-[11px] text-white/35 hover:text-white/60 transition-colors"
+                >
+                  {selected.size === trash.length ? "Deselect all" : "Select all"}
+                </button>
+                {selected.size > 0 && (
+                  <button
+                    onClick={deleteSelected}
+                    className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
+                  >
+                    Delete {selected.size === trash.length ? "all" : `(${selected.size})`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Trash list */}
+          <div className="overflow-y-auto flex-1 py-1.5">
+            {trash.length === 0 ? (
+              <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
+                Trash is empty
+              </div>
+            ) : (
+              trash.map((todo) => (
+                <div
+                  key={todo.id}
+                  className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-white/[0.04] transition-colors"
+                  style={{ minHeight: 48 }}
+                >
+                  {/* Select checkbox */}
+                  <button
+                    onClick={() => toggleSelect(todo.id)}
+                    className="w-4 h-4 rounded border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
+                    style={selected.has(todo.id) ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+                  >
+                    {selected.has(todo.id) && (
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                        <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
+
+                  <span className="flex-1 text-[14px] text-white/40 line-through truncate">{todo.text}</span>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Restore */}
+                    <button
+                      onClick={() => restore(todo.id)}
+                      title="Restore"
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-green-400"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6a4 4 0 1 0 1-2.5L1 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 2v2.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    {/* Delete permanently */}
+                    <button
+                      onClick={() => deletePermanently(todo.id)}
+                      title="Delete permanently"
+                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
