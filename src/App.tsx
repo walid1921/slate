@@ -626,9 +626,9 @@ export default function App() {
                 />
                 <button
                   onClick={() => setView("main")}
-                  title="Tasks"
-                  className={`relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Tasks</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <rect x="1" y="2" width="12" height="1.5" rx="0.75" fill="currentColor" />
                     <rect x="1" y="6" width="12" height="1.5" rx="0.75" fill="currentColor" />
@@ -637,9 +637,9 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setView("reminders")}
-                  title="Reminders"
-                  className={`relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Reminders</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
                     <path d="M7 4v3.2l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -647,9 +647,9 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setView("notes")}
-                  title="Notes"
-                  className={`relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Notes</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
                     <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
