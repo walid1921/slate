@@ -40,21 +40,59 @@ const PRIORITY_DOT: Record<Priority, string> = {
   high: "bg-red-400",
 };
 
-function isOverdue(due: string | null): boolean {
-  if (!due) return false;
-  return new Date(due) < new Date(new Date().toDateString());
+function buildDueDate(dueDate: string, dueTime: string | null): Date {
+  if (dueTime) return new Date(`${dueDate}T${dueTime}`);
+  // no time: treat as end of day so countdown shows days until midnight
+  return new Date(`${dueDate}T23:59:59`);
 }
 
-function formatDue(due: string | null): string {
-  if (!due) return "";
-  const d = new Date(due);
-  const today = new Date(new Date().toDateString());
-  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  if (diff === 0) return "today";
-  if (diff === 1) return "tomorrow";
-  if (diff === -1) return "yesterday";
-  if (diff < 0) return `${Math.abs(diff)}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { label: string; overdue: boolean } {
+  const target = buildDueDate(dueDate, dueTime);
+  const diffMs = target.getTime() - now.getTime();
+  const overdue = diffMs < 0;
+  const abs = Math.abs(diffMs);
+
+  const totalSecs = Math.floor(abs / 1000);
+  const secs = totalSecs % 60;
+  const mins = Math.floor(totalSecs / 60) % 60;
+  const hours = Math.floor(totalSecs / 3600) % 24;
+  const days = Math.floor(totalSecs / 86400);
+  const months = Math.floor(days / 30);
+
+  let label: string;
+  if (months >= 2) {
+    label = `${months}mo`;
+  } else if (days >= 2) {
+    label = `${days}d`;
+  } else if (days === 1) {
+    label = overdue ? "yesterday" : "tomorrow";
+  } else if (hours > 0) {
+    label = `${hours}h ${mins}m`;
+  } else if (mins > 0) {
+    label = `${mins}m ${secs}s`;
+  } else {
+    label = totalSecs <= 0 ? "now" : `${secs}s`;
+  }
+
+  if (overdue && days >= 2) label = `${days}d ago`;
+  else if (overdue && months >= 2) label = `${months}mo ago`;
+
+  return { label, overdue };
+}
+
+function useNow(dueDate: string | null, dueTime: string | null): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!dueDate) return;
+    const target = buildDueDate(dueDate, dueTime);
+    const diffMs = target.getTime() - Date.now();
+    const absDiff = Math.abs(diffMs);
+    // tick every second if within 1 hour, else every minute
+    const interval = absDiff < 3600_000 ? 1000 : 60_000;
+    const id = setInterval(() => setNow(new Date()), interval);
+    return () => clearInterval(id);
+  }, [dueDate, dueTime]);
+  return now;
 }
 
 function TodoRow({
@@ -75,6 +113,9 @@ function TodoRow({
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: todo.id });
+
+  const now = useNow(todo.due_date, todo.due_time);
+  const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
   useEffect(() => {
     if (editingDate && dateRef.current) dateRef.current.focus();
@@ -148,18 +189,9 @@ function TodoRow({
 
         {/* Due date / priority row */}
         <div className="flex items-center gap-2 mt-0.5">
-          {todo.due_date && (
-            <span
-              className={`text-xs ${
-                isOverdue(todo.due_date) && !todo.done ? "text-red-400" : "text-white/35"
-              }`}
-            >
-              {formatDue(todo.due_date)}
-              {todo.due_time && (
-                <span className="ml-1 opacity-70">
-                  {new Date(`2000-01-01T${todo.due_time}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                </span>
-              )}
+          {countdown && (
+            <span className={`text-xs ${countdown.overdue && !todo.done ? "text-red-400" : "text-white/35"}`}>
+              {countdown.label}
             </span>
           )}
           {todo.priority !== "none" && (
