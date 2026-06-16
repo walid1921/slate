@@ -612,7 +612,7 @@ export default function App() {
             <div className="absolute left-1/2 -translate-x-1/2">
               <div
                 className="relative flex items-center gap-1 px-1.5 py-0.5"
-                style={{ borderRadius: 10, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
+                style={{ borderRadius: 6, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
               >
                 {/* Sliding active indicator */}
                 <div
