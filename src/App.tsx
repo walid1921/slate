@@ -612,15 +612,15 @@ export default function App() {
             <div className="absolute left-1/2 -translate-x-1/2">
               <div
                 className="relative flex items-center gap-1 px-1.5 py-1"
-                style={{ borderRadius: 10 }}
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
+                style={{ borderRadius: 10, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
               >
                 {/* Sliding active indicator */}
                 <div
                   className="absolute top-1 h-6 w-7 transition-transform duration-200 ease-out"
-                  style={{ borderRadius: 7, background: "rgba(255,255,255,0.12)", left: "6px" }}
                   style={{
+                    borderRadius: 7,
                     background: "rgba(255,255,255,0.12)",
+                    left: "6px",
                     transform: `translateX(${view === "main" ? "0px" : view === "reminders" ? "32px" : "64px"})`,
                   }}
                 />
