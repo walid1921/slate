@@ -649,11 +649,15 @@ export default function App() {
               <button
                 onClick={openTrash}
                 title="Trash"
-                className="text-white/25 hover:text-white/50 transition-colors"
+                className="flex items-center gap-1.5 text-white/25 hover:text-white/50 transition-colors"
               >
-                <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
-                  <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2" />
+                  <path d="M6.5 3.5v3l2 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2.5 2L1 0.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  <path d="M1 0.5h2.5v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+                <span className="text-[11px]">Trash</span>
               </button>
             </div>
           </div>
