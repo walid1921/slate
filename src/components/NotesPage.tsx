@@ -12,8 +12,8 @@ function relativeDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function NotesPage() {
-  const { notes, load, add, update, remove } = useNotesStore();
+export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: number) => void }) {
+  const { notes, load, add, update } = useNotesStore();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -48,13 +48,8 @@ export default function NotesPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    await remove(id);
-    if (selectedId === id) {
-      setSelectedId(null);
-      setTitle("");
-      setContent("");
-    }
+  const handleDeleteConfirm = (id: number) => {
+    onDeleteRequest(id);
   };
 
   return (
@@ -91,7 +86,7 @@ export default function NotesPage() {
                 </p>
                 <p className="text-[10px] text-white/20 mt-0.5">{relativeDate(note.updated_at)}</p>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleDeleteConfirm(note.id); }}
                   title="Delete"
                   className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-white/25 hover:text-red-400 hover:bg-white/10 transition-colors"
                 >

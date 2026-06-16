@@ -9,6 +9,7 @@ import DateTimeModal from "./components/DateTimeModal";
 import RemindersPage from "./components/RemindersPage";
 import GuidePage from "./components/GuidePage";
 import NotesPage from "./components/NotesPage";
+import ConfirmDialog from "./components/ConfirmDialog";
 import {
   DndContext,
   closestCenter,
@@ -60,12 +61,14 @@ function TodoRow({
   todo,
   focused,
   onFocus,
+  onDeleteRequest,
 }: {
   todo: Todo;
   focused: boolean;
   onFocus: () => void;
+  onDeleteRequest: () => void;
 }) {
-  const { toggle, remove, setPriority, setDueDate } = useTodoStore();
+  const { toggle, setPriority, setDueDate } = useTodoStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingDate, setEditingDate] = useState(false);
   const dateRef = useRef<HTMLInputElement>(null);
@@ -206,7 +209,7 @@ function TodoRow({
 
         {/* Delete */}
         <button
-          onClick={(e) => { e.stopPropagation(); remove(todo.id); }}
+          onClick={(e) => { e.stopPropagation(); onDeleteRequest(); }}
           title="Delete"
           className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400"
         >
@@ -233,6 +236,11 @@ export default function App() {
   // Pending modal state: type + text extracted from /tm or /rm
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
+  const askConfirm = useCallback((title: string, message: string, onConfirm: () => void) => {
+    setConfirmDelete({ title, message, onConfirm });
+  }, []);
 
   const COMMANDS = [
     { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
@@ -441,7 +449,14 @@ export default function App() {
                 {selected.size === trash.length ? "Deselect all" : "Select all"}
               </button>
               {selected.size > 0 && (
-                <button onClick={deleteSelected} className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors">
+                <button
+                  onClick={() => askConfirm(
+                    "Delete selected?",
+                    `${selected.size} task${selected.size !== 1 ? "s" : ""} will be permanently deleted.`,
+                    deleteSelected
+                  )}
+                  className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
+                >
                   Delete {selected.size === trash.length ? "all" : `(${selected.size})`}
                 </button>
               )}
@@ -512,7 +527,7 @@ export default function App() {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                   {filtered.map((todo, i) => (
-                    <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} />
+                    <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} />
                   ))}
                 </SortableContext>
               </DndContext>
@@ -552,7 +567,7 @@ export default function App() {
                       <path d="M1 2v2.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </button>
-                  <button onClick={() => deletePermanently(todo.id)} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400">
+                  <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400">
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
@@ -565,13 +580,13 @@ export default function App() {
       )}
 
       {/* Reminders view */}
-      {view === "reminders" && <RemindersPage />}
+      {view === "reminders" && <RemindersPage onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} />}
 
       {/* Guide view */}
       {view === "guide" && <GuidePage />}
 
       {/* Notes view */}
-      {view === "notes" && <NotesPage />}
+      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} />}
 
       {/* Footer — main, reminders, notes views */}
       {(view === "main" || view === "reminders" || view === "notes") && (
@@ -634,6 +649,15 @@ export default function App() {
             </div>
           </div>
         </>
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title={confirmDelete.title}
+          message={confirmDelete.message}
+          onConfirm={() => { confirmDelete.onConfirm(); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
 
       {/* Date/time picker modal */}
