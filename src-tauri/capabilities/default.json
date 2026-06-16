@@ -12,6 +12,10 @@
     "sql:allow-execute",
     "sql:allow-load",
     "sql:allow-select",
-    "sql:allow-close"
+    "sql:allow-close",
+    "notification:default",
+    "notification:allow-request-permission",
+    "notification:allow-is-permission-granted",
+    "notification:allow-notify"
   ]
 }

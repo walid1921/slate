@@ -9,6 +9,7 @@ export interface Todo {
   done: boolean;
   priority: Priority;
   due_date: string | null;
+  due_time: string | null;
   position: number;
   created_at: string;
   deleted_at?: string | null;
@@ -44,7 +45,7 @@ export const useTodoStore = create<State>((set, get) => ({
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, position, created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, position, created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
     set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done) })), loading: false });
   },
@@ -61,11 +62,10 @@ export const useTodoStore = create<State>((set, get) => ({
     const trimmed = text.trim();
     if (!trimmed) return;
     const db = await getDb();
-    const rows = await db.select<{ max: number }[]>("SELECT COALESCE(MAX(position), -1) as max FROM todos WHERE deleted_at IS NULL");
-    const nextPos = (rows[0]?.max ?? -1) + 1;
+    await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
     await db.execute(
-      "INSERT INTO todos (text, priority, due_date, position) VALUES (?, ?, ?, ?)",
-      [trimmed, priority, due_date, nextPos]
+      "INSERT INTO todos (text, priority, due_date, position) VALUES (?, ?, ?, 0)",
+      [trimmed, priority, due_date]
     );
     await get().load();
   },
