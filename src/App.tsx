@@ -2,6 +2,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
+import { useReminderStore } from "./reminderStore";
+import { initNotifications } from "./notifications";
+import DateTimeModal from "./components/DateTimeModal";
+import RemindersPage from "./components/RemindersPage";
+import GuidePage from "./components/GuidePage";
+import NotesPage from "./components/NotesPage";
 import {
   DndContext,
   closestCenter,
@@ -141,12 +147,15 @@ function TodoRow({
           {todo.due_date && (
             <span
               className={`text-xs ${
-                isOverdue(todo.due_date) && !todo.done
-                  ? "text-red-400"
-                  : "text-white/35"
+                isOverdue(todo.due_date) && !todo.done ? "text-red-400" : "text-white/35"
               }`}
             >
               {formatDue(todo.due_date)}
+              {todo.due_time && (
+                <span className="ml-1 opacity-70">
+                  {new Date(`2000-01-01T${todo.due_time}`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </span>
+              )}
             </span>
           )}
           {todo.priority !== "none" && (
@@ -211,28 +220,41 @@ function TodoRow({
 
 export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
+  const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
+  type View = "main" | "trash" | "reminders" | "guide" | "notes";
+  const [view, setView] = useState<View>("main");
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Pending modal state: type + text extracted from /tm or /rm
+  const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
+  const [cmdIdx, setCmdIdx] = useState(0);
 
-  // Load todos on mount
+  const COMMANDS = [
+    { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
+    { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
+  ];
+
+  const showCmdPalette = inputVal === "/" || inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal));
+  const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
+
+  // Load todos on mount + request notification permission early
+  useEffect(() => { load(); initNotifications(); }, [load]);
+
+  // Background notification checker — runs every 30s
   useEffect(() => {
-    load();
-  }, [load]);
+    checkDue();
+    const interval = setInterval(checkDue, 30_000);
+    return () => clearInterval(interval);
+  }, [checkDue]);
 
   const openTrash = useCallback(() => {
     loadTrash();
     setSelected(new Set());
-    setShowTrash(true);
+    setView("trash");
   }, [loadTrash]);
-
-  const closeTrash = useCallback(() => {
-    setShowTrash(false);
-    setSelected(new Set());
-  }, []);
 
   const toggleSelect = useCallback((id: number) => {
     setSelected((s) => {
@@ -289,8 +311,32 @@ export default function App() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Command palette navigation
+      if (showCmdPalette && filteredCmds.length > 0) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCmds.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredCmds.length) % filteredCmds.length); return; }
+        if (e.key === "Tab" || (e.key === "Enter" && inputVal === "/")) {
+          e.preventDefault();
+          setInputVal(filteredCmds[cmdIdx].prefix);
+          setQuery(filteredCmds[cmdIdx].prefix);
+          return;
+        }
+        if (e.key === "Escape") { setInputVal(""); setQuery(""); return; }
+      }
+
       if (e.key === "Enter" && inputVal.trim()) {
-        add(inputVal.trim());
+        const val = inputVal.trim();
+        if (val.startsWith("/tm ") || val === "/tm") {
+          const text = val.slice(4).trim();
+          if (text) { setPendingModal({ type: "task", text }); setInputVal(""); setQuery(""); }
+          return;
+        }
+        if (val.startsWith("/rm ") || val === "/rm") {
+          const text = val.slice(4).trim();
+          if (text) { setPendingModal({ type: "reminder", text }); setInputVal(""); setQuery(""); }
+          return;
+        }
+        add(val);
         setInputVal("");
         setQuery("");
         setFocusedIdx(-1);
@@ -351,188 +397,276 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [filtered, focusedIdx]);
 
+  const BackButton = () => (
+    <button onClick={() => setView("main")} className="text-white/40 hover:text-white/70 transition-colors mr-3">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Trash", reminders: "Reminders", guide: "Guide", notes: "Notes" };
+
   return (
     <div
       className={`relative w-full h-full flex flex-col overflow-hidden transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
-      {/* Header drag region */}
+      {/* Header */}
       <div
         data-tauri-drag-region
         className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-white/[0.06]"
         style={{ height: 38 }}
       >
-        <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">Slate</span>
-        <span className="ml-auto text-[11px] text-white/20">⌥S</span>
-      </div>
-
-      {/* Search / add input */}
-      <div className="flex items-center gap-3 px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 48 }}>
-        <svg className="text-white/30 shrink-0" width="15" height="15" viewBox="0 0 15 15" fill="none">
-          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M11 11l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputVal}
-          onChange={(e) => {
-            setInputVal(e.target.value);
-            setQuery(e.target.value);
-            setFocusedIdx(-1);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Search or add a task…"
-          className="flex-1 bg-transparent text-white/88 placeholder-white/25 text-sm outline-none"
-        />
-        {inputVal && (
-          <button
-            onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-            className="text-white/25 hover:text-white/50 transition-colors text-xs shrink-0"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="shrink-0 h-px mx-0" style={{ background: "rgba(255,255,255,0.06)" }} />
-
-      {/* Todo list */}
-      <div className="overflow-y-auto flex-1 py-1.5">
-        {loading ? (
-          <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
-            Loading…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
-            {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
-          </div>
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-              {filtered.map((todo, i) => (
-                <TodoRow
-                  key={todo.id}
-                  todo={todo}
-                  focused={focusedIdx === i}
-                  onFocus={() => setFocusedIdx(i)}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="shrink-0 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-      <div
-        data-tauri-drag-region
-        className="flex items-center px-5 shrink-0 select-none"
-        style={{ height: 36 }}
-      >
-        <span className="text-[11px] text-white/25">
-          {todos.filter((t) => !t.done).length} task{todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining
-        </span>
-        <button
-          onClick={openTrash}
-          className="ml-auto flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/50 transition-colors"
-        >
-          <svg width="11" height="12" viewBox="0 0 11 12" fill="none">
-            <path d="M1 3h9M4 3V2h3v1M2 3l.5 7h6l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Trash
-        </button>
-      </div>
-
-      {/* Trash panel — slides over the main view */}
-      {showTrash && (
-        <div className="absolute inset-0 flex flex-col" style={{ background: "rgba(20,20,22,0.6)", borderRadius: 12, zIndex: 10 }}>
-          {/* Trash header */}
-          <div className="flex items-center px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 38 }}>
-            <button onClick={closeTrash} className="text-white/40 hover:text-white/70 transition-colors mr-3">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+        {view !== "main" && <BackButton />}
+        <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
+        <div className="ml-auto flex items-center gap-3">
+          {view === "main" && (
+            <button
+              onClick={() => setView("guide")}
+              className="text-white/20 hover:text-white/50 transition-colors text-[11px] w-4 h-4 rounded-full border border-white/15 flex items-center justify-center hover:border-white/35"
+            >
+              ?
             </button>
-            <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">Trash</span>
-            {trash.length > 0 && (
-              <div className="ml-auto flex items-center gap-3">
-                <button
-                  onClick={selected.size === trash.length ? () => setSelected(new Set()) : selectAll}
-                  className="text-[11px] text-white/35 hover:text-white/60 transition-colors"
-                >
-                  {selected.size === trash.length ? "Deselect all" : "Select all"}
+          )}
+          {view === "trash" && trash.length > 0 && (
+            <>
+              <button
+                onClick={selected.size === trash.length ? () => setSelected(new Set()) : selectAll}
+                className="text-[11px] text-white/35 hover:text-white/60 transition-colors"
+              >
+                {selected.size === trash.length ? "Deselect all" : "Select all"}
+              </button>
+              {selected.size > 0 && (
+                <button onClick={deleteSelected} className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors">
+                  Delete {selected.size === trash.length ? "all" : `(${selected.size})`}
                 </button>
-                {selected.size > 0 && (
-                  <button
-                    onClick={deleteSelected}
-                    className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
-                  >
-                    Delete {selected.size === trash.length ? "all" : `(${selected.size})`}
-                  </button>
-                )}
-              </div>
+              )}
+            </>
+          )}
+          {view === "main" && <span className="text-[11px] text-white/20">⌥S</span>}
+        </div>
+      </div>
+
+      {/* Main view: search input + command palette + todo list */}
+      {view === "main" && (
+        <>
+          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 48 }}>
+            <svg className="text-white/30 shrink-0" width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M11 11l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputVal}
+              onChange={(e) => {
+                setInputVal(e.target.value);
+                setQuery(e.target.value);
+                setFocusedIdx(-1);
+                setCmdIdx(0);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Add task · /tm deadline · /rm reminder…"
+              className="flex-1 bg-transparent text-white/88 placeholder-white/25 text-sm outline-none"
+            />
+            {inputVal && (
+              <button
+                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
+                className="text-white/25 hover:text-white/50 transition-colors text-xs shrink-0"
+              >
+                ✕
+              </button>
             )}
           </div>
 
-          {/* Trash list */}
+          {showCmdPalette && filteredCmds.length > 0 && (
+            <div className="shrink-0 border-b border-white/[0.06] py-1">
+              {filteredCmds.map((cmd, i) => (
+                <button
+                  key={cmd.prefix}
+                  onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
+                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${
+                    i === cmdIdx ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
+                  <span className="text-[12px] text-white/40">{cmd.desc}</span>
+                  {i === cmdIdx && <span className="ml-auto text-[10px] text-white/20">↵ or Tab</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="overflow-y-auto flex-1 py-1.5">
-            {trash.length === 0 ? (
+            {loading ? (
+              <div className="px-5 py-10 text-center text-white/20 text-sm select-none">Loading…</div>
+            ) : filtered.length === 0 ? (
               <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
-                Trash is empty
+                {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
               </div>
             ) : (
-              trash.map((todo) => (
-                <div
-                  key={todo.id}
-                  className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-white/[0.04] transition-colors"
-                  style={{ minHeight: 48 }}
-                >
-                  {/* Select checkbox */}
-                  <button
-                    onClick={() => toggleSelect(todo.id)}
-                    className="w-4 h-4 rounded border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
-                    style={selected.has(todo.id) ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
-                  >
-                    {selected.has(todo.id) && (
-                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                        <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-
-                  <span className="flex-1 text-[14px] text-white/40 line-through truncate">{todo.text}</span>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {/* Restore */}
-                    <button
-                      onClick={() => restore(todo.id)}
-                      title="Restore"
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-green-400"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6a4 4 0 1 0 1-2.5L1 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M1 2v2.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                    {/* Delete permanently */}
-                    <button
-                      onClick={() => deletePermanently(todo.id)}
-                      title="Delete permanently"
-                      className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  {filtered.map((todo, i) => (
+                    <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} />
+                  ))}
+                </SortableContext>
+              </DndContext>
             )}
           </div>
+        </>
+      )}
+
+      {/* Trash view */}
+      {view === "trash" && (
+        <div className="overflow-y-auto flex-1 py-1.5">
+          {trash.length === 0 ? (
+            <div className="px-5 py-10 text-center text-white/20 text-sm select-none">Trash is empty</div>
+          ) : (
+            trash.map((todo) => (
+              <div
+                key={todo.id}
+                className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-white/[0.04] transition-colors"
+                style={{ minHeight: 48 }}
+              >
+                <button
+                  onClick={() => toggleSelect(todo.id)}
+                  className="w-4 h-4 rounded border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
+                  style={selected.has(todo.id) ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+                >
+                  {selected.has(todo.id) && (
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                      <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </button>
+                <span className="flex-1 text-[14px] text-white/40 line-through truncate">{todo.text}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-green-400">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6a4 4 0 1 0 1-2.5L1 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M1 2v2.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <button onClick={() => deletePermanently(todo.id)} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
+      )}
+
+      {/* Reminders view */}
+      {view === "reminders" && <RemindersPage />}
+
+      {/* Guide view */}
+      {view === "guide" && <GuidePage />}
+
+      {/* Notes view */}
+      {view === "notes" && <NotesPage />}
+
+      {/* Footer — main, reminders, notes views */}
+      {(view === "main" || view === "reminders" || view === "notes") && (
+        <>
+          <div className="shrink-0 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+          <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36 }}>
+            <span className="text-[11px] text-white/25">
+              {view === "reminders"
+                ? `${allReminders.filter((r) => !r.notified).length} upcoming`
+                : view === "notes"
+                ? "0 notes"
+                : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
+            </span>
+            <div className="flex items-center gap-4 absolute left-1/2 -translate-x-1/2">
+              <button
+                onClick={() => setView("main")}
+                title="Tasks"
+                className={`transition-colors ${view === "main" ? "text-white/70" : "text-white/25 hover:text-white/50"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="1" y="2" width="12" height="1.5" rx="0.75" fill="currentColor" />
+                  <rect x="1" y="6" width="12" height="1.5" rx="0.75" fill="currentColor" />
+                  <rect x="1" y="10" width="12" height="1.5" rx="0.75" fill="currentColor" />
+                  <circle cx="1.75" cy="2.75" r="0.75" fill="currentColor" />
+                  <circle cx="1.75" cy="6.75" r="0.75" fill="currentColor" />
+                  <circle cx="1.75" cy="10.75" r="0.75" fill="currentColor" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setView("reminders")}
+                title="Reminders"
+                className={`transition-colors ${view === "reminders" ? "text-white/70" : "text-white/25 hover:text-white/50"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M7 4v3.2l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setView("notes")}
+                title="Notes"
+                className={`transition-colors ${view === "notes" ? "text-white/70" : "text-white/25 hover:text-white/50"}`}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+                  <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="ml-auto">
+              <button
+                onClick={openTrash}
+                title="Trash"
+                className="text-white/25 hover:text-white/50 transition-colors"
+              >
+                <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
+                  <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Date/time picker modal */}
+      {pendingModal && (
+        <DateTimeModal
+          title={pendingModal.type === "task" ? "Set deadline" : "Set reminder"}
+          subtitle={pendingModal.text}
+          showDate={true}
+          onConfirm={async (datetime) => {
+            const snapshot = pendingModal;
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+            try {
+              if (snapshot.type === "task") {
+                const date = datetime.split("T")[0];
+                const time = datetime.split("T")[1]?.slice(0, 5);
+                await useTodoStore.getState().add(snapshot.text);
+                const db = await import("./db").then((m) => m.getDb());
+                await db.execute(
+                  "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
+                  [date, time, snapshot.text]
+                );
+                await load();
+              } else {
+                await addReminder(snapshot.text, datetime);
+              }
+            } catch (e) {
+              console.error("confirm failed", e);
+            }
+          }}
+          onCancel={() => {
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+        />
       )}
     </div>
   );
