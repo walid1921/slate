@@ -597,8 +597,8 @@ export default function App() {
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} />}
 
-      {/* Footer — main, reminders, notes views */}
-      {(view === "main" || view === "reminders" || view === "notes") && (
+      {/* Footer — all views */}
+      {true && (
         <>
           <div className="shrink-0 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
           <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36 }}>
@@ -607,6 +607,10 @@ export default function App() {
                 ? `${allReminders.filter((r) => !r.notified).length} upcoming`
                 : view === "notes"
                 ? `${notes.length} note${notes.length !== 1 ? "s" : ""}`
+                : view === "trash"
+                ? `${trash.length} deleted`
+                : view === "guide"
+                ? "Guide"
                 : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
             </span>
             <div className="absolute left-1/2 -translate-x-1/2">
