@@ -618,7 +618,7 @@ export default function App() {
                 <div
                   className="absolute top-0.5 h-5 w-7 transition-transform duration-200 ease-out"
                   style={{
-                    borderRadius: 6,
+                    borderRadius: 5,
                     background: "rgba(255,255,255,0.12)",
                     left: "6px",
                     transform: `translateX(${view === "main" ? "0px" : view === "reminders" ? "32px" : "64px"})`,
