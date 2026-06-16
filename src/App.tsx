@@ -498,7 +498,7 @@ export default function App() {
       <div
         data-tauri-drag-region
         className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-white/[0.06]"
-        style={{ height: 38 }}
+        style={{ height: 38, background: "rgba(0,0,0,0.25)" }}
       >
         {view !== "main" && <BackButton />}
         <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
@@ -673,8 +673,7 @@ export default function App() {
       {/* Footer — all views */}
       {true && (
         <>
-          <div className="shrink-0 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-          <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36 }}>
+          <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36, background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <span className="text-[11px] text-white/25">
               {view === "reminders"
                 ? `${allReminders.filter((r) => !r.notified).length} upcoming`
