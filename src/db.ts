@@ -87,5 +87,51 @@ export async function getDb(): Promise<Database> {
     }
   }
 
+  const reminderSeeded = await _db.select<{ value: string }[]>(
+    "SELECT value FROM meta WHERE key = 'seeded_reminders'"
+  );
+  if (reminderSeeded.length === 0) {
+    await _db.execute("INSERT INTO meta (key, value) VALUES ('seeded_reminders', '1')");
+    const now = new Date();
+    const localIso = (d: Date) => {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+    };
+    const inMin = (m: number) => localIso(new Date(now.getTime() + m * 60000));
+    const seeds: [string, string, number][] = [
+      ["Team standup meeting",          inMin(30),       0],
+      ["Review design mockups",         inMin(120),      0],
+      ["Call with client",              inMin(60 * 24),  0],
+      ["Submit expense report",         inMin(60 * 48),  0],
+      ["Deploy staging build",          inMin(-60),      1],
+      ["Check server logs",             inMin(-120),     1],
+    ];
+    for (const [text, remind_at, notified] of seeds) {
+      await _db.execute(
+        "INSERT INTO reminders (text, remind_at, notified) VALUES (?, ?, ?)",
+        [text, remind_at, notified]
+      );
+    }
+  }
+
+  const notesSeeded = await _db.select<{ value: string }[]>(
+    "SELECT value FROM meta WHERE key = 'seeded_notes'"
+  );
+  if (notesSeeded.length === 0) {
+    await _db.execute("INSERT INTO meta (key, value) VALUES ('seeded_notes', '1')");
+    const seedNotes: [string, string][] = [
+      ["Release checklist", "- [ ] Bump version number\n- [ ] Update changelog\n- [ ] Run full test suite\n- [ ] Tag the release\n- [ ] Deploy to production\n- [ ] Notify the team"],
+      ["Meeting notes — sprint planning", "Attendees: Walid, Sara, Tom\n\nGoals for this sprint:\n1. Finish auth refactor\n2. Ship the onboarding flow\n3. Fix the date formatter bug\n\nBlockers: waiting on design assets for onboarding screens."],
+      ["Ideas", "- Dark mode toggle per user preference\n- Keyboard shortcut cheatsheet overlay\n- Export todos as markdown\n- Sync across devices via iCloud\n- Widget for macOS menu bar"],
+      ["Useful commands", "pnpm tauri dev       → start dev server\npnpm tauri build     → production build\ngit log --oneline    → recent commits\ntccutil reset Notifications <id>"],
+    ];
+    for (const [title, content] of seedNotes) {
+      await _db.execute(
+        "INSERT INTO notes (title, content) VALUES (?, ?)",
+        [title, content]
+      );
+    }
+  }
+
   return _db;
 }
