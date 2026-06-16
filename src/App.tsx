@@ -610,13 +610,21 @@ export default function App() {
                 : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
             </span>
             <div
-              className="flex items-center gap-1 absolute left-1/2 -translate-x-1/2 rounded-full px-1.5 py-1"
+              className="relative flex items-center gap-1 absolute left-1/2 -translate-x-1/2 rounded-full px-1.5 py-1"
               style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
             >
+              {/* Sliding active indicator */}
+              <div
+                className="absolute top-1 h-6 w-7 rounded-full transition-transform duration-200 ease-out"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  transform: `translateX(${view === "main" ? "0px" : view === "reminders" ? "32px" : "64px"})`,
+                }}
+              />
               <button
                 onClick={() => setView("main")}
                 title="Tasks"
-                className={`w-7 h-6 flex items-center justify-center rounded-full transition-colors ${view === "main" ? "text-white/80 bg-white/10" : "text-white/30 hover:text-white/55"}`}
+                className={`relative z-10 w-7 h-6 flex items-center justify-center rounded-full transition-colors duration-200 ${view === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <rect x="1" y="2" width="12" height="1.5" rx="0.75" fill="currentColor" />
@@ -627,7 +635,7 @@ export default function App() {
               <button
                 onClick={() => setView("reminders")}
                 title="Reminders"
-                className={`w-7 h-6 flex items-center justify-center rounded-full transition-colors ${view === "reminders" ? "text-white/80 bg-white/10" : "text-white/30 hover:text-white/55"}`}
+                className={`relative z-10 w-7 h-6 flex items-center justify-center rounded-full transition-colors duration-200 ${view === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
@@ -637,7 +645,7 @@ export default function App() {
               <button
                 onClick={() => setView("notes")}
                 title="Notes"
-                className={`w-7 h-6 flex items-center justify-center rounded-full transition-colors ${view === "notes" ? "text-white/80 bg-white/10" : "text-white/30 hover:text-white/55"}`}
+                className={`relative z-10 w-7 h-6 flex items-center justify-center rounded-full transition-colors duration-200 ${view === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
