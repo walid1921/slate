@@ -54,7 +54,7 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
   );
 
   return (
-    <div className="overflow-y-auto flex-1 py-1.5">
+    <div className="view-animate overflow-y-auto flex-1 py-1.5">
       {reminders.length === 0 ? (
         <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
           No reminders yet — type /rm in the main view

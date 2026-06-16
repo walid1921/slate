@@ -53,7 +53,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
   };
 
   return (
-    <div className="flex flex-row flex-1 overflow-hidden">
+    <div className="view-animate flex flex-row flex-1 overflow-hidden">
       {/* Note list */}
       <div className="w-44 shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2 shrink-0">

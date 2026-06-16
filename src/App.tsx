@@ -477,7 +477,7 @@ export default function App() {
 
       {/* Main view: search input + command palette + todo list */}
       {view === "main" && (
-        <>
+        <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
           <div className="flex items-center gap-3 px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 48 }}>
             <svg className="text-white/30 shrink-0" width="15" height="15" viewBox="0 0 15 15" fill="none">
               <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
@@ -542,12 +542,12 @@ export default function App() {
               </DndContext>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* Trash view */}
       {view === "trash" && (
-        <div className="overflow-y-auto flex-1 py-1.5">
+        <div key="trash" className="view-animate overflow-y-auto flex-1 py-1.5">
           {trash.length === 0 ? (
             <div className="px-5 py-10 text-center text-white/20 text-sm select-none">Trash is empty</div>
           ) : (
@@ -589,7 +589,7 @@ export default function App() {
       )}
 
       {/* Reminders view */}
-      {view === "reminders" && <RemindersPage onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} />}
+      {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} />}
 
       {/* Guide view */}
       {view === "guide" && <GuidePage />}
