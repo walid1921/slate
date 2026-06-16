@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNotesStore, Note } from "../notesStore";
+import FilterBar, { NoteSort } from "./FilterBar";
 
 function relativeDate(iso: string): string {
   const d = new Date(iso);
@@ -14,6 +15,7 @@ function relativeDate(iso: string): string {
 
 export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: number) => void }) {
   const { notes, load, add, update } = useNotesStore();
+  const [sort, setSort] = useState<NoteSort>("updated");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -21,6 +23,12 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { load(); }, [load]);
+
+  const sortedNotes = [...notes].sort((a, b) => {
+    if (sort === "az") return a.title.localeCompare(b.title);
+    if (sort === "created") return a.id - b.id;
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  });
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
 
@@ -56,6 +64,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
     <div className="view-animate flex flex-row flex-1 overflow-hidden">
       {/* Note list */}
       <div className="w-44 shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden">
+        <FilterBar page="notes" sort={sort} onSort={setSort} />
         <div className="flex items-center justify-between px-3 py-2 shrink-0">
           <span className="text-[10px] text-white/30 uppercase tracking-widest select-none">Notes</span>
           <button
@@ -69,10 +78,10 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
           </button>
         </div>
         <div className="overflow-y-auto flex-1">
-          {notes.length === 0 ? (
+          {sortedNotes.length === 0 ? (
             <p className="px-3 py-6 text-center text-white/20 text-xs select-none">No notes yet</p>
           ) : (
-            notes.map((note) => (
+            sortedNotes.map((note) => (
               <div
                 key={note.id}
                 onClick={() => selectNote(note)}

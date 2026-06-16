@@ -10,6 +10,7 @@ import RemindersPage from "./components/RemindersPage";
 import GuidePage from "./components/GuidePage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
+import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import {
   DndContext,
   closestCenter,
@@ -276,6 +277,8 @@ export default function App() {
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
+  const [todoSort, setTodoSort] = useState<TodoSort>("manual");
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void) => {
     setConfirmDelete({ title, message, onConfirm });
@@ -339,9 +342,29 @@ export default function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
-  const filtered = todos.filter((t) =>
-    query ? t.text.toLowerCase().includes(query.toLowerCase()) : true
-  );
+  const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2, none: 3 };
+
+  const filtered = todos
+    .filter((t) => query ? t.text.toLowerCase().includes(query.toLowerCase()) : true)
+    .filter((t) => {
+      if (todoFilter === "active") return !t.done;
+      if (todoFilter === "done") return t.done;
+      return true;
+    })
+    .sort((a, b) => {
+      if (todoSort === "manual") return 0; // preserve store order
+      if (todoSort === "az") return a.text.localeCompare(b.text);
+      if (todoSort === "priority") return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      if (todoSort === "due") {
+        const da = a.due_date ? new Date(`${a.due_date}T${a.due_time ?? "23:59:59"}`) : null;
+        const db = b.due_date ? new Date(`${b.due_date}T${b.due_time ?? "23:59:59"}`) : null;
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da.getTime() - db.getTime();
+      }
+      return 0;
+    });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -566,6 +589,14 @@ export default function App() {
               ))}
             </div>
           )}
+
+          <FilterBar
+            page="todos"
+            filter={todoFilter}
+            sort={todoSort}
+            onFilter={setTodoFilter}
+            onSort={setTodoSort}
+          />
 
           <div className="overflow-y-auto flex-1 py-1.5">
             {loading ? (

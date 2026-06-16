@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useReminderStore, Reminder } from "../reminderStore";
+import FilterBar, { ReminderFilter, ReminderSort } from "./FilterBar";
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -18,11 +19,24 @@ function isOverdue(iso: string): boolean {
 
 export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (id: number) => void }) {
   const { reminders, load } = useReminderStore();
+  const [filter, setFilter] = useState<ReminderFilter>("all");
+  const [sort, setSort] = useState<ReminderSort>("time");
 
   useEffect(() => { load(); }, [load]);
 
-  const upcoming = reminders.filter((r) => !r.notified);
-  const done = reminders.filter((r) => r.notified);
+  const sorted = [...reminders].sort((a, b) => {
+    if (sort === "az") return a.text.localeCompare(b.text);
+    return new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime();
+  });
+
+  const visible = sorted.filter((r) => {
+    if (filter === "upcoming") return !r.notified;
+    if (filter === "sent") return r.notified;
+    return true;
+  });
+
+  const upcoming = visible.filter((r) => !r.notified);
+  const done = visible.filter((r) => r.notified);
 
   const ReminderRow = ({ r }: { r: Reminder }) => (
     <div
@@ -54,20 +68,24 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
   );
 
   return (
-    <div className="view-animate overflow-y-auto flex-1 py-1.5">
+    <div className="view-animate flex flex-col flex-1 overflow-hidden">
+      <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} />
+      <div className="overflow-y-auto flex-1 py-1.5">
       {reminders.length === 0 ? (
         <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
           No reminders yet — type /rm in the main view
         </div>
+      ) : visible.length === 0 ? (
+        <div className="px-5 py-10 text-center text-white/20 text-sm select-none">No reminders match this filter</div>
       ) : (
         <>
-          {upcoming.length > 0 && (
+          {filter !== "sent" && upcoming.length > 0 && (
             <>
               <p className="px-5 pt-2 pb-1 text-[10px] text-white/25 uppercase tracking-widest select-none">Upcoming</p>
               {upcoming.map((r) => <ReminderRow key={r.id} r={r} />)}
             </>
           )}
-          {done.length > 0 && (
+          {filter !== "upcoming" && done.length > 0 && (
             <>
               <p className="px-5 pt-3 pb-1 text-[10px] text-white/25 uppercase tracking-widest select-none">Sent</p>
               {done.map((r) => <ReminderRow key={r.id} r={r} />)}
@@ -75,6 +93,7 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
