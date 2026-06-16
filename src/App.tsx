@@ -449,12 +449,15 @@ export default function App() {
         <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         <div className="ml-auto flex items-center gap-3">
           {view === "main" && (
-            <button
-              onClick={() => navigate("guide")}
-              className="text-white/20 hover:text-white/50 transition-colors text-[11px] w-4 h-4 rounded-full border border-white/15 flex items-center justify-center hover:border-white/35"
-            >
-              ?
-            </button>
+            <div className="group/guide relative">
+              <button
+                onClick={() => navigate("guide")}
+                className="text-white/20 hover:text-white/50 transition-colors text-[11px] w-4 h-4 rounded-full border border-white/15 flex items-center justify-center hover:border-white/35"
+              >
+                ?
+              </button>
+              <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/guide:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Guide</span>
+            </div>
           )}
           {view === "trash" && trash.length > 0 && (
             <>
