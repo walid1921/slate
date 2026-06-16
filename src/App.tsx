@@ -611,7 +611,7 @@ export default function App() {
             </span>
             <div className="absolute left-1/2 -translate-x-1/2">
               <div
-                className="relative flex items-center gap-1 px-1.5 py-0.5"
+                className="relative flex items-center gap-1 px-0.5 py-0.5"
                 style={{ borderRadius: 6, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
               >
                 {/* Sliding active indicator */}
@@ -620,7 +620,7 @@ export default function App() {
                   style={{
                     borderRadius: 5,
                     background: "rgba(255,255,255,0.12)",
-                    left: "6px",
+                    left: "2px",
                     transform: `translateX(${view === "main" ? "0px" : view === "reminders" ? "32px" : "64px"})`,
                   }}
                 />
