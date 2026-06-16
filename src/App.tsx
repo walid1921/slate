@@ -231,7 +231,14 @@ export default function App() {
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
   type View = "main" | "trash" | "reminders" | "guide" | "notes";
+  type NavView = "main" | "reminders" | "notes";
   const [view, setView] = useState<View>("main");
+  const [lastNavView, setLastNavView] = useState<NavView>("main");
+
+  const navigate = useCallback((v: View) => {
+    if (v === "main" || v === "reminders" || v === "notes") setLastNavView(v);
+    setView(v);
+  }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   // Pending modal state: type + text extracted from /tm or /rm
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
@@ -264,7 +271,7 @@ export default function App() {
   const openTrash = useCallback(() => {
     loadTrash();
     setSelected(new Set());
-    setView("trash");
+    navigate("trash");
   }, [loadTrash]);
 
   const toggleSelect = useCallback((id: number) => {
@@ -350,7 +357,7 @@ export default function App() {
         if (val.startsWith("/nt ") || val === "/nt") {
           const title = val.slice(4).trim();
           addNote(title || "Untitled", "");
-          setView("notes");
+          navigate("notes");
           setInputVal("");
           setQuery("");
           return;
@@ -417,7 +424,7 @@ export default function App() {
   }, [filtered, focusedIdx]);
 
   const BackButton = () => (
-    <button onClick={() => setView("main")} className="text-white/40 hover:text-white/70 transition-colors mr-3">
+    <button onClick={() => navigate("main")} className="text-white/40 hover:text-white/70 transition-colors mr-3">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -443,7 +450,7 @@ export default function App() {
         <div className="ml-auto flex items-center gap-3">
           {view === "main" && (
             <button
-              onClick={() => setView("guide")}
+              onClick={() => navigate("guide")}
               className="text-white/20 hover:text-white/50 transition-colors text-[11px] w-4 h-4 rounded-full border border-white/15 flex items-center justify-center hover:border-white/35"
             >
               ?
@@ -625,12 +632,12 @@ export default function App() {
                     borderRadius: 5,
                     background: "rgba(255,255,255,0.12)",
                     left: "2px",
-                    transform: `translateX(${view === "main" ? "0px" : view === "reminders" ? "32px" : "64px"})`,
+                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "reminders" ? "32px" : "64px"})`,
                   }}
                 />
                 <button
-                  onClick={() => setView("main")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  onClick={() => navigate("main")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Tasks</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -640,8 +647,8 @@ export default function App() {
                   </svg>
                 </button>
                 <button
-                  onClick={() => setView("reminders")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  onClick={() => navigate("reminders")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Reminders</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -650,8 +657,8 @@ export default function App() {
                   </svg>
                 </button>
                 <button
-                  onClick={() => setView("notes")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${view === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  onClick={() => navigate("notes")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Notes</span>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
