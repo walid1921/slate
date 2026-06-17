@@ -5,32 +5,38 @@ import { useNotesStore } from "../notesStore";
 
 export default function QuickNote() {
   const [text, setText] = useState("");
+  const textVal = useRef("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const saved = useRef(false);
+  const saving = useRef(false);
 
   useEffect(() => {
-    // Make root transparent so vibrancy shows through
     const root = document.getElementById("root");
     if (root) root.style.background = "transparent";
     setTimeout(() => textareaRef.current?.focus(), 80);
   }, []);
 
+  // Keep ref in sync so event listeners always read latest text
+  useEffect(() => { textVal.current = text; }, [text]);
+
   const save = async () => {
-    if (saved.current) return;
-    saved.current = true;
-    const trimmed = text.trim();
+    if (saving.current) return;
+    saving.current = true;
+    const trimmed = textVal.current.trim();
     if (trimmed) {
       const lines = trimmed.split("\n");
       const title = lines[0].slice(0, 60) || "Quick note";
       const content = lines.slice(1).join("\n").trim();
       await useNotesStore.getState().add(title, content);
     }
-    getCurrentWindow().close();
+    await getCurrentWindow().close();
   };
 
-  // Close when the OS window loses focus
+  const saveRef = useRef(save);
+  useEffect(() => { saveRef.current = save; });
+
+  // Close when window loses focus
   useEffect(() => {
-    const unlisten = listen("quick-note-blur", () => save());
+    const unlisten = listen("quick-note-blur", () => saveRef.current());
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
@@ -47,8 +53,8 @@ export default function QuickNote() {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Escape") save();
-          if (e.key === "Enter" && e.metaKey) { e.preventDefault(); save(); }
+          if (e.key === "Escape") { e.preventDefault(); saveRef.current(); }
+          if (e.key === "Enter" && e.metaKey) { e.preventDefault(); saveRef.current(); }
         }}
         placeholder="First line becomes the title…"
         className="flex-1 px-3 py-2.5 text-[13px] text-t1 bg-transparent outline-none resize-none placeholder-themed leading-relaxed"
