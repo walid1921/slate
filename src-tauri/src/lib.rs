@@ -27,9 +27,13 @@ pub fn run() {
                 .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
                         let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
-                        if shortcut == &toggle {
-                            if let Some(window) = app.get_webview_window("main") {
+                        let new_note = Shortcut::new(Some(Modifiers::ALT), Code::KeyN);
+                        if let Some(window) = app.get_webview_window("main") {
+                            if shortcut == &toggle {
                                 toggle_window(&window);
+                            } else if shortcut == &new_note {
+                                show_window(&window);
+                                let _ = window.emit("new-note", ());
                             }
                         }
                     }
@@ -39,6 +43,8 @@ pub fn run() {
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
+            let new_note_shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyN);
+            app.global_shortcut().register(new_note_shortcut)?;
 
             if let Some(window) = app.get_webview_window("main") {
                 #[cfg(target_os = "macos")]

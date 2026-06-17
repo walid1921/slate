@@ -444,6 +444,16 @@ export default function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
+  // ⌥N global shortcut: open app and create a new note
+  useEffect(() => {
+    const unlisten = listen("new-note", async () => {
+      navigate("notes");
+      const { add: addN } = useNotesStore.getState();
+      await addN("Untitled", "");
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
   const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
   const activeSort = todoSort === "manual" ? defaultSort : todoSort;
