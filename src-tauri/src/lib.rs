@@ -78,6 +78,12 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
+                let win = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::Focused(false) = event {
+                        let _ = win.hide();
+                    }
+                });
             }
 
             Ok(())
