@@ -80,7 +80,7 @@ function Divider() {
 }
 
 export default function SettingsPage() {
-  const { density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, reminderInterval, set, reset } = useSettingsStore();
+  const { density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, showDividers, reminderInterval, set, reset } = useSettingsStore();
   const { todos, remove } = useTodoStore();
 
   const clearCompleted = () => {
@@ -90,7 +90,7 @@ export default function SettingsPage() {
   return (
     <div className="view-animate overflow-y-auto flex-1 py-3">
       <Section title="Appearance">
-        <Row label="Row density" hint="How much space between tasks">
+        <Row label="Row density" hint="Spacing between tasks">
           <SegmentedControl<Density>
             options={[
               { value: "compact", label: "Compact" },
@@ -100,6 +100,10 @@ export default function SettingsPage() {
             value={density}
             onChange={(v) => set("density", v)}
           />
+        </Row>
+        <Divider />
+        <Row label="Dividers between tasks" hint="Show a soft line separating each task">
+          <Toggle value={showDividers} onChange={(v) => set("showDividers", v)} />
         </Row>
       </Section>
 

@@ -11,6 +11,7 @@ export interface Settings {
   defaultPriority: Priority;
   defaultSort: DefaultSort;
   showDoneAtBottom: boolean;
+  showDividers: boolean;
   reminderInterval: 30 | 60 | 300;
 }
 
@@ -25,6 +26,7 @@ const DEFAULTS: Settings = {
   defaultPriority: "none",
   defaultSort: "manual",
   showDoneAtBottom: false,
+  showDividers: false,
   reminderInterval: 30,
 };
 
