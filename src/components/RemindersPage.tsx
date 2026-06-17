@@ -148,8 +148,8 @@ function ReminderRow({ r, onDeleteRequest, focused }: { r: Reminder; onDeleteReq
 
   return (
     <div
-      className="group/row flex items-center gap-3 px-5 border-b border-s transition-colors"
-      style={{ minHeight: 52, background: focused ? "var(--c-surface-2)" : undefined }}
+      className="group/row flex items-center gap-3 px-5 py-3 border-b border-s transition-colors"
+      style={{ minHeight: 56, background: focused ? "var(--c-surface-2)" : undefined }}
     >
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
         r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
