@@ -249,7 +249,7 @@ function TodoRow({
           <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
             <Pencil size={12} className="text-t4" /><span>Edit task</span>
           </button>
-          <div className="flex items-center gap-2 px-3 py-1">
+          <div className="flex items-center gap-2 px-3 py-1.5">
             {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
               <button
                 key={p}
