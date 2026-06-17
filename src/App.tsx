@@ -563,7 +563,7 @@ export default function App() {
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
       if (e.key === "Backspace" || e.key === "Delete") {
         const todo = filtered[focusedIdx];
-        if (todo) useTodoStore.getState().remove(todo.id);
+        if (todo) askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id));
         return;
       }
       if (e.key === " ") {
@@ -788,7 +788,7 @@ export default function App() {
       )}
 
       {/* Reminders view */}
-      {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} />}
+      {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} onConfirm={askConfirm} />}
 
       {/* Guide view */}
       {view === "guide" && <GuidePage />}

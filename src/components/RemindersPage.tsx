@@ -116,7 +116,7 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
   );
 }
 
-function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () => void }) {
+function ReminderRow({ r, onDeleteRequest, focused }: { r: Reminder; onDeleteRequest: () => void; focused?: boolean }) {
   const { update } = useReminderStore();
   const [editingText, setEditingText] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
@@ -148,8 +148,8 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
 
   return (
     <div
-      className="group/row flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors"
-      style={{ minHeight: 52 }}
+      className="group/row flex items-center gap-3 px-5 border-b border-s transition-colors"
+      style={{ minHeight: 52, background: focused ? "var(--c-surface-2)" : undefined }}
     >
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
         r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
@@ -233,10 +233,11 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
   );
 }
 
-export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (id: number) => void }) {
-  const { reminders, load } = useReminderStore();
+export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDeleteRequest: (id: number) => void; onConfirm: (title: string, msg: string, fn: () => void) => void }) {
+  const { reminders, load, markSent } = useReminderStore();
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
+  const [focusedIdx, setFocusedIdx] = useState(-1);
   const { remindersViewMode, set: setSetting } = useSettingsStore();
 
   useEffect(() => { load(); }, [load]);
@@ -254,6 +255,26 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
 
   const upcoming = visible.filter((r) => !r.notified);
   const done = visible.filter((r) => r.notified);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === "INPUT") return;
+      if (e.key === "ArrowDown") { e.preventDefault(); setFocusedIdx((i) => Math.min(i + 1, visible.length - 1)); return; }
+      if (e.key === "ArrowUp")   { e.preventDefault(); setFocusedIdx((i) => Math.max(i - 1, 0)); return; }
+      if (e.key === "Backspace" || e.key === "Delete") {
+        const r = visible[focusedIdx];
+        if (r) onConfirm("Delete reminder?", "This reminder will be deleted.", () => onDeleteRequest(r.id));
+        return;
+      }
+      if (e.key === " ") {
+        const r = visible[focusedIdx];
+        if (r && !r.notified) { e.preventDefault(); onConfirm("Send reminder now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); }
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [visible, focusedIdx, onDeleteRequest, onConfirm, markSent]);
 
   return (
     <div className="view-animate flex flex-col flex-1 overflow-hidden">
@@ -276,13 +297,13 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
             {filter !== "sent" && upcoming.length > 0 && (
               <>
                 <p className="px-5 pt-2 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Upcoming</p>
-                {upcoming.map((r) => <ReminderRow key={r.id} r={r} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {upcoming.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}
             {filter !== "upcoming" && done.length > 0 && (
               <>
                 <p className="px-5 pt-3 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Sent</p>
-                {done.map((r) => <ReminderRow key={r.id} r={r} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {done.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}
           </>

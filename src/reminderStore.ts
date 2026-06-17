@@ -16,6 +16,7 @@ interface ReminderState {
   add: (text: string, remind_at: string) => Promise<void>;
   update: (id: number, text: string, remind_at: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  markSent: (id: number) => Promise<void>;
   checkDue: () => Promise<void>;
 }
 
@@ -49,6 +50,14 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
     set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
+  },
+
+  markSent: async (id) => {
+    const db = await getDb();
+    const r = get().reminders.find((r) => r.id === id);
+    if (r) await notify("Slate Reminder", r.text);
+    await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [id]);
+    set((s) => ({ reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r) }));
   },
 
   checkDue: async () => {
