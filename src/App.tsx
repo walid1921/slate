@@ -438,6 +438,9 @@ export default function App() {
   useEffect(() => {
     const unlisten = listen("window-shown", () => {
       setVisible(true);
+      navigate("main");
+      setInputVal("");
+      setQuery("");
       setTimeout(() => inputRef.current?.focus(), 50);
     });
     // Also trigger on initial mount (first open)
