@@ -25,20 +25,28 @@ fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
         let _ = window.center();
         return;
     };
+    // Default logical size — quick-note overrides these when it passes different values
+    let (win_w, win_h) = window.inner_size()
+        .ok()
+        .map(|s| {
+            let scale = window.scale_factor().unwrap_or(1.0);
+            (s.width as f64 / scale, s.height as f64 / scale)
+        })
+        .unwrap_or((640.0, 520.0));
     for monitor in monitors {
         let pos = monitor.position();
         let size = monitor.size();
+        let scale = monitor.scale_factor();
         let mx = pos.x as f64;
         let my = pos.y as f64;
         let mw = size.width as f64;
         let mh = size.height as f64;
         if cursor.x >= mx && cursor.x < mx + mw && cursor.y >= my && cursor.y < my + mh {
-            // Move window onto this monitor first, then center() will center within it
-            let _ = window.set_position(tauri::PhysicalPosition::new(
-                mx + mw / 2.0,
-                my + mh / 2.0,
-            ));
-            let _ = window.center();
+            let ww = win_w * scale;
+            let wh = win_h * scale;
+            let x = mx + (mw - ww) / 2.0;
+            let y = my + (mh - wh) / 2.0;
+            let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
             return;
         }
     }
