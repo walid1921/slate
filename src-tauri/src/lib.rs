@@ -61,6 +61,8 @@ pub fn run() {
                             .build() {
                                 #[cfg(target_os = "macos")]
                                 apply_vibrancy(&qn, NSVisualEffectMaterial::HudWindow, None, Some(12.0)).ok();
+                                #[cfg(target_os = "macos")]
+                                let _ = qn.set_visible_on_all_workspaces(true);
 
 
 
@@ -81,7 +83,8 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
-
+                #[cfg(target_os = "macos")]
+                let _ = window.set_visible_on_all_workspaces(true);
             }
 
             Ok(())
