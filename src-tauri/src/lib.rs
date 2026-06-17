@@ -17,24 +17,32 @@ fn set_fullscreen_overlay(window: &WebviewWindow) {
 }
 
 fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
-    let Ok(cursor) = app.cursor_position() else { return };
-    let Ok(monitors) = window.available_monitors() else { return };
+    let Ok(cursor) = app.cursor_position() else {
+        let _ = window.center();
+        return;
+    };
+    let Ok(monitors) = window.available_monitors() else {
+        let _ = window.center();
+        return;
+    };
     for monitor in monitors {
         let pos = monitor.position();
         let size = monitor.size();
-        let _scale = monitor.scale_factor();
         let mx = pos.x as f64;
         let my = pos.y as f64;
         let mw = size.width as f64;
         let mh = size.height as f64;
         if cursor.x >= mx && cursor.x < mx + mw && cursor.y >= my && cursor.y < my + mh {
-            let Ok(wsize) = window.outer_size() else { break };
-            let x = mx + (mw - wsize.width as f64) / 2.0;
-            let y = my + (mh - wsize.height as f64) / 2.0;
-            let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
-            break;
+            // Move window onto this monitor first, then center() will center within it
+            let _ = window.set_position(tauri::PhysicalPosition::new(
+                mx + mw / 2.0,
+                my + mh / 2.0,
+            ));
+            let _ = window.center();
+            return;
         }
     }
+    let _ = window.center();
 }
 
 #[tauri::command]
