@@ -34,8 +34,12 @@ pub fn run() {
                             }
                         } else if shortcut == &new_note {
                             if let Some(qn) = app.get_webview_window("quick-note") {
-                                let _ = qn.show();
-                                let _ = qn.set_focus();
+                                if qn.is_visible().unwrap_or(false) {
+                                    let _ = qn.emit("quick-note-blur", ());
+                                } else {
+                                    let _ = qn.show();
+                                    let _ = qn.set_focus();
+                                }
                             } else if let Ok(qn) = WebviewWindowBuilder::new(
                                 app,
                                 "quick-note",
