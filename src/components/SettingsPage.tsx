@@ -156,7 +156,7 @@ function GeneralTab() {
                 className="flex flex-col items-center gap-1.5 group"
               >
                 <div
-                  className="w-14 h-10 rounded-lg border-2 transition-all overflow-hidden"
+                  className="w-14 h-10 rounded-xl border-2 transition-all overflow-hidden"
                   style={{
                     borderColor: theme === t ? "rgb(147,210,255)" : "var(--c-border)",
                     background: t === "dark" ? "#1a1a1e" : "#f0f0f4",
@@ -184,7 +184,7 @@ function GeneralTab() {
                 className="flex flex-col items-center gap-0.5"
               >
                 <div
-                  className="w-9 h-8 rounded-lg flex items-center justify-center transition-all border"
+                  className="w-9 h-8 rounded-xl flex items-center justify-center transition-all border"
                   style={{
                     background: textSize === s ? "var(--c-surface-3)" : "var(--c-surface-2)",
                     borderColor: textSize === s ? "rgb(147,210,255)" : "var(--c-border)",
@@ -209,7 +209,7 @@ function GeneralTab() {
             ] as { value: WindowMode; label: string; w: number; h: number }[]).map((m) => (
               <button key={m.value} onClick={() => set("windowMode", m.value)} className="flex flex-col items-center gap-1">
                 <div
-                  className="rounded-lg border-2 transition-all flex flex-col overflow-hidden"
+                  className="rounded-xl border-2 transition-all flex flex-col overflow-hidden"
                   style={{
                     width: m.w, height: m.h,
                     borderColor: windowMode === m.value ? "rgb(147,210,255)" : "var(--c-border)",
@@ -235,7 +235,7 @@ function GeneralTab() {
         <SettingRow label="Reset all settings" hint="Restore defaults">
           <button
             onClick={reset}
-            className="px-3 py-1 rounded-md text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
+            className="px-3 py-1 rounded-xl text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
             style={{ background: "var(--c-surface-2)" }}
           >
             Reset
