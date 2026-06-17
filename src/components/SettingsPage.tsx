@@ -1,4 +1,4 @@
-import { useSettingsStore, Density, Theme } from "../settingsStore";
+import { useSettingsStore, Theme } from "../settingsStore";
 
 const guideSections = [
   {
@@ -78,23 +78,7 @@ const guideSections = [
   },
 ];
 
-function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!value)}
-      className="relative w-8 h-4 rounded-full transition-colors shrink-0"
-      style={{ background: value ? "rgba(99,179,237,0.5)" : "var(--c-surface-3)" }}
-    >
-      <span
-        className="absolute top-0.5 w-3 h-3 rounded-full transition-transform"
-        style={{
-          background: value ? "rgb(147,210,255)" : "var(--c-text-3)",
-          transform: value ? "translateX(17px)" : "translateX(2px)",
-        }}
-      />
-    </button>
-  );
-}
+
 
 function SegmentedControl<T extends string>({
   options,
@@ -154,7 +138,7 @@ function Divider() {
 }
 
 export default function SettingsPage() {
-  const { theme, density, showDoneAtBottom, reminderInterval, set, reset } = useSettingsStore();
+  const { theme, set, reset } = useSettingsStore();
 
   return (
     <div className="view-animate overflow-y-auto flex-1 py-3">
@@ -167,36 +151,6 @@ export default function SettingsPage() {
             ]}
             value={theme}
             onChange={(v) => set("theme", v)}
-          />
-        </Row>
-        <Divider />
-        <Row label="Row density" hint="Spacing between tasks">
-          <SegmentedControl<Density>
-            options={[
-              { value: "compact", label: "Compact" },
-              { value: "normal", label: "Normal" },
-              { value: "comfortable", label: "Roomy" },
-            ]}
-            value={density}
-            onChange={(v) => set("density", v)}
-          />
-        </Row>
-        <Divider />
-        <Row label="Done tasks at bottom" hint="Separate completed tasks visually">
-          <Toggle value={showDoneAtBottom} onChange={(v) => set("showDoneAtBottom", v)} />
-        </Row>
-      </Section>
-
-      <Section title="Behavior">
-        <Row label="Reminder check interval" hint="How often to check for due reminders">
-          <SegmentedControl<string>
-            options={[
-              { value: "30", label: "30s" },
-              { value: "60", label: "1m" },
-              { value: "300", label: "5m" },
-            ]}
-            value={String(reminderInterval)}
-            onChange={(v) => set("reminderInterval", Number(v) as 30 | 60 | 300)}
           />
         </Row>
       </Section>

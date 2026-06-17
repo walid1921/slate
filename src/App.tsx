@@ -189,7 +189,6 @@ function TodoRow({
   onDeleteRequest: () => void;
 }) {
   const { toggle, setPriority, updateText } = useTodoStore();
-  const { density } = useSettingsStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
@@ -233,7 +232,7 @@ function TodoRow({
       onMouseEnter={() => setShowMeta(true)}
       onMouseLeave={() => setShowMeta(false)}
       style={{
-        minHeight: density === "compact" ? 40 : density === "comfortable" ? 64 : 52,
+        minHeight: 52,
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
@@ -341,7 +340,7 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
-  const { showDoneAtBottom, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
+  const { defaultSort, defaultPriority, tasksViewMode, set: setSetting, theme } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -388,9 +387,9 @@ export default function App() {
   useEffect(() => {
     checkDue();
     checkDueTodos();
-    const interval = setInterval(() => { checkDue(); checkDueTodos(); }, reminderInterval * 1000);
+    const interval = setInterval(() => { checkDue(); checkDueTodos(); }, 30_000);
     return () => clearInterval(interval);
-  }, [checkDue, checkDueTodos, reminderInterval]);
+  }, [checkDue, checkDueTodos]);
 
   const openTrash = useCallback(() => {
     loadTrash();
@@ -445,7 +444,7 @@ export default function App() {
       return true;
     })
     .sort((a, b) => {
-      if (showDoneAtBottom && a.done !== b.done) return a.done ? 1 : -1;
+      if (a.done !== b.done) return a.done ? 1 : -1;
       if (activeSort === "manual") return 0;
       if (activeSort === "az") return a.text.localeCompare(b.text);
       if (activeSort === "priority") return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
