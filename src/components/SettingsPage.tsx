@@ -1,6 +1,5 @@
 import { useSettingsStore, Density, DefaultSort } from "../settingsStore";
 import { Priority } from "../store";
-import { useTodoStore } from "../store";
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -81,11 +80,6 @@ function Divider() {
 
 export default function SettingsPage() {
   const { density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, showDividers, reminderInterval, set, reset } = useSettingsStore();
-  const { todos, remove } = useTodoStore();
-
-  const clearCompleted = () => {
-    todos.filter((t) => t.done).forEach((t) => remove(t.id));
-  };
 
   return (
     <div className="view-animate overflow-y-auto flex-1 py-3">
@@ -158,15 +152,6 @@ export default function SettingsPage() {
       </Section>
 
       <Section title="Data">
-        <Row label="Clear completed tasks" hint="Move all done tasks to trash">
-          <button
-            onClick={clearCompleted}
-            className="px-3 py-1 rounded-md text-[11px] text-white/40 hover:text-white/65 transition-colors"
-            style={{ background: "rgba(255,255,255,0.07)" }}
-          >
-            Clear
-          </button>
-        </Row>
         <Divider />
         <Row label="Reset all settings" hint="Restore defaults">
           <button
