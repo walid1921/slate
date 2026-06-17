@@ -1,4 +1,5 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
+use tauri_plugin_autostart::MacosLauncher;
 
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
@@ -19,6 +20,7 @@ fn show_window(window: &WebviewWindow) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_sql::Builder::default().build())

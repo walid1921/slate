@@ -6,6 +6,8 @@ export type Density = "compact" | "normal" | "comfortable";
 export type DefaultSort = "manual" | "due" | "priority" | "az";
 export type ViewMode = "list" | "cards";
 export type Theme = "dark" | "light";
+export type TextSize = "small" | "normal" | "large";
+export type WindowMode = "default" | "compact";
 
 export interface Settings {
   theme: Theme;
@@ -17,6 +19,8 @@ export interface Settings {
   tasksViewMode: ViewMode;
   remindersViewMode: ViewMode;
   reminderInterval: 30 | 60 | 300;
+  textSize: TextSize;
+  windowMode: WindowMode;
 }
 
 interface SettingsState extends Settings {
@@ -34,6 +38,8 @@ const DEFAULTS: Settings = {
   tasksViewMode: "list",
   remindersViewMode: "list",
   reminderInterval: 30,
+  textSize: "normal",
+  windowMode: "default",
 };
 
 export const useSettingsStore = create<SettingsState>()(

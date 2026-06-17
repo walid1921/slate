@@ -340,7 +340,7 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
-  const { defaultSort, defaultPriority, tasksViewMode, set: setSetting, theme } = useSettingsStore();
+  const { defaultSort, defaultPriority, tasksViewMode, set: setSetting, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -375,10 +375,24 @@ export default function App() {
   const showCmdPalette = inputVal === "/" || inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal));
   const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
 
-  // Apply theme to document root
+  // Apply theme and text size to document root
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const size = textSize === "small" ? "11px" : textSize === "large" ? "15px" : "13px";
+    document.documentElement.style.setProperty("--base-font-size", size);
+  }, [textSize]);
+
+  useEffect(() => {
+    const win = getCurrentWindow();
+    if (windowMode === "compact") {
+      win.setSize({ type: "Logical", width: 480, height: 420 } as any);
+    } else {
+      win.setSize({ type: "Logical", width: 640, height: 520 } as any);
+    }
+  }, [windowMode]);
 
   // Load todos on mount + request notification permission early
   useEffect(() => { load(); initNotifications(); }, [load]);

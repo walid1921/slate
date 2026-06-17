@@ -18,6 +18,10 @@
     "notification:default",
     "notification:allow-request-permission",
     "notification:allow-is-permission-granted",
-    "notification:allow-notify"
+    "notification:allow-notify",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "core:window:allow-set-size"
   ]
 }

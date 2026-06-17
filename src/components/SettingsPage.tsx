@@ -1,4 +1,6 @@
-import { useSettingsStore, Theme } from "../settingsStore";
+import { useEffect, useState } from "react";
+import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
 const guideSections = [
   {
@@ -78,39 +80,25 @@ const guideSections = [
   },
 ];
 
-
-
-function SegmentedControl<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
+function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div
-      className="flex gap-0.5 p-0.5 rounded-lg"
-      style={{ background: "var(--c-surface-2)" }}
+    <button
+      onClick={() => onChange(!value)}
+      className="relative w-8 h-4 rounded-full transition-colors shrink-0"
+      style={{ background: value ? "rgba(99,179,237,0.5)" : "var(--c-surface-3)" }}
     >
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          onClick={() => onChange(opt.value)}
-          className={`flex-1 px-2 py-0.5 rounded-md text-[11px] transition-colors ${
-            value === opt.value ? "text-t1" : "text-t4 hover:text-t3"
-          }`}
-          style={value === opt.value ? { background: "var(--c-surface-3)" } : {}}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
+      <span
+        className="absolute top-0.5 w-3 h-3 rounded-full transition-transform"
+        style={{
+          background: value ? "rgb(147,210,255)" : "var(--c-text-3)",
+          transform: value ? "translateX(17px)" : "translateX(2px)",
+        }}
+      />
+    </button>
   );
 }
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function SettingRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-2.5">
       <div className="min-w-0">
@@ -124,9 +112,9 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-4">
-      <p className="px-4 pb-1.5 text-[10px] text-t4 uppercase tracking-widest select-none">{title}</p>
-      <div className="rounded-xl overflow-hidden mx-1" style={{ background: "var(--c-surface-1)" }}>
+    <div className="mb-5">
+      <p className="px-1 pb-1.5 text-[11px] text-t4 font-medium select-none">{title}</p>
+      <div className="rounded-xl overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
         {children}
       </div>
     </div>
@@ -137,27 +125,114 @@ function Divider() {
   return <div className="h-px mx-4" style={{ background: "var(--c-border-subtle)" }} />;
 }
 
-export default function SettingsPage() {
-  const { theme, set, reset } = useSettingsStore();
+function GeneralTab() {
+  const { theme, textSize, windowMode, set, reset } = useSettingsStore();
+  const [loginEnabled, setLoginEnabled] = useState(false);
+
+  useEffect(() => {
+    isEnabled().then(setLoginEnabled).catch(() => {});
+  }, []);
+
+  const toggleLogin = async (v: boolean) => {
+    if (v) await enable(); else await disable();
+    setLoginEnabled(v);
+  };
 
   return (
-    <div className="view-animate overflow-y-auto flex-1 py-3">
+    <div className="overflow-y-auto flex-1 py-4 px-4">
+      <Section title="System">
+        <SettingRow label="Launch Slate at login" hint="Start automatically when you log in">
+          <Toggle value={loginEnabled} onChange={toggleLogin} />
+        </SettingRow>
+      </Section>
+
       <Section title="Appearance">
-        <Row label="Theme" hint="Switch between dark and light appearance">
-          <SegmentedControl<Theme>
-            options={[
-              { value: "dark", label: "Dark" },
-              { value: "light", label: "Light" },
-            ]}
-            value={theme}
-            onChange={(v) => set("theme", v)}
-          />
-        </Row>
+        <SettingRow label="Theme">
+          <div className="flex gap-3">
+            {(["dark", "light"] as Theme[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => set("theme", t)}
+                className="flex flex-col items-center gap-1.5 group"
+              >
+                <div
+                  className="w-14 h-10 rounded-lg border-2 transition-all overflow-hidden"
+                  style={{
+                    borderColor: theme === t ? "rgb(147,210,255)" : "var(--c-border)",
+                    background: t === "dark" ? "#1a1a1e" : "#f0f0f4",
+                  }}
+                >
+                  <div className="h-3 w-full" style={{ background: t === "dark" ? "#2a2a30" : "#e0e0e8" }} />
+                  <div className="flex gap-1 p-1 pt-1">
+                    {[3, 5, 4].map((w, i) => (
+                      <div key={i} className="h-1 rounded-full" style={{ width: `${w * 4}px`, background: t === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)" }} />
+                    ))}
+                  </div>
+                </div>
+                <span className={`text-[11px] capitalize ${theme === t ? "text-t1 font-medium" : "text-t4"}`}>{t}</span>
+              </button>
+            ))}
+          </div>
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Text size">
+          <div className="flex items-center gap-2">
+            {(["small", "normal", "large"] as TextSize[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => set("textSize", s)}
+                className="flex flex-col items-center gap-0.5"
+              >
+                <div
+                  className="w-9 h-8 rounded-lg flex items-center justify-center transition-all border"
+                  style={{
+                    background: textSize === s ? "var(--c-surface-3)" : "var(--c-surface-2)",
+                    borderColor: textSize === s ? "rgb(147,210,255)" : "var(--c-border)",
+                    fontSize: s === "small" ? "10px" : s === "large" ? "16px" : "13px",
+                    color: "var(--c-text-2)",
+                    fontWeight: 500,
+                  }}
+                >
+                  Aa
+                </div>
+                <span className={`text-[10px] capitalize ${textSize === s ? "text-t2" : "text-t5"}`}>{s}</span>
+              </button>
+            ))}
+          </div>
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Window mode">
+          <div className="flex items-center gap-2">
+            {([
+              { value: "default", label: "Default", w: 56, h: 40 },
+              { value: "compact", label: "Compact", w: 44, h: 32 },
+            ] as { value: WindowMode; label: string; w: number; h: number }[]).map((m) => (
+              <button key={m.value} onClick={() => set("windowMode", m.value)} className="flex flex-col items-center gap-1">
+                <div
+                  className="rounded-lg border-2 transition-all flex flex-col overflow-hidden"
+                  style={{
+                    width: m.w, height: m.h,
+                    borderColor: windowMode === m.value ? "rgb(147,210,255)" : "var(--c-border)",
+                    background: "var(--c-surface-2)",
+                  }}
+                >
+                  <div className="h-2 w-full shrink-0" style={{ background: "var(--c-surface-3)" }} />
+                  <div className="flex-1 p-1 flex flex-col gap-0.5">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-0.5 rounded-full" style={{ background: "var(--c-border)", width: i === 2 ? "60%" : "80%" }} />
+                    ))}
+                  </div>
+                </div>
+                <span className={`text-[10px] ${windowMode === m.value ? "text-t2 font-medium" : "text-t5"}`}>{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </SettingRow>
       </Section>
 
       <Section title="Data">
         <Divider />
-        <Row label="Reset all settings" hint="Restore defaults">
+        <SettingRow label="Reset all settings" hint="Restore defaults">
           <button
             onClick={reset}
             className="px-3 py-1 rounded-md text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
@@ -165,43 +240,88 @@ export default function SettingsPage() {
           >
             Reset
           </button>
-        </Row>
+        </SettingRow>
       </Section>
+    </div>
+  );
+}
 
-      <div className="mb-4">
-        <p className="px-4 pb-1.5 text-[10px] text-t4 uppercase tracking-widest select-none">Guide</p>
-        {guideSections.map((section) => (
-          <div key={section.title} className="mb-3">
-            <p className="px-4 pb-1 text-[10px] text-t5 uppercase tracking-widest select-none">{section.title}</p>
-            <div className="rounded-xl overflow-hidden mx-1" style={{ background: "var(--c-surface-1)" }}>
-              {section.items.map((item, i) => (
-                <div
-                  key={i}
-                  className={`flex items-center gap-3 px-4 py-2 ${i < section.items.length - 1 ? "border-b border-s" : ""}`}
-                >
-                  <div className="flex items-center gap-1 shrink-0 flex-wrap">
-                    {item.keys.map((k, ki) => (
-                      <span key={ki} className="flex items-center gap-1">
-                        <kbd
-                          className="px-1.5 py-0.5 rounded text-[11px] font-mono text-t2"
-                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-                        >
-                          {k}
-                        </kbd>
-                        {ki < item.keys.length - 1 && <span className="text-t5 text-[10px]">+</span>}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-[12px] text-t3 ml-auto text-right">{item.desc}</span>
+function AboutTab() {
+  return (
+    <div className="overflow-y-auto flex-1 flex flex-col items-center justify-center gap-3 py-8 px-4">
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg"
+        style={{ background: "linear-gradient(135deg, #3a3a4a 0%, #1a1a24 100%)", border: "1px solid var(--c-border)" }}
+      >
+        🗒️
+      </div>
+      <div className="text-center">
+        <p className="text-[17px] font-semibold text-t1">Slate</p>
+        <p className="text-[13px] text-t4 mt-0.5">Version 0.1.0</p>
+      </div>
+      <p className="text-[11px] text-t5 text-center mt-2">A minimal todo & notes app for macOS.<br />Built with Tauri + React.</p>
+    </div>
+  );
+}
+
+function GuideTab() {
+  return (
+    <div className="overflow-y-auto flex-1 py-4 px-4">
+      {guideSections.map((section) => (
+        <div key={section.title} className="mb-4">
+          <p className="px-1 pb-1 text-[11px] text-t4 font-medium select-none">{section.title}</p>
+          <div className="rounded-xl overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
+            {section.items.map((item, i) => (
+              <div key={i} className={`flex items-center gap-3 px-4 py-2 ${i < section.items.length - 1 ? "border-b border-s" : ""}`}>
+                <div className="flex items-center gap-1 shrink-0 flex-wrap">
+                  {item.keys.map((k, ki) => (
+                    <span key={ki} className="flex items-center gap-1">
+                      <kbd className="px-1.5 py-0.5 rounded text-[11px] font-mono text-t2" style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}>{k}</kbd>
+                      {ki < item.keys.length - 1 && <span className="text-t5 text-[10px]">+</span>}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <span className="text-[12px] text-t3 ml-auto text-right">{item.desc}</span>
+              </div>
+            ))}
           </div>
+        </div>
+      ))}
+      <p className="text-center text-[11px] text-t5 pb-2 select-none">Type / in the main input to see all available commands</p>
+    </div>
+  );
+}
+
+type Tab = "general" | "guide" | "about";
+
+export default function SettingsPage() {
+  const [tab, setTab] = useState<Tab>("general");
+
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "general", label: "General" },
+    { id: "guide", label: "Guide" },
+    { id: "about", label: "About" },
+  ];
+
+  return (
+    <div className="view-animate flex flex-col flex-1 overflow-hidden">
+      {/* Tab bar */}
+      <div className="flex items-center justify-center gap-1 px-4 pt-3 pb-2 shrink-0 border-b border-s">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${tab === t.id ? "text-t1" : "text-t4 hover:text-t2"}`}
+            style={tab === t.id ? { background: "var(--c-surface-3)" } : {}}
+          >
+            {t.label}
+          </button>
         ))}
-        <p className="text-center text-[11px] text-t5 pt-1 pb-1 select-none">Type / in the main input to see all available commands</p>
       </div>
 
-      <p className="text-center text-[10px] text-t6 pb-2 select-none">Slate · settings are saved locally</p>
+      {tab === "general" && <GeneralTab />}
+      {tab === "guide" && <GuideTab />}
+      {tab === "about" && <AboutTab />}
     </div>
   );
 }
