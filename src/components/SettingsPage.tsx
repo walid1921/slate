@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logoWithBg from "../assets/logo-with-bg.svg";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -259,12 +260,7 @@ function GeneralTab() {
 function AboutTab() {
   return (
     <div className="overflow-y-auto flex-1 flex flex-col items-center justify-center gap-3 py-8 px-4">
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg"
-        style={{ background: "linear-gradient(135deg, #3a3a4a 0%, #1a1a24 100%)", border: "1px solid var(--c-border)" }}
-      >
-        🗒️
-      </div>
+      <img src={logoWithBg} alt="Slate" className="w-16 h-16" />
       <div className="text-center">
         <p className="text-[17px] font-semibold text-t1">Slate</p>
         <p className="text-[13px] text-t4 mt-0.5">Version 0.1.0</p>

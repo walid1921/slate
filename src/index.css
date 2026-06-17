@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --logo-filter: invert(1);
   --c-bg: #121214;
   --c-nav: rgba(20,20,24,0.97);
   --c-surface-1: rgba(255,255,255,0.04);
@@ -23,6 +24,7 @@
 }
 
 [data-theme="light"] {
+  --logo-filter: none;
   --c-bg: #f4f4f6;
   --c-nav: rgba(232,232,236,0.98);
   --c-surface-1: rgba(255,255,255,0.70);

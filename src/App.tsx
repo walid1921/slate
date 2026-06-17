@@ -27,6 +27,7 @@ import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import { useSettingsStore } from "./settingsStore";
+import logoMark from "./assets/logo-mark.svg";
 import {
   DndContext,
   closestCenter,
@@ -627,7 +628,11 @@ export default function App() {
         style={{ height: 38, background: "var(--c-nav)" }}
       >
         {view !== "main" && <BackButton />}
-        <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
+        {view === "main" ? (
+          <img src={logoMark} alt="Slate" className="w-5 h-5 opacity-60" style={{ filter: "var(--logo-filter)" }} />
+        ) : (
+          <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
+        )}
         <div className="ml-auto flex items-center gap-3">
           {view === "trash" && trash.length > 0 && (
             <>
