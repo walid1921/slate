@@ -91,7 +91,7 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
       style={{ background: value ? "rgba(99,179,237,0.5)" : "var(--c-surface-3)" }}
     >
       <span
-        className="absolute top-0.5 w-3 h-3 rounded-full transition-transform"
+        className="absolute top-0.5 left-0 w-3 h-3 rounded-full transition-transform"
         style={{
           background: value ? "white" : "var(--c-text-3)",
           transform: value ? "translateX(18px)" : "translateX(2px)",
