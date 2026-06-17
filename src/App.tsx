@@ -740,10 +740,7 @@ export default function App() {
                 className="flex items-center gap-1.5 text-white/25 hover:text-white/50 transition-colors"
               >
                 <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
-                  <path d="M1 3h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                  <path d="M4 3V2h4v1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M2 3l.5 7.5a1 1 0 0 0 1 .5h5a1 1 0 0 0 1-.5L10 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M4.5 6v2.5M7.5 6v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span className="text-[11px]">Deleted</span>
               </button>
