@@ -4,8 +4,8 @@ const sections = [
     items: [
       { keys: ["Type anything", "↵"], desc: "Add a new task" },
       { keys: ["/tm", "task name", "↵"], desc: "Add a task with a deadline — picks date & time" },
-      { keys: ["/rm", "reminder text", "↵"], desc: "Add a standalone reminder with notification" },
-      { keys: ["/nt", "title", "↵"], desc: "Create a new note and open it immediately" },
+      { keys: ["/rm", "reminder text", "↵"], desc: "Add a reminder — navigates to Reminders after" },
+      { keys: ["/nt", "title", "↵"], desc: "Create a new note — opens it immediately" },
     ],
   },
   {
@@ -21,10 +21,11 @@ const sections = [
   {
     title: "Task Actions",
     items: [
+      { keys: ["Double-click text"], desc: "Edit task text inline — Enter to save, Esc to cancel" },
       { keys: ["Hover → ●"], desc: "Click dot to cycle priority: none → low → medium → high" },
       { keys: ["Hover → 📅"], desc: "Set or change due date" },
       { keys: ["Hover → ✕"], desc: "Move task to trash" },
-      { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks" },
+      { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks manually" },
     ],
   },
   {
@@ -32,24 +33,47 @@ const sections = [
     items: [
       { keys: ["Type to search"], desc: "Input doubles as a live search filter" },
       { keys: ["✕ button"], desc: "Clear search and return to full list" },
+      { keys: ["Filter bar"], desc: "Filter by All / Active / Done" },
+      { keys: ["Sort menu"], desc: "Sort by manual order, due date, priority, or A–Z" },
     ],
   },
   {
-    title: "Trash",
+    title: "Due Dates & Countdown",
     items: [
-      { keys: ["Footer → Trash"], desc: "View all deleted tasks" },
-      { keys: ["↺"], desc: "Restore a task back to the list" },
-      { keys: ["✕"], desc: "Permanently delete a task" },
-      { keys: ["Select all → Delete"], desc: "Wipe the entire trash at once" },
+      { keys: ["/tm", "task", "↵"], desc: "Set deadline via date & time picker" },
+      { keys: ["Countdown"], desc: "Shows months · days · hours · minutes · seconds live" },
+      { keys: ["Red label"], desc: "Task is overdue" },
     ],
   },
   {
     title: "Reminders",
     items: [
-      { keys: ["Footer → Reminders"], desc: "View all upcoming and sent reminders" },
+      { keys: ["Footer → ⏱"], desc: "View all upcoming and sent reminders" },
+      { keys: ["Double-click text"], desc: "Edit reminder text inline" },
+      { keys: ["Double-click time"], desc: "Edit the reminder date and time inline" },
+      { keys: ["Filter bar"], desc: "Filter by All / Upcoming / Sent — sort by time or A–Z" },
       { keys: ["Blue dot"], desc: "Upcoming reminder" },
-      { keys: ["Red dot"], desc: "Overdue reminder" },
-      { keys: ["✕"], desc: "Delete a reminder" },
+      { keys: ["Red dot"], desc: "Overdue — notification hasn't fired yet" },
+      { keys: ["Grey dot · sent"], desc: "Notification already fired" },
+    ],
+  },
+  {
+    title: "Notes",
+    items: [
+      { keys: ["Footer → 📄"], desc: "Open notes — split view with list and editor" },
+      { keys: ["+ button"], desc: "Create a new note" },
+      { keys: ["Click note"], desc: "Select and edit title or content" },
+      { keys: ["Auto-save"], desc: "Notes save automatically after 500ms" },
+      { keys: ["Sort menu"], desc: "Sort by last edited, created, or A–Z" },
+    ],
+  },
+  {
+    title: "Deleted",
+    items: [
+      { keys: ["Footer → 🗑"], desc: "View all deleted tasks" },
+      { keys: ["↺"], desc: "Restore a task back to the list" },
+      { keys: ["✕"], desc: "Permanently delete a task" },
+      { keys: ["Select all → Delete"], desc: "Wipe the entire deleted list at once" },
     ],
   },
 ];
@@ -92,7 +116,7 @@ export default function GuidePage() {
         </div>
       ))}
       <p className="text-center text-[11px] text-white/15 pb-2 select-none">
-        Type / in the main input to see available commands
+        Type / in the main input to see all available commands
       </p>
     </div>
   );
