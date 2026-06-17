@@ -16,16 +16,34 @@ fn set_fullscreen_overlay(window: &WebviewWindow) {
     }
 }
 
-fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
-    let Ok(cursor) = app.cursor_position() else {
-        let _ = window.center();
-        return;
-    };
+#[cfg(target_os = "macos")]
+fn cg_cursor_position() -> Option<(f64, f64)> {
+    #[repr(C)]
+    struct CGPoint { x: f64, y: f64 }
+    extern "C" {
+        fn CGEventCreate(source: *const std::ffi::c_void) -> *mut std::ffi::c_void;
+        fn CGEventGetLocation(event: *mut std::ffi::c_void) -> CGPoint;
+        fn CFRelease(cf: *mut std::ffi::c_void);
+    }
+    unsafe {
+        let ev = CGEventCreate(std::ptr::null());
+        if ev.is_null() { return None; }
+        let pt = CGEventGetLocation(ev);
+        CFRelease(ev);
+        Some((pt.x, pt.y))
+    }
+}
+
+fn center_on_cursor_screen(window: &WebviewWindow, _app: &AppHandle) {
+    #[cfg(target_os = "macos")]
+    let cursor = cg_cursor_position();
+    #[cfg(not(target_os = "macos"))]
+    let cursor: Option<(f64, f64)> = None;
+
     let Ok(monitors) = window.available_monitors() else {
         let _ = window.center();
         return;
     };
-    // Default logical size — quick-note overrides these when it passes different values
     let (win_w, win_h) = window.inner_size()
         .ok()
         .map(|s| {
@@ -33,21 +51,24 @@ fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
             (s.width as f64 / scale, s.height as f64 / scale)
         })
         .unwrap_or((640.0, 520.0));
-    for monitor in monitors {
-        let pos = monitor.position();
-        let size = monitor.size();
-        let scale = monitor.scale_factor();
-        let mx = pos.x as f64;
-        let my = pos.y as f64;
-        let mw = size.width as f64;
-        let mh = size.height as f64;
-        if cursor.x >= mx && cursor.x < mx + mw && cursor.y >= my && cursor.y < my + mh {
-            let ww = win_w * scale;
-            let wh = win_h * scale;
-            let x = mx + (mw - ww) / 2.0;
-            let y = my + (mh - wh) / 2.0;
-            let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
-            return;
+    if let Some((cx, cy)) = cursor {
+        for monitor in monitors {
+            let pos = monitor.position();
+            let size = monitor.size();
+            let scale = monitor.scale_factor();
+            let mx = pos.x as f64;
+            let my = pos.y as f64;
+            let mw = size.width as f64;
+            let mh = size.height as f64;
+            // CG coords are top-left physical; Tauri monitor coords are also top-left physical
+            if cx >= mx && cx < mx + mw && cy >= my && cy < my + mh {
+                let ww = win_w * scale;
+                let wh = win_h * scale;
+                let x = mx + (mw - ww) / 2.0;
+                let y = my + (mh - wh) / 2.0;
+                let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+                return;
+            }
         }
     }
     let _ = window.center();
