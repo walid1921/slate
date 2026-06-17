@@ -113,6 +113,76 @@ function useNow(dueDate: string | null, dueTime: string | null): Date {
   return now;
 }
 
+function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
+  const now = useNow(todo.due_date, todo.due_time);
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(todo.text);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) { setVal(todo.text); setTimeout(() => inputRef.current?.select(), 10); }
+  }, [editing]);
+
+  const commit = () => {
+    const trimmed = val.trim();
+    if (trimmed && trimmed !== todo.text) useTodoStore.getState().updateText(todo.id, trimmed);
+    setEditing(false);
+  };
+
+  return (
+    <div
+      className="rounded-xl p-3 flex flex-col gap-1.5 cursor-default"
+      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <button
+          onClick={() => useTodoStore.getState().toggle(todo.id)}
+          className="mt-0.5 w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
+          style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+        >
+          {todo.done && <Check size={8} stroke="white" />}
+        </button>
+        <button
+          onClick={onDelete}
+          className="text-white/20 hover:text-red-400 transition-colors shrink-0"
+        >
+          <X size={10} />
+        </button>
+      </div>
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            if (e.key === "Escape") setEditing(false);
+            e.stopPropagation();
+          }}
+          className="text-[12px] font-medium text-white/88 bg-transparent outline-none border-b border-white/20 leading-snug"
+        />
+      ) : (
+        <p
+          onDoubleClick={() => setEditing(true)}
+          className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-white/25" : "text-white/80"}`}
+        >
+          {todo.text}
+        </p>
+      )}
+      <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
+        {todo.due_date && (() => {
+          const cd = formatCountdown(todo.due_date, todo.due_time, now);
+          return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-white/30"}`}>{cd.label}</span>;
+        })()}
+        {todo.priority !== "none" && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TodoRow({
   todo,
   focused,
@@ -633,40 +703,11 @@ export default function App() {
             ) : tasksViewMode === "cards" ? (
               <div className="grid grid-cols-2 gap-2 px-3 py-2">
                 {filtered.map((todo) => (
-                  <div
+                  <TodoCard
                     key={todo.id}
-                    className="rounded-xl p-3 flex flex-col gap-1.5 cursor-default"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <button
-                        onClick={() => useTodoStore.getState().toggle(todo.id)}
-                        className="mt-0.5 w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
-                        style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
-                      >
-                        {todo.done && <Check size={8} stroke="white" />}
-                      </button>
-                      <button
-                        onClick={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
-                        className="text-white/20 hover:text-red-400 transition-colors shrink-0"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                    <p className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-white/25" : "text-white/80"}`}>
-                      {todo.text}
-                    </p>
-                    <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
-                      {todo.due_date && (() => {
-                        const now = new Date();
-                        const cd = formatCountdown(todo.due_date, todo.due_time, now);
-                        return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-white/30"}`}>{cd.label}</span>;
-                      })()}
-                      {todo.priority !== "none" && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
-                      )}
-                    </div>
-                  </div>
+                    todo={todo}
+                    onDelete={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
+                  />
                 ))}
               </div>
             ) : (
