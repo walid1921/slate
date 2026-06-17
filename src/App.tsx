@@ -787,7 +787,7 @@ export default function App() {
       {view === "guide" && <GuidePage />}
 
       {/* Notes view */}
-      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} onConfirm={askConfirm} />}
+      {view === "notes" && <NotesPage onDeleteRequest={(id) => { const n = useNotesStore.getState().notes.find(n => n.id === id); askConfirm("Delete note?", `"${n?.title ?? "This note"}" will be permanently deleted.`, () => useNotesStore.getState().remove(id)); }} />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}

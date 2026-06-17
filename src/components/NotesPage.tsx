@@ -13,9 +13,8 @@ function relativeDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function NotesPage({ onDeleteRequest, onConfirm }: {
+export default function NotesPage({ onDeleteRequest }: {
   onDeleteRequest: (id: number) => void;
-  onConfirm: (title: string, msg: string, fn: () => void) => void;
 }) {
   const { notes, load, add, update } = useNotesStore();
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -65,15 +64,12 @@ export default function NotesPage({ onDeleteRequest, onConfirm }: {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if ((e.key === "Backspace" || e.key === "Delete") && selectedId !== null) {
         const note = notes.find((n) => n.id === selectedId);
-        if (note) onConfirm("Delete note?", `"${note.title}" will be permanently deleted.`, () => {
-          onDeleteRequest(note.id);
-          setSelectedId(null);
-        });
+        if (note) { onDeleteRequest(note.id); setSelectedId(null); }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId, notes, onDeleteRequest, onConfirm]);
+  }, [selectedId, notes, onDeleteRequest]);
 
   return (
     <div className="view-animate flex flex-row flex-1 overflow-hidden">
