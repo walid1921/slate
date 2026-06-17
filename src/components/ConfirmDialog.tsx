@@ -24,16 +24,16 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: P
           <p className="text-white/80 text-sm font-medium">{title}</p>
           <p className="text-white/35 text-xs mt-0.5">{message}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end">
           <button
             onMouseDown={(e) => { e.preventDefault(); onCancel(); }}
-            className="flex-1 py-2 rounded-lg text-sm text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+            className="px-3 py-1 rounded-md text-xs text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
           >
             Cancel
           </button>
           <button
             onMouseDown={(e) => { e.preventDefault(); onConfirm(); }}
-            className="flex-1 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-500/20 hover:bg-red-500/30 transition-colors"
+            className="px-3 py-1 rounded-md text-xs font-medium text-red-400 bg-red-500/20 hover:bg-red-500/30 transition-colors"
           >
             Delete
           </button>
