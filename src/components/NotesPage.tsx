@@ -19,6 +19,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -56,14 +57,13 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
     }
   };
 
-  const handleDeleteConfirm = (id: number) => {
-    onDeleteRequest(id);
-  };
-
   return (
     <div className="view-animate flex flex-row flex-1 overflow-hidden">
-      {/* Note list */}
-      <div className="w-44 shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden">
+      {/* Sidebar */}
+      <div
+        className="shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden transition-all duration-200"
+        style={{ width: sidebarOpen ? 176 : 0, opacity: sidebarOpen ? 1 : 0 }}
+      >
         <FilterBar page="notes" sort={sort} onSort={setSort} />
         <div className="flex items-center justify-between px-3 py-2 shrink-0">
           <span className="text-[10px] text-white/30 uppercase tracking-widest select-none">Notes</span>
@@ -95,7 +95,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
                 </p>
                 <p className="text-[10px] text-white/20 mt-0.5">{relativeDate(note.updated_at)}</p>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDeleteConfirm(note.id); }}
+                  onClick={(e) => { e.stopPropagation(); onDeleteRequest(note.id); }}
                   title="Delete"
                   className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-white/25 hover:text-red-400 hover:bg-white/10 transition-colors"
                 >
@@ -110,7 +110,34 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
       </div>
 
       {/* Editor */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        {/* Editor toolbar */}
+        <div className="flex items-center gap-2 px-3 pt-2 pb-1 shrink-0">
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
+          >
+            <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
+              <rect x="0.5" y="0.5" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.1" />
+              <line x1="4" y1="0.5" x2="4" y2="10.5" stroke="currentColor" strokeWidth="1.1" />
+              {sidebarOpen && <path d="M2 5.5L1 5.5M2 3l-1.5 2.5L2 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />}
+              {!sidebarOpen && <path d="M2 5.5L3 5.5M2 3l1.5 2.5L2 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />}
+            </svg>
+          </button>
+          {!sidebarOpen && (
+            <button
+              onClick={handleNew}
+              title="New note"
+              className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+        </div>
+
         {selected ? (
           <>
             <input
@@ -118,7 +145,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="px-4 pt-3 pb-1 text-[15px] font-medium text-white/88 bg-transparent outline-none placeholder-white/20 shrink-0"
+              className="px-4 pt-1 pb-1 text-[15px] font-medium text-white/88 bg-transparent outline-none placeholder-white/20 shrink-0"
             />
             <textarea
               value={content}
