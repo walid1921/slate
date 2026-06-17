@@ -36,18 +36,27 @@ pub fn run() {
                             if let Some(qn) = app.get_webview_window("quick-note") {
                                 let _ = qn.show();
                                 let _ = qn.set_focus();
-                            } else {
-                                let _ = WebviewWindowBuilder::new(
-                                    app,
-                                    "quick-note",
-                                    WebviewUrl::App("index.html?quicknote=1".into()),
-                                )
-                                .title("")
-                                .inner_size(360.0, 200.0)
-                                .decorations(false)
-                                .always_on_top(true)
-                                .resizable(false)
-                                .build();
+                            } else if let Ok(qn) = WebviewWindowBuilder::new(
+                                app,
+                                "quick-note",
+                                WebviewUrl::App("index.html?quicknote=1".into()),
+                            )
+                            .title("")
+                            .inner_size(360.0, 200.0)
+                            .decorations(false)
+                            .always_on_top(true)
+                            .resizable(false)
+                            .transparent(true)
+                            .build() {
+                                #[cfg(target_os = "macos")]
+                                apply_vibrancy(&qn, NSVisualEffectMaterial::HudWindow, None, Some(12.0)).ok();
+
+                                let qn_win = qn.clone();
+                                qn.on_window_event(move |event| {
+                                    if let tauri::WindowEvent::Focused(false) = event {
+                                        let _ = qn_win.emit("quick-note-blur", ());
+                                    }
+                                });
                             }
                         }
                     }

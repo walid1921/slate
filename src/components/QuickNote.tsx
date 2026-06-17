@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import { useNotesStore } from "../notesStore";
 
 export default function QuickNote() {
@@ -8,6 +9,9 @@ export default function QuickNote() {
   const saved = useRef(false);
 
   useEffect(() => {
+    // Make root transparent so vibrancy shows through
+    const root = document.getElementById("root");
+    if (root) root.style.background = "transparent";
     setTimeout(() => textareaRef.current?.focus(), 80);
   }, []);
 
@@ -24,19 +28,19 @@ export default function QuickNote() {
     getCurrentWindow().close();
   };
 
+  // Close when the OS window loses focus
+  useEffect(() => {
+    const unlisten = listen("quick-note-blur", () => save());
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
   return (
-    <div
-      className="w-full h-full flex flex-col"
-      style={{ background: "var(--c-bg)", borderRadius: 12, outline: "1px solid var(--c-border)", outlineOffset: -1 }}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node)) save();
-      }}
-    >
+    <div className="w-full h-full flex flex-col" style={{ borderRadius: 12, overflow: "hidden" }}>
       <div
         className="px-3 py-2 text-[11px] text-t4 select-none shrink-0 border-b border-s"
         data-tauri-drag-region
       >
-        Quick note — click outside to save
+        Quick note — Esc or click outside to save
       </div>
       <textarea
         ref={textareaRef}
