@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Plus, X, PanelLeft } from "lucide-react";
+import { Plus, PanelLeft, Trash2 } from "lucide-react";
 import { useNotesStore, Note } from "../notesStore";
 
 function relativeDate(iso: string): string {
@@ -18,6 +18,15 @@ export default function NotesPage({ onDeleteRequest }: {
 }) {
   const { notes, load, add, update } = useNotesStore();
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [noteMenu, setNoteMenu] = useState<{ id: number; x: number; y: number } | null>(null);
+  const noteMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!noteMenu) return;
+    const close = (e: MouseEvent) => { if (noteMenuRef.current && !noteMenuRef.current.contains(e.target as Node)) setNoteMenu(null); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [noteMenu]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -96,7 +105,8 @@ export default function NotesPage({ onDeleteRequest }: {
               <div
                 key={note.id}
                 onClick={() => selectNote(note)}
-                className={`group relative px-3 py-2.5 cursor-default transition-colors border-b border-s ${
+                onContextMenu={(e) => { e.preventDefault(); setNoteMenu({ id: note.id, x: e.clientX, y: e.clientY }); }}
+                className={`px-3 py-2.5 cursor-default transition-colors border-b border-s ${
                   selectedId === note.id ? "" : "hover:bg-s1"
                 }`}
                 style={selectedId === note.id ? { background: "var(--c-surface-2)" } : {}}
@@ -106,17 +116,17 @@ export default function NotesPage({ onDeleteRequest }: {
                   {note.content.split("\n")[0] || "No content"}
                 </p>
                 <p className="text-[10px] text-t5 mt-0.5">{relativeDate(note.updated_at)}</p>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDeleteRequest(note.id); }}
-                  title="Delete"
-                  className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 hover:bg-s3 transition-colors"
-                >
-                  <X size={9} />
-                </button>
               </div>
             ))
           )}
         </div>
+      {noteMenu && (
+        <div ref={noteMenuRef} className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]" style={{ left: noteMenu.x, top: noteMenu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}>
+          <button onClick={() => { onDeleteRequest(noteMenu.id); setNoteMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
+            <Trash2 size={12} /><span>Delete</span>
+          </button>
+        </div>
+      )}
       </div>
 
       {/* Editor */}

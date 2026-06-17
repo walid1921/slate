@@ -201,6 +201,15 @@ function TodoRow({
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
   const textRef = useRef<HTMLInputElement>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(null); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menu]);
 
   useEffect(() => {
     if (editingText) {
@@ -246,8 +255,23 @@ function TodoRow({
         zIndex: isDragging ? 50 : "auto",
         background: focused ? "var(--c-surface-2)" : undefined,
       }}
-      className={`group flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}
+      onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
+      className={`group relative flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}
     >
+      {menu && (
+        <div ref={menuRef} className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[170px]" style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}>
+          <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <Pencil size={12} className="text-t4" /><span>Edit task</span>
+          </button>
+          <button onClick={(e) => { cycleP(e); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[todo.priority]}`} /><span>Cycle priority</span>
+          </button>
+          <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
+          <button onClick={() => { onDeleteRequest(); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
+            <X size={12} /><span>Delete</span>
+          </button>
+        </div>
+      )}
       {/* Drag handle */}
       <div
         {...attributes}
@@ -311,39 +335,6 @@ function TodoRow({
         </div>
       </div>
 
-      {/* Action buttons — appear on hover / focus */}
-      <div
-        className={`flex items-center gap-1 shrink-0 transition-opacity ${
-          showMeta || focused ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        {/* Priority cycle */}
-        <button
-          onClick={cycleP}
-          title="Cycle priority"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors"
-        >
-          <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[todo.priority]}`} />
-        </button>
-
-        {/* Edit text */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setEditingText(true); }}
-          title="Edit task"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-t2"
-        >
-          <Pencil size={11} />
-        </button>
-
-        {/* Delete */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDeleteRequest(); }}
-          title="Delete"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"
-        >
-          <X size={10} />
-        </button>
-      </div>
     </div>
   );
 }

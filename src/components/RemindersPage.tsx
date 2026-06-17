@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Pencil, X, Clock } from "lucide-react";
+import { Pencil, X, Clock, Send, Trash2 } from "lucide-react";
 import { useReminderStore, Reminder } from "../reminderStore";
 import FilterBar, { ReminderFilter, ReminderSort } from "./FilterBar";
 import { useSettingsStore, ViewMode } from "../settingsStore";
@@ -169,31 +169,19 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
           style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
         >
           {!r.notified && (
-            <button
-              onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); setMenu(null); }}
-              className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
-            >
-              Send now
+            <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+              <Send size={12} className="text-t4" /><span>Send now</span>
             </button>
           )}
-          <button
-            onClick={() => { setEditingText(true); setMenu(null); }}
-            className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
-          >
-            Edit text
+          <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <Pencil size={12} className="text-t4" /><span>Edit text</span>
           </button>
-          <button
-            onClick={() => { setEditingTime(true); setMenu(null); }}
-            className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
-          >
-            Edit time
+          <button onClick={() => { setEditingTime(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <Clock size={12} className="text-t4" /><span>Edit time</span>
           </button>
           <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
-          <button
-            onClick={() => { onDeleteRequest(); setMenu(null); }}
-            className="w-full text-left px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors"
-          >
-            Delete
+          <button onClick={() => { onDeleteRequest(); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
+            <Trash2 size={12} /><span>Delete</span>
           </button>
         </div>
       )}
@@ -260,21 +248,6 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
         )}
       </div>
 
-      <div className={`flex items-center gap-1 transition-opacity shrink-0 ${focused ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"}`}>
-        <button
-          onClick={() => setEditingText(true)}
-          title="Edit text"
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-t2"
-        >
-          <Pencil size={11} />
-        </button>
-        <button
-          onClick={() => onDeleteRequest()}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"
-        >
-          <X size={10} />
-        </button>
-      </div>
     </div>
   );
 }
