@@ -1,5 +1,19 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
 
+#[cfg(target_os = "macos")]
+fn set_fullscreen_overlay(window: &WebviewWindow) {
+    use objc2::runtime::AnyObject;
+    use objc2::msg_send;
+    if let Ok(ns_window) = window.ns_window() {
+        unsafe {
+            let win = ns_window as *mut AnyObject;
+            // NSWindowCollectionBehaviorCanJoinAllSpaces (1<<0) | NSWindowCollectionBehaviorFullScreenAuxiliary (1<<8)
+            let behavior: u64 = (1 << 0) | (1 << 8);
+            let _: () = msg_send![win, setCollectionBehavior: behavior];
+        }
+    }
+}
+
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
     if let Some(window) = app.get_webview_window("quick-note") {
@@ -62,7 +76,7 @@ pub fn run() {
                                 #[cfg(target_os = "macos")]
                                 apply_vibrancy(&qn, NSVisualEffectMaterial::HudWindow, None, Some(12.0)).ok();
                                 #[cfg(target_os = "macos")]
-                                let _ = qn.set_visible_on_all_workspaces(true);
+                                set_fullscreen_overlay(&qn);
 
 
 
@@ -84,7 +98,7 @@ pub fn run() {
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
                 #[cfg(target_os = "macos")]
-                let _ = window.set_visible_on_all_workspaces(true);
+                set_fullscreen_overlay(&window);
             }
 
             Ok(())
