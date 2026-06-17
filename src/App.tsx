@@ -499,7 +499,11 @@ export default function App() {
           setQuery(filteredCmds[cmdIdx].prefix);
           return;
         }
-        if (e.key === "Escape") { setInputVal(""); setQuery(""); return; }
+        if (e.key === "Escape") {
+          if (inputVal.trim()) { setInputVal(""); setQuery(""); }
+          else { getCurrentWindow().hide(); }
+          return;
+        }
       }
 
       if (e.key === "Enter" && inputVal.trim()) {
