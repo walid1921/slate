@@ -621,16 +621,6 @@ export default function App() {
             onSort={setTodoSort}
             onViewMode={(v) => setSetting("tasksViewMode", v)}
           />
-          {todos.some((t) => t.done) && (
-            <div className="flex items-center justify-end px-4 py-1 shrink-0 border-b border-white/[0.04]">
-              <button
-                onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
-                className="text-[11px] text-white/25 hover:text-white/55 transition-colors"
-              >
-                Clear completed
-              </button>
-            </div>
-          )}
 
           <div className="overflow-y-auto flex-1 py-1.5">
             {loading ? (
@@ -799,7 +789,15 @@ export default function App() {
                 </button>
               </div>
             </div>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              {view === "main" && todos.some((t) => t.done) && (
+                <button
+                  onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
+                  className="text-[11px] text-white/25 hover:text-white/55 transition-colors px-1"
+                >
+                  Clear done
+                </button>
+              )}
               <div className="group/trash relative">
                 <button
                   onClick={openTrash}
