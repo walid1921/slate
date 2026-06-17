@@ -77,13 +77,17 @@ function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { 
   const days = Math.floor(totalSecs / 86400);
   const months = Math.floor(days / 30);
 
+  if (overdue) {
+    return { label: "overdue", overdue: true };
+  }
+
   let label: string;
   if (months >= 2) {
     label = `${months}mo`;
   } else if (days >= 2) {
     label = `${days}d`;
   } else if (days === 1) {
-    label = overdue ? "yesterday" : "tomorrow";
+    label = "tomorrow";
   } else if (hours > 0) {
     label = `${hours}h ${mins}m`;
   } else if (mins > 0) {
@@ -91,9 +95,6 @@ function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { 
   } else {
     label = totalSecs <= 0 ? "now" : `${secs}s`;
   }
-
-  if (overdue && days >= 2) label = `${days}d ago`;
-  else if (overdue && months >= 2) label = `${months}mo ago`;
 
   return { label, overdue };
 }
