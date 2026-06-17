@@ -794,7 +794,7 @@ export default function App() {
       {view === "guide" && <GuidePage />}
 
       {/* Notes view */}
-      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} autoNew={newNoteRequested} onAutoNewDone={() => setNewNoteRequested(false)} />}
+      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} onConfirm={askConfirm} autoNew={newNoteRequested} onAutoNewDone={() => setNewNoteRequested(false)} />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}

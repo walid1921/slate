@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Plus, X, PanelLeft } from "lucide-react";
 import { useNotesStore, Note } from "../notesStore";
-import FilterBar, { NoteSort } from "./FilterBar";
 
 function relativeDate(iso: string): string {
   const d = new Date(iso);
@@ -14,9 +13,13 @@ function relativeDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: { onDeleteRequest: (id: number) => void; autoNew?: boolean; onAutoNewDone?: () => void }) {
+export default function NotesPage({ onDeleteRequest, onConfirm, autoNew, onAutoNewDone }: {
+  onDeleteRequest: (id: number) => void;
+  onConfirm: (title: string, msg: string, fn: () => void) => void;
+  autoNew?: boolean;
+  onAutoNewDone?: () => void;
+}) {
   const { notes, load, add, update } = useNotesStore();
-  const [sort, setSort] = useState<NoteSort>("updated");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -30,11 +33,9 @@ export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: {
     if (autoNew) { handleNew(); onAutoNewDone?.(); }
   }, [autoNew]);
 
-  const sortedNotes = [...notes].sort((a, b) => {
-    if (sort === "az") return a.title.localeCompare(b.title);
-    if (sort === "created") return a.id - b.id;
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-  });
+  const sortedNotes = [...notes].sort((a, b) =>
+    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  );
 
   const selected = notes.find((n) => n.id === selectedId) ?? null;
 
@@ -62,6 +63,23 @@ export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: {
     }
   };
 
+  // Delete key removes selected note with confirmation
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if ((e.key === "Backspace" || e.key === "Delete") && selectedId !== null) {
+        const note = notes.find((n) => n.id === selectedId);
+        if (note) onConfirm("Delete note?", `"${note.title}" will be permanently deleted.`, () => {
+          onDeleteRequest(note.id);
+          setSelectedId(null);
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, notes, onDeleteRequest, onConfirm]);
+
   return (
     <div className="view-animate flex flex-row flex-1 overflow-hidden">
       {/* Sidebar */}
@@ -69,8 +87,7 @@ export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: {
         className="shrink-0 border-r border-s flex flex-col overflow-hidden transition-all duration-200"
         style={{ width: sidebarOpen ? 176 : 0, opacity: sidebarOpen ? 1 : 0 }}
       >
-        <FilterBar page="notes" sort={sort} onSort={setSort} />
-        <div className="flex items-center justify-between px-3 py-2 shrink-0">
+        <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-s">
           <span className="text-[10px] text-t4 uppercase tracking-widest select-none">Notes</span>
           <button
             onClick={handleNew}
@@ -113,7 +130,6 @@ export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: {
 
       {/* Editor */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Editor toolbar */}
         <div className="flex items-center gap-2 px-3 pt-2 pb-1 shrink-0">
           <button
             onClick={() => setSidebarOpen((o) => !o)}

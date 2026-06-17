@@ -6,7 +6,6 @@ export type TodoFilter = "all" | "active" | "done";
 export type TodoSort = "manual" | "due" | "priority" | "az";
 export type ReminderFilter = "all" | "upcoming" | "sent";
 export type ReminderSort = "time" | "az";
-export type NoteSort = "updated" | "created" | "az";
 
 interface FilterBarProps {
   page: "todos";
@@ -28,13 +27,7 @@ interface ReminderFilterBarProps {
   onViewMode: (v: ViewMode) => void;
 }
 
-interface NoteFilterBarProps {
-  page: "notes";
-  sort: NoteSort;
-  onSort: (s: NoteSort) => void;
-}
-
-type Props = FilterBarProps | ReminderFilterBarProps | NoteFilterBarProps;
+type Props = FilterBarProps | ReminderFilterBarProps;
 
 const SORT_LABELS: Record<string, string> = {
   manual: "Manual",
@@ -200,15 +193,4 @@ export default function FilterBar(props: Props) {
     );
   }
 
-  // notes
-  const { sort, onSort } = props;
-  return (
-    <div className="flex items-center justify-end px-4 py-1.5 border-b border-s shrink-0">
-      <SortMenu
-        options={["updated", "created", "az"]}
-        value={sort}
-        onChange={(v) => onSort(v as NoteSort)}
-      />
-    </div>
-  );
 }
