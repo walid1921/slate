@@ -9,8 +9,8 @@ fn set_fullscreen_overlay(window: &WebviewWindow) {
             let win = ns_window as *mut AnyObject;
             // NSPopUpMenuWindowLevel (101) — floats above fullscreen spaces like Raycast
             let _: () = msg_send![win, setLevel: 101i64];
-            // NSWindowCollectionBehaviorCanJoinAllSpaces (1<<0) | NSWindowCollectionBehaviorTransient (1<<2)
-            let behavior: u64 = (1 << 0) | (1 << 2);
+            // CanJoinAllSpaces | Transient | FullScreenAuxiliary
+            let behavior: u64 = (1 << 0) | (1 << 2) | (1 << 8);
             let _: () = msg_send![win, setCollectionBehavior: behavior];
         }
     }
@@ -107,6 +107,8 @@ pub fn run() {
                                 if window.is_visible().unwrap_or(false) {
                                     let _ = window.hide();
                                 } else {
+                                    #[cfg(target_os = "macos")]
+                                    set_fullscreen_overlay(&window);
                                     center_on_cursor_screen(&window, app);
                                     show_window(&window);
                                 }
@@ -116,6 +118,8 @@ pub fn run() {
                                 if qn.is_visible().unwrap_or(false) {
                                     let _ = qn.hide();
                                 } else {
+                                    #[cfg(target_os = "macos")]
+                                    set_fullscreen_overlay(&qn);
                                     center_on_cursor_screen(&qn, app);
                                     let _ = qn.show();
                                     let _ = qn.set_focus();
