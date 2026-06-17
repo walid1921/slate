@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { useNotesStore } from "../notesStore";
 
@@ -35,18 +34,13 @@ export default function QuickNote() {
   const saveRef = useRef(save);
   useEffect(() => { saveRef.current = save; });
 
-  useEffect(() => {
-    const unlisten = listen("quick-note-blur", () => saveRef.current());
-    return () => { unlisten.then((fn) => fn()); };
-  }, []);
-
   return (
     <div className="w-full h-full flex flex-col" style={{ borderRadius: 12, overflow: "hidden" }}>
       <div
         className="px-3 py-2 text-[11px] text-t4 select-none shrink-0 border-b border-s"
         data-tauri-drag-region
       >
-        Quick note — Esc or click outside to save
+        Quick note — Esc or ⌘↩ to save
       </div>
       <textarea
         ref={textareaRef}

@@ -1,4 +1,11 @@
-use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl};
+use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
+
+#[tauri::command]
+fn close_quick_note(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("quick-note") {
+        let _ = window.close();
+    }
+}
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
@@ -55,18 +62,15 @@ pub fn run() {
                                 #[cfg(target_os = "macos")]
                                 apply_vibrancy(&qn, NSVisualEffectMaterial::HudWindow, None, Some(12.0)).ok();
 
-                                let qn_win = qn.clone();
-                                qn.on_window_event(move |event| {
-                                    if let tauri::WindowEvent::Focused(false) = event {
-                                        let _ = qn_win.emit("quick-note-blur", ());
-                                    }
-                                });
+
+
                             }
                         }
                     }
                 })
                 .build(),
         )
+        .invoke_handler(tauri::generate_handler![close_quick_note])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
@@ -78,12 +82,6 @@ pub fn run() {
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
 
-                let win = window.clone();
-                window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::Focused(false) = event {
-                        let _ = win.hide();
-                    }
-                });
             }
 
             Ok(())
