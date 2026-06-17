@@ -734,16 +734,17 @@ export default function App() {
               </div>
             </div>
             <div className="ml-auto">
-              <button
-                onClick={openTrash}
-                title="Trash"
-                className="flex items-center gap-1.5 text-white/25 hover:text-white/50 transition-colors"
-              >
-                <svg width="12" height="13" viewBox="0 0 12 13" fill="none">
-                  <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-[11px]">Deleted</span>
-              </button>
+              <div className="group/trash relative">
+                <button
+                  onClick={openTrash}
+                  className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                >
+                  <svg width="14" height="15" viewBox="0 0 12 13" fill="none">
+                    <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Deleted</span>
+              </div>
             </div>
           </div>
         </>
