@@ -1,7 +1,6 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 
-const TRAY_ICON: &[u8] = include_bytes!("../icons/tray-icon.png");
 use tauri_plugin_autostart::MacosLauncher;
 
 #[tauri::command]
@@ -99,15 +98,11 @@ pub fn run() {
             }
 
             // Create tray icon (hidden by default; toggled via set_tray_icon command)
-            if let Ok(icon) = tauri::image::Image::from_bytes(TRAY_ICON) {
-                if let Ok(tray) = TrayIconBuilder::with_id("slate-tray")
-                    .icon(icon)
-                    .icon_as_template(true)
-                    .build(app)
-                {
-                    let _ = tray.set_visible(false);
-                }
-            }
+            let tray = TrayIconBuilder::with_id("slate-tray")
+                .icon(tauri::include_image!("icons/tray-icon.png"))
+                .icon_as_template(true)
+                .build(app)?;
+            tray.set_visible(false)?;
 
             // Wire tray click → toggle main window
             app.on_tray_icon_event(|tray, event| {
