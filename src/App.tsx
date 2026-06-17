@@ -486,7 +486,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Trash", reminders: "Reminders", guide: "Guide", notes: "Notes" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", guide: "Guide", notes: "Notes" };
 
   return (
     <div
@@ -745,7 +745,7 @@ export default function App() {
                   <path d="M2 3l.5 7.5a1 1 0 0 0 1 .5h5a1 1 0 0 0 1-.5L10 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                   <path d="M4.5 6v2.5M7.5 6v2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                 </svg>
-                <span className="text-[11px]">Trash</span>
+                <span className="text-[11px]">Deleted</span>
               </button>
             </div>
           </div>
