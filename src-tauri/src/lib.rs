@@ -1,5 +1,5 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
-use tauri::tray::TrayIconEvent;
+
 
 use tauri_plugin_autostart::MacosLauncher;
 
@@ -90,20 +90,6 @@ pub fn run() {
                 });
             }
 
-            // Wire tray click → toggle main window
-            app.on_tray_icon_event(|tray, event| {
-                if let TrayIconEvent::Click { .. } = event {
-                    let app = tray.app_handle();
-                    if let Some(window) = app.get_webview_window("main") {
-                        if window.is_visible().unwrap_or(false) {
-                            let _ = window.hide();
-                        } else {
-                            let _ = window.center();
-                            show_window(&window);
-                        }
-                    }
-                }
-            });
 
             Ok(())
         })
