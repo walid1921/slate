@@ -631,7 +631,7 @@ export default function App() {
         {view !== "main" && <BackButton />}
         {view === "main" ? (
           <div className="flex items-center gap-1.5">
-            <img src={theme === "dark" ? logoMarkLight : logoMarkDark} alt="Slate" className="w-4 h-4 opacity-70" />
+            <img src={theme === "dark" ? logoMarkDark : logoMarkLight} alt="Slate" className="w-4 h-4 opacity-70" />
             <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">Slate</span>
           </div>
         ) : (
