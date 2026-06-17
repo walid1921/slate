@@ -3,9 +3,11 @@ interface Props {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmLabel?: string;
+  confirmClassName?: string;
 }
 
-export default function ConfirmDialog({ title, message, onConfirm, onCancel }: Props) {
+export default function ConfirmDialog({ title, message, onConfirm, onCancel, confirmLabel = "Delete", confirmClassName = "text-red-400 bg-red-500/20 hover:bg-red-500/30" }: Props) {
   return (
     <div
       className="absolute inset-0 flex items-center justify-center"
@@ -35,9 +37,9 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: P
             autoFocus
             onMouseDown={(e) => { e.preventDefault(); onConfirm(); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onConfirm(); } if (e.key === "Escape") { e.preventDefault(); onCancel(); } }}
-            className="px-3 py-1 rounded-md text-xs font-medium text-red-400 bg-red-500/20 hover:bg-red-500/30 transition-colors outline-none"
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors outline-none ${confirmClassName}`}
           >
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>

@@ -116,7 +116,7 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
   );
 }
 
-function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; onConfirm: (title: string, msg: string, fn: () => void) => void; focused?: boolean; onFocus?: () => void }) {
+function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; onConfirm: (title: string, msg: string, fn: () => void, confirmLabel?: string, confirmClassName?: string) => void; focused?: boolean; onFocus?: () => void }) {
   const { update, markSent } = useReminderStore();
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -169,7 +169,7 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
           style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
         >
           {!r.notified && (
-            <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-blue-400 bg-blue-500/20 hover:bg-blue-500/30"); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
               <Send size={12} className="text-t4" /><span>Send now</span>
             </button>
           )}
@@ -252,7 +252,7 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
   );
 }
 
-export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDeleteRequest: (id: number) => void; onConfirm: (title: string, msg: string, fn: () => void) => void }) {
+export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDeleteRequest: (id: number) => void; onConfirm: (title: string, msg: string, fn: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
   const { reminders, load, markSent } = useReminderStore();
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
@@ -287,7 +287,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
       }
       if (e.key === " ") {
         const r = visible[focusedIdx];
-        if (r && !r.notified) { e.preventDefault(); onConfirm("Send reminder now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); }
+        if (r && !r.notified) { e.preventDefault(); onConfirm("Send reminder now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-blue-400 bg-blue-500/20 hover:bg-blue-500/30"); }
         return;
       }
     };

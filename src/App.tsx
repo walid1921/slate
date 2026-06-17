@@ -356,13 +356,13 @@ export default function App() {
   // Pending modal state: type + text extracted from /tm or /rm
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
-  const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
 
-  const askConfirm = useCallback((title: string, message: string, onConfirm: () => void) => {
+  const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
     if (!settingsConfirmDelete) { onConfirm(); return; }
-    setConfirmDelete({ title, message, onConfirm });
+    setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
   }, []);
 
   const COMMANDS = [
@@ -892,6 +892,8 @@ export default function App() {
           message={confirmDelete.message}
           onConfirm={() => { confirmDelete.onConfirm(); setConfirmDelete(null); }}
           onCancel={() => setConfirmDelete(null)}
+          confirmLabel={confirmDelete.confirmLabel}
+          confirmClassName={confirmDelete.confirmClassName}
         />
       )}
 
