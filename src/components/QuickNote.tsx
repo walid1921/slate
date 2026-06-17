@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import { useNotesStore } from "../notesStore";
 
 export default function QuickNote() {
@@ -15,8 +15,9 @@ export default function QuickNote() {
     setTimeout(() => textareaRef.current?.focus(), 80);
   }, []);
 
-  // Keep ref in sync so event listeners always read latest text
   useEffect(() => { textVal.current = text; }, [text]);
+
+  const close = () => invoke("close_quick_note");
 
   const save = async () => {
     if (saving.current) return;
@@ -28,13 +29,12 @@ export default function QuickNote() {
       const content = lines.slice(1).join("\n").trim();
       await useNotesStore.getState().add(title, content);
     }
-    await getCurrentWindow().close();
+    close();
   };
 
   const saveRef = useRef(save);
   useEffect(() => { saveRef.current = save; });
 
-  // Close when window loses focus
   useEffect(() => {
     const unlisten = listen("quick-note-blur", () => saveRef.current());
     return () => { unlisten.then((fn) => fn()); };
