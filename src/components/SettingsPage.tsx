@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
 const guideSections = [
@@ -269,6 +270,22 @@ function AboutTab() {
         <p className="text-[13px] text-t4 mt-0.5">Version 0.1.0</p>
       </div>
       <p className="text-[11px] text-t5 text-center mt-2">A minimal todo & notes app for macOS.<br />Built with Tauri + React.</p>
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={() => openUrl("https://google.com")}
+          className="px-4 py-1.5 rounded-lg text-[12px] text-t2 hover:text-t1 transition-colors"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+        >
+          Visit Website
+        </button>
+        <button
+          onClick={() => openUrl("mailto:kouiderayadwalid@gmail.com?subject=Slate%20Feedback")}
+          className="px-4 py-1.5 rounded-lg text-[12px] text-t2 hover:text-t1 transition-colors"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+        >
+          Send Feedback
+        </button>
+      </div>
     </div>
   );
 }
