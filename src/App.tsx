@@ -107,12 +107,10 @@ function TodoRow({
   onFocus: () => void;
   onDeleteRequest: () => void;
 }) {
-  const { toggle, setPriority, setDueDate, updateText } = useTodoStore();
+  const { toggle, setPriority, updateText } = useTodoStore();
   const [showMeta, setShowMeta] = useState(false);
-  const [editingDate, setEditingDate] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
-  const dateRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -133,10 +131,6 @@ function TodoRow({
 
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
-
-  useEffect(() => {
-    if (editingDate && dateRef.current) dateRef.current.focus();
-  }, [editingDate]);
 
   const cycleP = useCallback(
     (e: React.MouseEvent) => {
@@ -250,26 +244,15 @@ function TodoRow({
           <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[todo.priority]}`} />
         </button>
 
-        {/* Due date */}
+        {/* Edit text */}
         <button
-          onClick={(e) => { e.stopPropagation(); setEditingDate(true); }}
-          title="Set due date"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-white/60 text-[11px]"
+          onClick={(e) => { e.stopPropagation(); setEditingText(true); }}
+          title="Edit task"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-white/60"
         >
-          {editingDate ? (
-            <input
-              ref={dateRef}
-              type="date"
-              defaultValue={todo.due_date ?? ""}
-              className="absolute opacity-0 pointer-events-none w-0"
-              onChange={(e) => {
-                setDueDate(todo.id, e.target.value || null);
-                setEditingDate(false);
-              }}
-              onBlur={() => setEditingDate(false)}
-            />
-          ) : null}
-          📅
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
 
         {/* Delete */}
