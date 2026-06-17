@@ -21,6 +21,7 @@ export interface Settings {
   reminderInterval: 30 | 60 | 300;
   textSize: TextSize;
   windowMode: WindowMode;
+  menuBarIcon: boolean;
 }
 
 interface SettingsState extends Settings {
@@ -40,6 +41,7 @@ const DEFAULTS: Settings = {
   reminderInterval: 30,
   textSize: "normal",
   windowMode: "default",
+  menuBarIcon: false,
 };
 
 export const useSettingsStore = create<SettingsState>()(

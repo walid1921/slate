@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
+import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
 const guideSections = [
@@ -126,12 +127,16 @@ function Divider() {
 }
 
 function GeneralTab() {
-  const { theme, textSize, windowMode, set, reset } = useSettingsStore();
+  const { theme, textSize, windowMode, menuBarIcon, set, reset } = useSettingsStore();
   const [loginEnabled, setLoginEnabled] = useState(false);
 
   useEffect(() => {
     isEnabled().then(setLoginEnabled).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    invoke("set_tray_icon", { visible: menuBarIcon }).catch(() => {});
+  }, [menuBarIcon]);
 
   const toggleLogin = async (v: boolean) => {
     if (v) await enable(); else await disable();
@@ -143,6 +148,10 @@ function GeneralTab() {
       <Section title="System">
         <SettingRow label="Launch Slate at login" hint="Start automatically when you log in">
           <Toggle value={loginEnabled} onChange={toggleLogin} />
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Show in menu bar" hint="Click the menu bar icon to toggle Slate">
+          <Toggle value={menuBarIcon} onChange={(v) => set("menuBarIcon", v)} />
         </SettingRow>
       </Section>
 

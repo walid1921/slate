@@ -1,5 +1,38 @@
-use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
+use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle, image::Image};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+
+const TRAY_ICON: &[u8] = include_bytes!("../icons/32x32.png");
 use tauri_plugin_autostart::MacosLauncher;
+
+#[tauri::command]
+fn set_tray_icon(app: AppHandle, visible: bool) {
+    if visible {
+        if app.tray_by_id("main").is_none() {
+            if let Ok(icon) = Image::from_bytes(TRAY_ICON) {
+                let _ = TrayIconBuilder::with_id("main")
+                    .icon(icon)
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click { .. } = event {
+                            let app = tray.app_handle();
+                            if let Some(window) = app.get_webview_window("main") {
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
+                                } else {
+                                    let _ = window.center();
+                                    show_window(&window);
+                                }
+                            }
+                        }
+                    })
+                    .build(&app);
+            }
+        } else if let Some(tray) = app.tray_by_id("main") {
+            let _ = tray.set_visible(true);
+        }
+    } else if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_visible(false);
+    }
+}
 
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
@@ -69,7 +102,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note])
+        .invoke_handler(tauri::generate_handler![close_quick_note, set_tray_icon])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
