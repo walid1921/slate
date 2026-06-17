@@ -380,10 +380,7 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  useEffect(() => {
-    const scale = textSize === "small" ? 0.88 : textSize === "large" ? 1.12 : 1;
-    document.documentElement.style.setProperty("zoom", String(scale));
-  }, [textSize]);
+  const textScale = textSize === "small" ? 0.88 : textSize === "large" ? 1.12 : 1;
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -611,10 +608,17 @@ export default function App() {
   const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", notes: "Notes", settings: "Settings" };
 
   return (
+    <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
     <div
-      className={`relative w-full h-full flex flex-col overflow-hidden transition-opacity duration-200 ${
+      className={`relative flex flex-col overflow-hidden transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
+      style={{
+        width: `${100 / textScale}%`,
+        height: `${100 / textScale}%`,
+        transform: `scale(${textScale})`,
+        transformOrigin: "top left",
+      }}
     >
       {/* Header */}
       <div
@@ -936,6 +940,7 @@ export default function App() {
           }}
         />
       )}
+    </div>
     </div>
   );
 }
