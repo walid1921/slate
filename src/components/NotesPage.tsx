@@ -29,7 +29,7 @@ export default function NotesPage({ onDeleteRequest }: {
   }, [noteMenu]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 

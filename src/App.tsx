@@ -558,6 +558,15 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const tabs: NavView[] = ["main", "reminders", "notes", "settings"];
+        const cur = tabs.indexOf(lastNavView);
+        const next = e.key === "ArrowRight"
+          ? tabs[(cur + 1) % tabs.length]
+          : tabs[(cur - 1 + tabs.length) % tabs.length];
+        navigate(next);
+        return;
+      }
       if (document.activeElement === inputRef.current) return;
       if (view !== "main") return;
       if (e.key === "Backspace" || e.key === "Delete") {
@@ -581,15 +590,6 @@ export default function App() {
           if (i <= 0) { inputRef.current?.focus(); return -1; }
           return i - 1;
         });
-        return;
-      }
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["main", "reminders", "notes", "settings"];
-        const cur = tabs.indexOf(lastNavView);
-        const next = e.key === "ArrowRight"
-          ? tabs[(cur + 1) % tabs.length]
-          : tabs[(cur - 1 + tabs.length) % tabs.length];
-        navigate(next);
         return;
       }
       // Any printable char → focus input
