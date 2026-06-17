@@ -7,9 +7,32 @@ fn set_fullscreen_overlay(window: &WebviewWindow) {
     if let Ok(ns_window) = window.ns_window() {
         unsafe {
             let win = ns_window as *mut AnyObject;
-            // NSWindowCollectionBehaviorCanJoinAllSpaces (1<<0) | NSWindowCollectionBehaviorFullScreenAuxiliary (1<<8)
-            let behavior: u64 = (1 << 0) | (1 << 8);
+            // NSPopUpMenuWindowLevel (101) — floats above fullscreen spaces like Raycast
+            let _: () = msg_send![win, setLevel: 101i64];
+            // NSWindowCollectionBehaviorCanJoinAllSpaces (1<<0) | NSWindowCollectionBehaviorTransient (1<<2)
+            let behavior: u64 = (1 << 0) | (1 << 2);
             let _: () = msg_send![win, setCollectionBehavior: behavior];
+        }
+    }
+}
+
+fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
+    let Ok(cursor) = app.cursor_position() else { return };
+    let Ok(monitors) = window.available_monitors() else { return };
+    for monitor in monitors {
+        let pos = monitor.position();
+        let size = monitor.size();
+        let scale = monitor.scale_factor();
+        let mx = pos.x as f64;
+        let my = pos.y as f64;
+        let mw = size.width as f64;
+        let mh = size.height as f64;
+        if cursor.x >= mx && cursor.x < mx + mw && cursor.y >= my && cursor.y < my + mh {
+            let Ok(wsize) = window.outer_size() else { break };
+            let x = mx + (mw - wsize.width as f64) / 2.0;
+            let y = my + (mh - wsize.height as f64) / 2.0;
+            let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+            break;
         }
     }
 }
@@ -51,13 +74,19 @@ pub fn run() {
                         let new_note = Shortcut::new(Some(Modifiers::ALT), Code::KeyN);
                         if shortcut == &toggle {
                             if let Some(window) = app.get_webview_window("main") {
-                                toggle_window(&window);
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
+                                } else {
+                                    center_on_cursor_screen(&window, app);
+                                    show_window(&window);
+                                }
                             }
                         } else if shortcut == &new_note {
                             if let Some(qn) = app.get_webview_window("quick-note") {
                                 if qn.is_visible().unwrap_or(false) {
-                                    let _ = qn.emit("quick-note-blur", ());
+                                    let _ = qn.hide();
                                 } else {
+                                    center_on_cursor_screen(&qn, app);
                                     let _ = qn.show();
                                     let _ = qn.set_focus();
                                 }
@@ -77,9 +106,7 @@ pub fn run() {
                                 apply_vibrancy(&qn, NSVisualEffectMaterial::HudWindow, None, Some(12.0)).ok();
                                 #[cfg(target_os = "macos")]
                                 set_fullscreen_overlay(&qn);
-
-
-
+                                center_on_cursor_screen(&qn, app);
                             }
                         }
                     }
