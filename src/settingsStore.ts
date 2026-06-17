@@ -4,6 +4,7 @@ import { Priority } from "./store";
 
 export type Density = "compact" | "normal" | "comfortable";
 export type DefaultSort = "manual" | "due" | "priority" | "az";
+export type ViewMode = "list" | "cards";
 
 export interface Settings {
   density: Density;
@@ -12,6 +13,8 @@ export interface Settings {
   defaultSort: DefaultSort;
   showDoneAtBottom: boolean;
   showDividers: boolean;
+  tasksViewMode: ViewMode;
+  remindersViewMode: ViewMode;
   reminderInterval: 30 | 60 | 300;
 }
 
@@ -27,6 +30,8 @@ const DEFAULTS: Settings = {
   defaultSort: "manual",
   showDoneAtBottom: false,
   showDividers: false,
+  tasksViewMode: "list",
+  remindersViewMode: "list",
   reminderInterval: 30,
 };
 

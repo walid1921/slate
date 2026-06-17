@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { Pencil, X } from "lucide-react";
+import { Pencil, X, Clock } from "lucide-react";
 import { useReminderStore, Reminder } from "../reminderStore";
 import FilterBar, { ReminderFilter, ReminderSort } from "./FilterBar";
+import { useSettingsStore, ViewMode } from "../settingsStore";
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -136,6 +137,7 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
   const { reminders, load } = useReminderStore();
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
+  const { remindersViewMode, set: setSetting } = useSettingsStore();
 
   useEffect(() => { load(); }, [load]);
 
@@ -155,7 +157,7 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
 
   return (
     <div className="view-animate flex flex-col flex-1 overflow-hidden">
-      <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} />
+      <FilterBar page="reminders" filter={filter} sort={sort} viewMode={remindersViewMode} onFilter={setFilter} onSort={setSort} onViewMode={(v: ViewMode) => setSetting("remindersViewMode", v)} />
       <div className="overflow-y-auto flex-1 py-1.5">
         {reminders.length === 0 ? (
           <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
@@ -163,6 +165,30 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
           </div>
         ) : visible.length === 0 ? (
           <div className="px-5 py-10 text-center text-white/20 text-sm select-none">No reminders match this filter</div>
+        ) : remindersViewMode === "cards" ? (
+          <div className="grid grid-cols-2 gap-2 px-3 py-2">
+            {visible.map((r) => (
+              <div
+                key={r.id}
+                className="rounded-xl p-3 flex flex-col gap-1.5"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${r.notified ? "bg-white/20" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"}`} />
+                  <button onClick={() => onDeleteRequest(r.id)} className="text-white/20 hover:text-red-400 transition-colors shrink-0">
+                    <X size={10} />
+                  </button>
+                </div>
+                <p className={`text-[12px] font-medium leading-snug ${r.notified ? "text-white/30" : "text-white/80"}`}>{r.text}</p>
+                <div className="flex items-center gap-1 mt-auto pt-1">
+                  <Clock size={9} className={r.notified ? "text-white/20" : isOverdue(r.remind_at) ? "text-red-400/60" : "text-white/30"} />
+                  <p className={`text-[10px] ${r.notified ? "text-white/20" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-white/35"}`}>
+                    {formatDateTime(r.remind_at)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <>
             {filter !== "sent" && upcoming.length > 0 && (

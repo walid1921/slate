@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, LayoutList, LayoutGrid } from "lucide-react";
+import { ViewMode } from "../settingsStore";
 
 export type TodoFilter = "all" | "active" | "done";
 export type TodoSort = "manual" | "due" | "priority" | "az";
@@ -11,16 +12,20 @@ interface FilterBarProps {
   page: "todos";
   filter: TodoFilter;
   sort: TodoSort;
+  viewMode: ViewMode;
   onFilter: (f: TodoFilter) => void;
   onSort: (s: TodoSort) => void;
+  onViewMode: (v: ViewMode) => void;
 }
 
 interface ReminderFilterBarProps {
   page: "reminders";
   filter: ReminderFilter;
   sort: ReminderSort;
+  viewMode: ViewMode;
   onFilter: (f: ReminderFilter) => void;
   onSort: (s: ReminderSort) => void;
+  onViewMode: (v: ViewMode) => void;
 }
 
 interface NoteFilterBarProps {
@@ -110,9 +115,30 @@ function SortMenu({
   );
 }
 
+function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMode) => void }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <button
+        onClick={() => onChange("list")}
+        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "list" ? "text-white/70 bg-white/10" : "text-white/25 hover:text-white/50"}`}
+        title="List view"
+      >
+        <LayoutList size={12} />
+      </button>
+      <button
+        onClick={() => onChange("cards")}
+        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "cards" ? "text-white/70 bg-white/10" : "text-white/25 hover:text-white/50"}`}
+        title="Card view"
+      >
+        <LayoutGrid size={12} />
+      </button>
+    </div>
+  );
+}
+
 export default function FilterBar(props: Props) {
   if (props.page === "todos") {
-    const { filter, sort, onFilter, onSort } = props;
+    const { filter, sort, viewMode, onFilter, onSort, onViewMode } = props;
     return (
       <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-white/[0.05] shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
@@ -130,6 +156,7 @@ export default function FilterBar(props: Props) {
             </button>
           ))}
         </div>
+        <ViewToggle value={viewMode} onChange={onViewMode} />
         <SortMenu
           options={["manual", "due", "priority", "az"]}
           value={sort}
@@ -140,7 +167,7 @@ export default function FilterBar(props: Props) {
   }
 
   if (props.page === "reminders") {
-    const { filter, sort, onFilter, onSort } = props;
+    const { filter, sort, viewMode, onFilter, onSort, onViewMode } = props;
     return (
       <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-white/[0.05] shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
@@ -158,6 +185,7 @@ export default function FilterBar(props: Props) {
             </button>
           ))}
         </div>
+        <ViewToggle value={viewMode} onChange={onViewMode} />
         <SortMenu
           options={["time", "az"]}
           value={sort}

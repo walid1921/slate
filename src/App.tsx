@@ -281,7 +281,7 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
   const { notes, add: addNote } = useNotesStore();
-  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval } = useSettingsStore();
+  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -616,8 +616,10 @@ export default function App() {
             page="todos"
             filter={todoFilter}
             sort={todoSort}
+            viewMode={tasksViewMode}
             onFilter={setTodoFilter}
             onSort={setTodoSort}
+            onViewMode={(v) => setSetting("tasksViewMode", v)}
           />
 
           <div className="overflow-y-auto flex-1 py-1.5">
@@ -626,6 +628,45 @@ export default function App() {
             ) : filtered.length === 0 ? (
               <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
                 {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
+              </div>
+            ) : tasksViewMode === "cards" ? (
+              <div className="grid grid-cols-2 gap-2 px-3 py-2">
+                {filtered.map((todo) => (
+                  <div
+                    key={todo.id}
+                    className="rounded-xl p-3 flex flex-col gap-1.5 cursor-default"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        onClick={() => useTodoStore.getState().toggle(todo.id)}
+                        className="mt-0.5 w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
+                        style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+                      >
+                        {todo.done && <Check size={8} stroke="white" />}
+                      </button>
+                      <button
+                        onClick={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
+                        className="text-white/20 hover:text-red-400 transition-colors shrink-0"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                    <p className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-white/25" : "text-white/80"}`}>
+                      {todo.text}
+                    </p>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
+                      {todo.due_date && (() => {
+                        const now = new Date();
+                        const cd = formatCountdown(todo.due_date, todo.due_time, now);
+                        return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-white/30"}`}>{cd.label}</span>;
+                      })()}
+                      {todo.priority !== "none" && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
