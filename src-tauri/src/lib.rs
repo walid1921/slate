@@ -22,7 +22,7 @@ fn center_on_cursor_screen(window: &WebviewWindow, app: &AppHandle) {
     for monitor in monitors {
         let pos = monitor.position();
         let size = monitor.size();
-        let scale = monitor.scale_factor();
+        let _scale = monitor.scale_factor();
         let mx = pos.x as f64;
         let my = pos.y as f64;
         let mw = size.width as f64;
@@ -52,13 +52,6 @@ fn show_window(window: &WebviewWindow) {
     let _ = window.emit("window-shown", ());
 }
 
-fn toggle_window(window: &WebviewWindow) {
-    if window.is_visible().unwrap_or(false) {
-        let _ = window.hide();
-    } else {
-        show_window(window);
-    }
-}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
