@@ -781,7 +781,7 @@ export default function App() {
       )}
 
       {/* Reminders view */}
-      {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => askConfirm("Delete reminder?", "This reminder will be deleted.", () => useReminderStore.getState().remove(id))} onConfirm={askConfirm} />}
+      {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => { const r = useReminderStore.getState().reminders.find(r => r.id === id); askConfirm("Delete reminder?", `"${r?.text ?? "This reminder"}" will be deleted.`, () => useReminderStore.getState().remove(id)); }} onConfirm={askConfirm} />}
 
       {/* Guide view */}
       {view === "guide" && <GuidePage />}

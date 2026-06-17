@@ -116,7 +116,7 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
   );
 }
 
-function ReminderRow({ r, onDeleteRequest, focused }: { r: Reminder; onDeleteRequest: () => void; focused?: boolean }) {
+function ReminderRow({ r, onDeleteRequest, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; focused?: boolean; onFocus?: () => void }) {
   const { update } = useReminderStore();
   const [editingText, setEditingText] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
@@ -148,7 +148,8 @@ function ReminderRow({ r, onDeleteRequest, focused }: { r: Reminder; onDeleteReq
 
   return (
     <div
-      className="group/row flex items-center gap-3 px-5 py-3 border-b border-s transition-colors"
+      onClick={onFocus}
+      className={`group/row flex items-center gap-3 px-5 py-3 border-b border-s transition-colors cursor-default ${!focused ? "hover:bg-s1" : ""}`}
       style={{ minHeight: 56, background: focused ? "var(--c-surface-2)" : undefined }}
     >
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -214,7 +215,7 @@ function ReminderRow({ r, onDeleteRequest, focused }: { r: Reminder; onDeleteReq
         )}
       </div>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0">
+      <div className={`flex items-center gap-1 transition-opacity shrink-0 ${focused ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"}`}>
         <button
           onClick={() => setEditingText(true)}
           title="Edit text"
@@ -263,7 +264,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
       if (e.key === "ArrowUp")   { e.preventDefault(); setFocusedIdx((i) => Math.max(i - 1, 0)); return; }
       if (e.key === "Backspace" || e.key === "Delete") {
         const r = visible[focusedIdx];
-        if (r) onConfirm("Delete reminder?", "This reminder will be deleted.", () => onDeleteRequest(r.id));
+        if (r) onConfirm("Delete reminder?", `"${r.text}" will be deleted.`, () => onDeleteRequest(r.id));
         return;
       }
       if (e.key === " ") {
@@ -297,13 +298,13 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
             {filter !== "sent" && upcoming.length > 0 && (
               <>
                 <p className="px-5 pt-2 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Upcoming</p>
-                {upcoming.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {upcoming.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}
             {filter !== "upcoming" && done.length > 0 && (
               <>
                 <p className="px-5 pt-3 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Sent</p>
-                {done.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {done.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}
           </>
