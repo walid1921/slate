@@ -62,41 +62,42 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
     <div className="view-animate flex flex-row flex-1 overflow-hidden">
       {/* Sidebar */}
       <div
-        className="shrink-0 border-r border-white/[0.06] flex flex-col overflow-hidden transition-all duration-200"
+        className="shrink-0 border-r border-s flex flex-col overflow-hidden transition-all duration-200"
         style={{ width: sidebarOpen ? 176 : 0, opacity: sidebarOpen ? 1 : 0 }}
       >
         <FilterBar page="notes" sort={sort} onSort={setSort} />
         <div className="flex items-center justify-between px-3 py-2 shrink-0">
-          <span className="text-[10px] text-white/30 uppercase tracking-widest select-none">Notes</span>
+          <span className="text-[10px] text-t4 uppercase tracking-widest select-none">Notes</span>
           <button
             onClick={handleNew}
             title="New note"
-            className="w-5 h-5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
           >
             <Plus size={11} />
           </button>
         </div>
         <div className="overflow-y-auto flex-1">
           {sortedNotes.length === 0 ? (
-            <p className="px-3 py-6 text-center text-white/20 text-xs select-none">No notes yet</p>
+            <p className="px-3 py-6 text-center text-t5 text-xs select-none">No notes yet</p>
           ) : (
             sortedNotes.map((note) => (
               <div
                 key={note.id}
                 onClick={() => selectNote(note)}
                 className={`group relative px-3 py-2.5 cursor-default transition-colors ${
-                  selectedId === note.id ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+                  selectedId === note.id ? "" : "hover:bg-s1"
                 }`}
+                style={selectedId === note.id ? { background: "var(--c-surface-2)" } : {}}
               >
-                <p className="text-[13px] text-white/80 truncate leading-snug">{note.title}</p>
-                <p className="text-[11px] text-white/30 truncate mt-0.5 leading-snug">
+                <p className="text-[13px] text-t1 truncate leading-snug">{note.title}</p>
+                <p className="text-[11px] text-t4 truncate mt-0.5 leading-snug">
                   {note.content.split("\n")[0] || "No content"}
                 </p>
-                <p className="text-[10px] text-white/20 mt-0.5">{relativeDate(note.updated_at)}</p>
+                <p className="text-[10px] text-t5 mt-0.5">{relativeDate(note.updated_at)}</p>
                 <button
                   onClick={(e) => { e.stopPropagation(); onDeleteRequest(note.id); }}
                   title="Delete"
-                  className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-white/25 hover:text-red-400 hover:bg-white/10 transition-colors"
+                  className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 hover:bg-s3 transition-colors"
                 >
                   <X size={9} />
                 </button>
@@ -113,7 +114,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
           <button
             onClick={() => setSidebarOpen((o) => !o)}
             title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-            className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
           >
             <PanelLeft size={13} />
           </button>
@@ -121,7 +122,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
             <button
               onClick={handleNew}
               title="New note"
-              className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
             >
               <Plus size={11} />
             </button>
@@ -135,18 +136,18 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="px-4 pt-1 pb-1 text-[15px] font-medium text-white/88 bg-transparent outline-none placeholder-white/20 shrink-0"
+              className="px-4 pt-1 pb-1 text-[15px] font-medium text-t1 bg-transparent outline-none placeholder-themed shrink-0"
             />
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write something…"
-              className="flex-1 px-4 py-2 text-[13px] text-white/70 bg-transparent outline-none resize-none placeholder-white/20 leading-relaxed"
+              className="flex-1 px-4 py-2 text-[13px] text-t2 bg-transparent outline-none resize-none placeholder-themed leading-relaxed"
             />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <p className="text-white/20 text-sm select-none">Select a note or create a new one</p>
+            <p className="text-t5 text-sm select-none">Select a note or create a new one</p>
           </div>
         )}
       </div>

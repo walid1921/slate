@@ -51,11 +51,11 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-1.5"
-      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}
     >
       <div className="flex items-start justify-between gap-1">
-        <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${r.notified ? "bg-white/20" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"}`} />
-        <button onClick={onDeleteRequest} className="text-white/20 hover:text-red-400 transition-colors shrink-0">
+        <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"}`} style={r.notified ? { background: "var(--c-text-5)" } : {}} />
+        <button onClick={onDeleteRequest} className="text-t5 hover:text-red-400 transition-colors shrink-0">
           <X size={10} />
         </button>
       </div>
@@ -70,18 +70,19 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
             if (e.key === "Escape") setEditingText(false);
             e.stopPropagation();
           }}
-          className="text-[12px] font-medium text-white/88 bg-transparent outline-none border-b border-white/20 leading-snug"
+          className="text-[12px] font-medium text-t1 bg-transparent outline-none border-b leading-snug"
+          style={{ borderColor: "var(--c-border)" }}
         />
       ) : (
         <p
           onDoubleClick={() => setEditingText(true)}
-          className={`text-[12px] font-medium leading-snug ${r.notified ? "text-white/30" : "text-white/80"}`}
+          className={`text-[12px] font-medium leading-snug ${r.notified ? "text-t4" : "text-t1"}`}
         >
           {r.text}
         </p>
       )}
       <div className="flex items-center gap-1 mt-auto pt-1">
-        <Clock size={9} className={r.notified ? "text-white/20" : isOverdue(r.remind_at) ? "text-red-400/60" : "text-white/30"} />
+        <Clock size={9} className={r.notified ? "text-t5" : isOverdue(r.remind_at) ? "text-red-400/60" : "text-t4"} />
         {editingTime ? (
           <div className="flex items-center gap-1">
             <input
@@ -89,7 +90,8 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
               value={dateVal}
               onChange={(e) => setDateVal(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-[10px] text-white/60 bg-transparent outline-none border-b border-white/20"
+              className="text-[10px] text-t2 bg-transparent outline-none border-b"
+              style={{ borderColor: "var(--c-border)" }}
             />
             <input
               type="time"
@@ -97,13 +99,14 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
               onChange={(e) => setTimeVal(e.target.value)}
               onBlur={commitTime}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTime(); } if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-[10px] text-white/60 bg-transparent outline-none border-b border-white/20"
+              className="text-[10px] text-t2 bg-transparent outline-none border-b"
+              style={{ borderColor: "var(--c-border)" }}
             />
           </div>
         ) : (
           <p
             onDoubleClick={() => setEditingTime(true)}
-            className={`text-[10px] ${r.notified ? "text-white/20" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-white/35"}`}
+            className={`text-[10px] ${r.notified ? "text-t5" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-t4"}`}
           >
             {formatDateTime(r.remind_at)}
           </p>
@@ -145,12 +148,12 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
 
   return (
     <div
-      className="group/row flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-white/[0.04] transition-colors"
+      className="group/row flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-s1 transition-colors"
       style={{ minHeight: 52 }}
     >
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-        r.notified ? "bg-white/20" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
-      }`} />
+        r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
+      }`} style={r.notified ? { background: "var(--c-text-5)" } : {}} />
 
       <div className="flex-1 min-w-0">
         {editingText ? (
@@ -164,12 +167,13 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
               if (e.key === "Escape") setEditingText(false);
               e.stopPropagation();
             }}
-            className="w-full text-[14px] text-white/88 bg-transparent outline-none border-b border-white/20"
+            className="w-full text-[14px] text-t1 bg-transparent outline-none border-b"
+            style={{ borderColor: "var(--c-border)" }}
           />
         ) : (
           <p
             onDoubleClick={() => setEditingText(true)}
-            className={`text-[14px] truncate ${r.notified ? "text-white/30" : "text-white/80"}`}
+            className={`text-[14px] truncate ${r.notified ? "text-t4" : "text-t1"}`}
           >
             {r.text}
           </p>
@@ -182,7 +186,8 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
               value={dateVal}
               onChange={(e) => setDateVal(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-xs text-white/60 bg-transparent outline-none border-b border-white/20"
+              className="text-xs text-t2 bg-transparent outline-none border-b"
+              style={{ borderColor: "var(--c-border)" }}
             />
             <input
               ref={dateRef}
@@ -191,14 +196,15 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
               onChange={(e) => setTimeVal(e.target.value)}
               onBlur={commitTime}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTime(); } if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-xs text-white/60 bg-transparent outline-none border-b border-white/20"
+              className="text-xs text-t2 bg-transparent outline-none border-b"
+              style={{ borderColor: "var(--c-border)" }}
             />
           </div>
         ) : (
           <p
             onDoubleClick={() => setEditingTime(true)}
             className={`text-xs mt-0.5 ${
-              r.notified ? "text-white/20" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-white/35"
+              r.notified ? "text-t5" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-t4"
             }`}
           >
             {formatDateTime(r.remind_at)}
@@ -212,13 +218,13 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
         <button
           onClick={() => setEditingText(true)}
           title="Edit text"
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/25 hover:text-white/60"
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-t2"
         >
           <Pencil size={11} />
         </button>
         <button
           onClick={() => onDeleteRequest()}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/25 hover:text-red-400"
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"
         >
           <X size={10} />
         </button>
@@ -254,11 +260,11 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
       <FilterBar page="reminders" filter={filter} sort={sort} viewMode={remindersViewMode} onFilter={setFilter} onSort={setSort} onViewMode={(v: ViewMode) => setSetting("remindersViewMode", v)} />
       <div className="overflow-y-auto flex-1 py-1.5">
         {reminders.length === 0 ? (
-          <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
+          <div className="px-5 py-10 text-center text-t5 text-sm select-none">
             No reminders yet — type /rm in the main view
           </div>
         ) : visible.length === 0 ? (
-          <div className="px-5 py-10 text-center text-white/20 text-sm select-none">No reminders match this filter</div>
+          <div className="px-5 py-10 text-center text-t5 text-sm select-none">No reminders match this filter</div>
         ) : remindersViewMode === "cards" ? (
           <div className="grid grid-cols-2 gap-2 px-3 py-2">
             {visible.map((r) => (
@@ -269,13 +275,13 @@ export default function RemindersPage({ onDeleteRequest }: { onDeleteRequest: (i
           <>
             {filter !== "sent" && upcoming.length > 0 && (
               <>
-                <p className="px-5 pt-2 pb-1 text-[10px] text-white/25 uppercase tracking-widest select-none">Upcoming</p>
+                <p className="px-5 pt-2 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Upcoming</p>
                 {upcoming.map((r) => <ReminderRow key={r.id} r={r} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}
             {filter !== "upcoming" && done.length > 0 && (
               <>
-                <p className="px-5 pt-3 pb-1 text-[10px] text-white/25 uppercase tracking-widest select-none">Sent</p>
+                <p className="px-5 pt-3 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Sent</p>
                 {done.map((r) => <ReminderRow key={r.id} r={r} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
               </>
             )}

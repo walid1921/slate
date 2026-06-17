@@ -45,7 +45,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 const PRIORITY_COLOR: Record<Priority, string> = {
-  none: "bg-white/10 text-white/40",
+  none: "bg-white/10 text-t3",
   low: "bg-blue-500/20 text-blue-400",
   medium: "bg-yellow-500/20 text-yellow-400",
   high: "bg-red-500/20 text-red-400",
@@ -132,19 +132,19 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
   return (
     <div
       className="rounded-xl p-3 flex flex-col gap-1.5 cursor-default"
-      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}
     >
       <div className="flex items-start justify-between gap-2">
         <button
           onClick={() => useTodoStore.getState().toggle(todo.id)}
-          className="mt-0.5 w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
-          style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+          className="mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors"
+          style={todo.done ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
         >
           {todo.done && <Check size={8} stroke="white" />}
         </button>
         <button
           onClick={onDelete}
-          className="text-white/20 hover:text-red-400 transition-colors shrink-0"
+          className="text-t5 hover:text-red-400 transition-colors shrink-0"
         >
           <X size={10} />
         </button>
@@ -160,12 +160,12 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
             if (e.key === "Escape") setEditing(false);
             e.stopPropagation();
           }}
-          className="text-[12px] font-medium text-white/88 bg-transparent outline-none border-b border-white/20 leading-snug"
+          className="text-[12px] font-medium text-t1 bg-transparent outline-none border-b leading-snug" style={{ borderColor: "var(--c-border)" }}
         />
       ) : (
         <p
           onDoubleClick={() => setEditing(true)}
-          className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-white/25" : "text-white/80"}`}
+          className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-t4" : "text-t1"}`}
         >
           {todo.text}
         </p>
@@ -173,7 +173,7 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
       <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
         {todo.due_date && (() => {
           const cd = formatCountdown(todo.due_date, todo.due_time, now);
-          return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-white/30"}`}>{cd.label}</span>;
+          return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>{cd.label}</span>;
         })()}
         {todo.priority !== "none" && (
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
@@ -243,16 +243,17 @@ function TodoRow({
         transition,
         opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 50 : "auto",
+        background: focused ? "var(--c-surface-2)" : undefined,
       }}
       className={`group flex items-center gap-3 px-5 cursor-default transition-colors mx-1.5 ${
-        showDividers ? "border-b border-white/[0.05] rounded-none" : "rounded-lg"
-      } ${focused ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"}`}
+        showDividers ? "border-b border-s rounded-none" : "rounded-lg"
+      } ${focused ? "" : "hover:bg-s1"}`}
     >
       {/* Drag handle */}
       <div
         {...attributes}
         {...listeners}
-        className={`shrink-0 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/50 transition-opacity ${
+        className={`shrink-0 cursor-grab active:cursor-grabbing text-t5 hover:text-t2 transition-opacity ${
           showMeta || focused ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -262,8 +263,8 @@ function TodoRow({
       {/* Checkbox */}
       <button
         onClick={() => toggle(todo.id)}
-        className="mt-0.5 w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
-        style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+        className="mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors"
+        style={todo.done ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
       >
         {todo.done && (
           <Check size={8} stroke="white" />
@@ -283,13 +284,13 @@ function TodoRow({
               if (e.key === "Escape") { setEditingText(false); }
               e.stopPropagation();
             }}
-            className="w-full text-[14px] leading-snug text-white/88 bg-transparent outline-none border-b border-white/20"
+            className="w-full text-[14px] leading-snug text-t1 bg-transparent outline-none border-b" style={{ borderColor: "var(--c-border)" }}
           />
         ) : (
           <span
             onDoubleClick={() => !todo.done && setEditingText(true)}
             className={`text-[14px] leading-snug block truncate transition-colors ${
-              todo.done ? "line-through text-white/25" : "text-white/88"
+              todo.done ? "line-through text-t4" : "text-t1"
             }`}
           >
             {todo.text}
@@ -299,7 +300,7 @@ function TodoRow({
         {/* Due date / priority row */}
         <div className="flex items-center gap-2 mt-0.5">
           {countdown && (
-            <span className={`text-xs ${countdown.overdue && !todo.done ? "text-red-400" : "text-white/35"}`}>
+            <span className={`text-xs ${countdown.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>
               {countdown.label}
             </span>
           )}
@@ -321,7 +322,7 @@ function TodoRow({
         <button
           onClick={cycleP}
           title="Cycle priority"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors"
         >
           <span className={`w-2 h-2 rounded-full ${PRIORITY_DOT[todo.priority]}`} />
         </button>
@@ -330,7 +331,7 @@ function TodoRow({
         <button
           onClick={(e) => { e.stopPropagation(); setEditingText(true); }}
           title="Edit task"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-white/60"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-t2"
         >
           <Pencil size={11} />
         </button>
@@ -339,7 +340,7 @@ function TodoRow({
         <button
           onClick={(e) => { e.stopPropagation(); onDeleteRequest(); }}
           title="Delete"
-          className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400"
+          className="w-5 h-5 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"
         >
           <X size={10} />
         </button>
@@ -352,7 +353,7 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
   const { notes, add: addNote } = useNotesStore();
-  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting } = useSettingsStore();
+  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -387,6 +388,11 @@ export default function App() {
 
   const showCmdPalette = inputVal === "/" || inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal));
   const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
+
+  // Apply theme to document root
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   // Load todos on mount + request notification permission early
   useEffect(() => { load(); initNotifications(); }, [load]);
@@ -577,7 +583,7 @@ export default function App() {
   }, [filtered, focusedIdx]);
 
   const BackButton = () => (
-    <button onClick={() => navigate("main")} className="text-white/40 hover:text-white/70 transition-colors mr-3">
+    <button onClick={() => navigate("main")} className="text-t3 hover:text-t2 transition-colors mr-3">
       <ChevronLeft size={14} />
     </button>
   );
@@ -593,28 +599,29 @@ export default function App() {
       {/* Header */}
       <div
         data-tauri-drag-region
-        className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-white/[0.06]"
-        style={{ height: 38, background: "rgba(0,0,0,0.25)" }}
+        className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-s"
+        style={{ height: 38, background: "var(--c-nav)" }}
       >
         {view !== "main" && <BackButton />}
-        <span className="text-[11px] font-semibold text-white/40 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
+        <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         <div className="ml-auto flex items-center gap-3">
           {view === "main" && (
             <div className="group/guide relative">
               <button
                 onClick={() => navigate("guide")}
-                className="text-white/20 hover:text-white/50 transition-colors text-[11px] w-4 h-4 rounded-full border border-white/15 flex items-center justify-center hover:border-white/35"
+                className="text-t5 hover:text-t2 transition-colors text-[11px] w-4 h-4 rounded-full border flex items-center justify-center"
+                style={{ borderColor: "var(--c-border-subtle)" }}
               >
                 ?
               </button>
-              <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/guide:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Guide</span>
+              <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/guide:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Guide</span>
             </div>
           )}
           {view === "trash" && trash.length > 0 && (
             <>
               <button
                 onClick={selected.size === trash.length ? () => setSelected(new Set()) : selectAll}
-                className="text-[11px] text-white/35 hover:text-white/60 transition-colors"
+                className="text-[11px] text-t4 hover:text-t2 transition-colors"
               >
                 {selected.size === trash.length ? "Deselect all" : "Select all"}
               </button>
@@ -632,15 +639,15 @@ export default function App() {
               )}
             </>
           )}
-          {view === "main" && <span className="text-[11px] text-white/20">⌥S</span>}
+          {view === "main" && <span className="text-[11px] text-t5">⌥S</span>}
         </div>
       </div>
 
       {/* Main view: search input + command palette + todo list */}
       {view === "main" && (
         <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
-          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 48 }}>
-            <Search size={15} className="text-white/30 shrink-0" />
+          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
+            <Search size={15} className="text-t4 shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -653,12 +660,12 @@ export default function App() {
               }}
               onKeyDown={handleKeyDown}
               placeholder="Add task · /tm deadline · /rm reminder…"
-              className="flex-1 bg-transparent text-white/88 placeholder-white/25 text-sm outline-none"
+              className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
             />
             {inputVal && (
               <button
                 onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-                className="text-white/25 hover:text-white/50 transition-colors shrink-0"
+                className="text-t4 hover:text-t2 transition-colors shrink-0"
               >
                 <X size={11} />
               </button>
@@ -666,18 +673,19 @@ export default function App() {
           </div>
 
           {showCmdPalette && filteredCmds.length > 0 && (
-            <div className="shrink-0 border-b border-white/[0.06] py-1">
+            <div className="shrink-0 border-b border-s py-1">
               {filteredCmds.map((cmd, i) => (
                 <button
                   key={cmd.prefix}
                   onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
                   className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${
-                    i === cmdIdx ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
+                    i === cmdIdx ? "" : "hover:bg-s1"
                   }`}
+                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
                 >
                   <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
-                  <span className="text-[12px] text-white/40">{cmd.desc}</span>
-                  {i === cmdIdx && <span className="ml-auto text-[10px] text-white/20">↵ or Tab</span>}
+                  <span className="text-[12px] text-t3">{cmd.desc}</span>
+                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
                 </button>
               ))}
             </div>
@@ -695,9 +703,9 @@ export default function App() {
 
           <div className="overflow-y-auto flex-1 py-1.5">
             {loading ? (
-              <div className="px-5 py-10 text-center text-white/20 text-sm select-none">Loading…</div>
+              <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
             ) : filtered.length === 0 ? (
-              <div className="px-5 py-10 text-center text-white/20 text-sm select-none">
+              <div className="px-5 py-10 text-center text-t5 text-sm select-none">
                 {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
               </div>
             ) : tasksViewMode === "cards" ? (
@@ -727,29 +735,29 @@ export default function App() {
       {view === "trash" && (
         <div key="trash" className="view-animate overflow-y-auto flex-1 py-1.5">
           {trash.length === 0 ? (
-            <div className="px-5 py-10 text-center text-white/20 text-sm select-none">Trash is empty</div>
+            <div className="px-5 py-10 text-center text-t5 text-sm select-none">Trash is empty</div>
           ) : (
             trash.map((todo) => (
               <div
                 key={todo.id}
-                className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-white/[0.04] transition-colors"
+                className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-s1 transition-colors"
                 style={{ minHeight: 48 }}
               >
                 <button
                   onClick={() => toggleSelect(todo.id)}
-                  className="w-4 h-4 rounded border border-white/20 flex items-center justify-center shrink-0 transition-colors hover:border-white/50"
-                  style={selected.has(todo.id) ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
+                  className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
+                  style={selected.has(todo.id) ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
                 >
                   {selected.has(todo.id) && (
                     <Check size={8} stroke="white" />
                   )}
                 </button>
-                <span className="flex-1 text-[14px] text-white/40 line-through truncate">{todo.text}</span>
+                <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-green-400">
+                  <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400">
                     <RotateCcw size={12} />
                   </button>
-                  <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400">
+                  <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400">
                     <X size={10} />
                   </button>
                 </div>
@@ -772,8 +780,8 @@ export default function App() {
       {/* Footer — all views */}
       {true && (
         <>
-          <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36, background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="text-[11px] text-white/25">
+          <div data-tauri-drag-region className="flex items-center px-5 shrink-0 select-none" style={{ height: 36, background: "var(--c-nav)", borderTop: "1px solid var(--c-border-subtle)" }}>
+            <span className="text-[11px] text-t4">
               {view === "reminders"
                 ? `${allReminders.filter((r) => !r.notified).length} upcoming`
                 : view === "notes"
@@ -789,44 +797,44 @@ export default function App() {
             <div className="absolute left-1/2 -translate-x-1/2">
               <div
                 className="relative flex items-center gap-1 px-0.5 py-0.5"
-                style={{ borderRadius: 6, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}
+                style={{ borderRadius: 6, background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
               >
                 {/* Sliding active indicator */}
                 <div
                   className="absolute top-0.5 h-5 w-7 transition-transform duration-200 ease-out"
                   style={{
                     borderRadius: 5,
-                    background: "rgba(255,255,255,0.12)",
+                    background: "var(--c-surface-3)",
                     left: "2px",
                     transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "reminders" ? "32px" : lastNavView === "notes" ? "64px" : "96px"})`,
                   }}
                 />
                 <button
                   onClick={() => navigate("main")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-t1" : "text-t4 hover:text-t2"}`}
                 >
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Tasks</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Tasks</span>
                   <CheckSquare size={14} />
                 </button>
                 <button
                   onClick={() => navigate("reminders")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "reminders" ? "text-t1" : "text-t4 hover:text-t2"}`}
                 >
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Reminders</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Reminders</span>
                   <Clock size={14} />
                 </button>
                 <button
                   onClick={() => navigate("notes")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "notes" ? "text-t1" : "text-t4 hover:text-t2"}`}
                 >
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Notes</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Notes</span>
                   <FileText size={14} />
                 </button>
                 <button
                   onClick={() => navigate("settings")}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "settings" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "settings" ? "text-t1" : "text-t4 hover:text-t2"}`}
                 >
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Settings</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Settings</span>
                   <SettingsIcon size={13} />
                 </button>
               </div>
@@ -836,32 +844,32 @@ export default function App() {
                 <div className="group/clear relative">
                   <button
                     onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
-                    className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
                   >
                     <CheckCheck size={13} />
                   </button>
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/clear:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Clear done</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clear:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear done</span>
                 </div>
               )}
               {view === "reminders" && allReminders.some((r) => r.notified) && (
                 <div className="group/clearsent relative">
                   <button
                     onClick={() => askConfirm("Clear sent?", "All sent reminders will be deleted.", () => allReminders.filter((r) => r.notified).forEach((r) => useReminderStore.getState().remove(r.id)))}
-                    className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
                   >
                     <CheckCheck size={13} />
                   </button>
-                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Clear sent</span>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear sent</span>
                 </div>
               )}
               <div className="group/trash relative">
                 <button
                   onClick={openTrash}
-                  className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                  className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
                 >
                   <Trash2 size={14} />
                 </button>
-                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Deleted</span>
+                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Deleted</span>
               </div>
             </div>
           </div>

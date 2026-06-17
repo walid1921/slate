@@ -84,8 +84,9 @@ function SortMenu({
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] transition-colors ${
-          open ? "text-white/70 bg-white/[0.07]" : "text-white/30 hover:text-white/55 hover:bg-white/[0.05]"
+          open ? "text-t2 hover:bg-s2" : "text-t4 hover:text-t3 hover:bg-s1"
         }`}
+        style={open ? { background: "var(--c-surface-2)" } : {}}
       >
         <SlidersHorizontal size={11} />
         <span>{SORT_LABELS[value]}</span>
@@ -95,14 +96,14 @@ function SortMenu({
       {open && (
         <div
           className="absolute right-0 top-full mt-1 z-50 py-0.5 min-w-[110px]"
-          style={{ background: "rgba(28,28,32,0.97)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 8 }}
+          style={{ background: "var(--c-dropdown)", border: "1px solid var(--c-border)", borderRadius: 8 }}
         >
           {options.map((opt) => (
             <button
               key={opt}
               onMouseDown={(e) => { e.preventDefault(); onChange(opt); setOpen(false); }}
               className={`w-full text-left px-3 py-1.5 text-[12px] transition-colors ${
-                value === opt ? "text-white/80" : "text-white/40 hover:text-white/65 hover:bg-white/[0.04]"
+                value === opt ? "text-t1" : "text-t3 hover:text-t2 hover:bg-s1"
               }`}
             >
               {value === opt && <span className="mr-1.5 text-white/60">✓</span>}
@@ -120,14 +121,16 @@ function ViewToggle({ value, onChange }: { value: ViewMode; onChange: (v: ViewMo
     <div className="flex items-center gap-0.5">
       <button
         onClick={() => onChange("list")}
-        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "list" ? "text-white/70 bg-white/10" : "text-white/25 hover:text-white/50"}`}
+        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "list" ? "text-t2" : "text-t4 hover:text-t2"}`}
+        style={value === "list" ? { background: "var(--c-surface-3)" } : {}}
         title="List view"
       >
         <LayoutList size={12} />
       </button>
       <button
         onClick={() => onChange("cards")}
-        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "cards" ? "text-white/70 bg-white/10" : "text-white/25 hover:text-white/50"}`}
+        className={`w-5 h-5 flex items-center justify-center rounded transition-colors ${value === "cards" ? "text-t2" : "text-t4 hover:text-t2"}`}
+        style={value === "cards" ? { background: "var(--c-surface-3)" } : {}}
         title="Card view"
       >
         <LayoutGrid size={12} />
@@ -140,7 +143,7 @@ export default function FilterBar(props: Props) {
   if (props.page === "todos") {
     const { filter, sort, viewMode, onFilter, onSort, onViewMode } = props;
     return (
-      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-white/[0.05] shrink-0">
+      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-s shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
           {TODO_FILTERS.map((f) => (
             <button
@@ -148,9 +151,10 @@ export default function FilterBar(props: Props) {
               onClick={() => onFilter(f.value)}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 filter === f.value
-                  ? "bg-white/10 text-white/75"
-                  : "text-white/30 hover:text-white/55 hover:bg-white/[0.05]"
+                  ? "text-t2"
+                  : "text-t4 hover:text-t3 hover:bg-s1"
               }`}
+              style={filter === f.value ? { background: "var(--c-surface-3)" } : {}}
             >
               {f.label}
             </button>
@@ -169,7 +173,7 @@ export default function FilterBar(props: Props) {
   if (props.page === "reminders") {
     const { filter, sort, viewMode, onFilter, onSort, onViewMode } = props;
     return (
-      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-white/[0.05] shrink-0">
+      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-s shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
           {REMINDER_FILTERS.map((f) => (
             <button
@@ -177,9 +181,10 @@ export default function FilterBar(props: Props) {
               onClick={() => onFilter(f.value)}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 filter === f.value
-                  ? "bg-white/10 text-white/75"
-                  : "text-white/30 hover:text-white/55 hover:bg-white/[0.05]"
+                  ? "text-t2"
+                  : "text-t4 hover:text-t3 hover:bg-s1"
               }`}
+              style={filter === f.value ? { background: "var(--c-surface-3)" } : {}}
             >
               {f.label}
             </button>
@@ -198,7 +203,7 @@ export default function FilterBar(props: Props) {
   // notes
   const { sort, onSort } = props;
   return (
-    <div className="flex items-center justify-end px-4 py-1.5 border-b border-white/[0.05] shrink-0">
+    <div className="flex items-center justify-end px-4 py-1.5 border-b border-s shrink-0">
       <SortMenu
         options={["updated", "created", "az"]}
         value={sort}

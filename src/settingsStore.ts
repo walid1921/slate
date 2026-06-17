@@ -5,8 +5,10 @@ import { Priority } from "./store";
 export type Density = "compact" | "normal" | "comfortable";
 export type DefaultSort = "manual" | "due" | "priority" | "az";
 export type ViewMode = "list" | "cards";
+export type Theme = "dark" | "light";
 
 export interface Settings {
+  theme: Theme;
   density: Density;
   confirmDelete: boolean;
   defaultPriority: Priority;
@@ -24,6 +26,7 @@ interface SettingsState extends Settings {
 }
 
 const DEFAULTS: Settings = {
+  theme: "dark",
   density: "normal",
   confirmDelete: true,
   defaultPriority: "none",

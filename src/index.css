@@ -1,5 +1,67 @@
 @import "tailwindcss";
 
+:root {
+  --c-bg: #121214;
+  --c-nav: rgba(20,20,24,0.97);
+  --c-surface-1: rgba(255,255,255,0.04);
+  --c-surface-2: rgba(255,255,255,0.07);
+  --c-surface-3: rgba(255,255,255,0.11);
+  --c-border-subtle: rgba(255,255,255,0.05);
+  --c-border: rgba(255,255,255,0.09);
+  --c-tooltip: rgba(30,30,34,0.97);
+  --c-dropdown: rgba(28,28,32,0.98);
+  --c-text-1: rgba(255,255,255,0.88);
+  --c-text-2: rgba(255,255,255,0.65);
+  --c-text-3: rgba(255,255,255,0.42);
+  --c-text-4: rgba(255,255,255,0.28);
+  --c-text-5: rgba(255,255,255,0.18);
+  --c-text-6: rgba(255,255,255,0.10);
+  --c-input-placeholder: rgba(255,255,255,0.22);
+  --c-scrollbar: rgba(255,255,255,0.12);
+}
+
+[data-theme="light"] {
+  --c-bg: #ebebee;
+  --c-nav: rgba(220,220,226,0.97);
+  --c-surface-1: rgba(0,0,0,0.04);
+  --c-surface-2: rgba(0,0,0,0.07);
+  --c-surface-3: rgba(0,0,0,0.12);
+  --c-border-subtle: rgba(0,0,0,0.07);
+  --c-border: rgba(0,0,0,0.12);
+  --c-tooltip: rgba(220,220,226,0.98);
+  --c-dropdown: rgba(218,218,224,0.99);
+  --c-text-1: rgba(0,0,0,0.85);
+  --c-text-2: rgba(0,0,0,0.60);
+  --c-text-3: rgba(0,0,0,0.40);
+  --c-text-4: rgba(0,0,0,0.28);
+  --c-text-5: rgba(0,0,0,0.18);
+  --c-text-6: rgba(0,0,0,0.10);
+  --c-input-placeholder: rgba(0,0,0,0.25);
+  --c-scrollbar: rgba(0,0,0,0.15);
+}
+
+/* Semantic text utilities */
+.text-t1 { color: var(--c-text-1); }
+.text-t2 { color: var(--c-text-2); }
+.text-t3 { color: var(--c-text-3); }
+.text-t4 { color: var(--c-text-4); }
+.text-t5 { color: var(--c-text-5); }
+.text-t6 { color: var(--c-text-6); }
+.hover\:text-t1:hover { color: var(--c-text-1); }
+.hover\:text-t2:hover { color: var(--c-text-2); }
+.hover\:text-t3:hover { color: var(--c-text-3); }
+
+/* Hover backgrounds */
+.hover\:bg-s1:hover { background: var(--c-surface-1); }
+.hover\:bg-s2:hover { background: var(--c-surface-2); }
+.hover\:bg-s3:hover { background: var(--c-surface-3); }
+
+/* Border */
+.border-s { border-color: var(--c-border-subtle); }
+
+/* Placeholder */
+.placeholder-themed::placeholder { color: var(--c-input-placeholder); }
+
 * {
   box-sizing: border-box;
 }
@@ -37,11 +99,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--c-scrollbar);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--c-text-3);
 }
 
 #root {
