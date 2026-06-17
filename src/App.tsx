@@ -254,10 +254,12 @@ function TodoRow({
               <button
                 key={p}
                 onClick={() => { setPriority(todo.id, p); setMenu(null); }}
-                className="flex items-center justify-center w-6 h-6 rounded-full transition-colors hover:bg-s3"
-                style={todo.priority === p ? { outline: "1.5px solid var(--c-text-3)", outlineOffset: "0.5px" } : {}}
+                className="rounded-full transition-opacity hover:opacity-80"
               >
-                <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[p]}`} />
+                <span
+                  className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
+                  style={todo.priority === p ? { outline: "1.5px solid white", outlineOffset: "1.5px" } : {}}
+                />
               </button>
             ))}
           </div>
