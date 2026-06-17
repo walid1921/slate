@@ -630,7 +630,7 @@ export default function App() {
       >
         {view !== "main" && <BackButton />}
         {view === "main" ? (
-          <img src={theme === "dark" ? logoMarkLight : logoMarkDark} alt="Slate" className="w-5 h-5 opacity-70" style={{ imageRendering: "pixelated" }} />
+          <img src={theme === "dark" ? logoMarkLight : logoMarkDark} alt="Slate" className="w-5 h-5 opacity-70" />
         ) : (
           <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         )}
