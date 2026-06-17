@@ -1,4 +1,4 @@
-use tauri::{Emitter, Manager, WebviewWindow};
+use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
@@ -28,12 +28,26 @@ pub fn run() {
                     if event.state() == ShortcutState::Pressed {
                         let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
                         let new_note = Shortcut::new(Some(Modifiers::ALT), Code::KeyN);
-                        if let Some(window) = app.get_webview_window("main") {
-                            if shortcut == &toggle {
+                        if shortcut == &toggle {
+                            if let Some(window) = app.get_webview_window("main") {
                                 toggle_window(&window);
-                            } else if shortcut == &new_note {
-                                show_window(&window);
-                                let _ = window.emit("new-note", ());
+                            }
+                        } else if shortcut == &new_note {
+                            if let Some(qn) = app.get_webview_window("quick-note") {
+                                let _ = qn.show();
+                                let _ = qn.set_focus();
+                            } else {
+                                let _ = WebviewWindowBuilder::new(
+                                    app,
+                                    "quick-note",
+                                    WebviewUrl::App("index.html?quicknote=1".into()),
+                                )
+                                .title("")
+                                .inner_size(360.0, 200.0)
+                                .decorations(false)
+                                .always_on_top(true)
+                                .resizable(false)
+                                .build();
                             }
                         }
                     }
