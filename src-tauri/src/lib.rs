@@ -1,4 +1,4 @@
-use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle, image::Image};
+use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
 use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 
 const TRAY_ICON: &[u8] = include_bytes!("../icons/32x32.png");
@@ -6,31 +6,8 @@ use tauri_plugin_autostart::MacosLauncher;
 
 #[tauri::command]
 fn set_tray_icon(app: AppHandle, visible: bool) {
-    if visible {
-        if app.tray_by_id("main").is_none() {
-            if let Ok(icon) = Image::from_bytes(TRAY_ICON) {
-                let _ = TrayIconBuilder::with_id("main")
-                    .icon(icon)
-                    .on_tray_icon_event(|tray, event| {
-                        if let TrayIconEvent::Click { .. } = event {
-                            let app = tray.app_handle();
-                            if let Some(window) = app.get_webview_window("main") {
-                                if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
-                                } else {
-                                    let _ = window.center();
-                                    show_window(&window);
-                                }
-                            }
-                        }
-                    })
-                    .build(&app);
-            }
-        } else if let Some(tray) = app.tray_by_id("main") {
-            let _ = tray.set_visible(true);
-        }
-    } else if let Some(tray) = app.tray_by_id("main") {
-        let _ = tray.set_visible(false);
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_visible(visible);
     }
 }
 
@@ -120,6 +97,32 @@ pub fn run() {
                     }
                 });
             }
+
+            // Create tray icon (hidden by default; toggled via set_tray_icon command)
+            if let Ok(icon) = tauri::image::Image::from_bytes(TRAY_ICON) {
+                if let Ok(tray) = TrayIconBuilder::with_id("main")
+                    .icon(icon)
+                    .icon_as_template(true)
+                    .build(app)
+                {
+                    let _ = tray.set_visible(false);
+                }
+            }
+
+            // Wire tray click → toggle main window
+            app.on_tray_icon_event(|tray, event| {
+                if let TrayIconEvent::Click { .. } = event {
+                    let app = tray.app_handle();
+                    if let Some(window) = app.get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let _ = window.center();
+                            show_window(&window);
+                        }
+                    }
+                }
+            });
 
             Ok(())
         })
