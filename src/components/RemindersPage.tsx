@@ -237,7 +237,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
   const { reminders, load, markSent } = useReminderStore();
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
-  const [focusedIdx, setFocusedIdx] = useState(-1);
+  const [focusedIdx, setFocusedIdx] = useState(0);
   const { remindersViewMode, set: setSetting } = useSettingsStore();
 
   useEffect(() => { load(); }, [load]);
