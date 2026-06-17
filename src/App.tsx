@@ -381,8 +381,8 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    const size = textSize === "small" ? "11px" : textSize === "large" ? "15px" : "13px";
-    document.documentElement.style.setProperty("--base-font-size", size);
+    const scale = textSize === "small" ? 0.88 : textSize === "large" ? 1.12 : 1;
+    document.documentElement.style.setProperty("zoom", String(scale));
   }, [textSize]);
 
   useEffect(() => {
