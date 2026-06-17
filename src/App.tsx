@@ -107,10 +107,26 @@ function TodoRow({
   onFocus: () => void;
   onDeleteRequest: () => void;
 }) {
-  const { toggle, setPriority, setDueDate } = useTodoStore();
+  const { toggle, setPriority, setDueDate, updateText } = useTodoStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingDate, setEditingDate] = useState(false);
+  const [editingText, setEditingText] = useState(false);
+  const [editVal, setEditVal] = useState(todo.text);
   const dateRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingText) {
+      setEditVal(todo.text);
+      setTimeout(() => { textRef.current?.select(); }, 10);
+    }
+  }, [editingText]);
+
+  const commitText = () => {
+    const trimmed = editVal.trim();
+    if (trimmed && trimmed !== todo.text) updateText(todo.id, trimmed);
+    setEditingText(false);
+  };
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: todo.id });
@@ -180,13 +196,29 @@ function TodoRow({
 
       {/* Text + meta */}
       <div className="flex-1 min-w-0 py-3">
-        <span
-          className={`text-[14px] leading-snug block truncate transition-colors ${
-            todo.done ? "line-through text-white/25" : "text-white/88"
-          }`}
-        >
-          {todo.text}
-        </span>
+        {editingText ? (
+          <input
+            ref={textRef}
+            value={editVal}
+            onChange={(e) => setEditVal(e.target.value)}
+            onBlur={commitText}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitText(); }
+              if (e.key === "Escape") { setEditingText(false); }
+              e.stopPropagation();
+            }}
+            className="w-full text-[14px] leading-snug text-white/88 bg-transparent outline-none border-b border-white/20"
+          />
+        ) : (
+          <span
+            onDoubleClick={() => !todo.done && setEditingText(true)}
+            className={`text-[14px] leading-snug block truncate transition-colors ${
+              todo.done ? "line-through text-white/25" : "text-white/88"
+            }`}
+          >
+            {todo.text}
+          </span>
+        )}
 
         {/* Due date / priority row */}
         <div className="flex items-center gap-2 mt-0.5">
