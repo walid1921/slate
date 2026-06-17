@@ -114,7 +114,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div className="mb-5">
       <p className="px-1 pb-1.5 text-[11px] text-t4 font-medium select-none">{title}</p>
-      <div className="rounded-xl overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
+      <div className="rounded-lg overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
         {children}
       </div>
     </div>
@@ -156,7 +156,7 @@ function GeneralTab() {
                 className="flex flex-col items-center gap-1.5 group"
               >
                 <div
-                  className="w-14 h-10 rounded-xl border-2 transition-all overflow-hidden"
+                  className="w-14 h-10 rounded-lg border-2 transition-all overflow-hidden"
                   style={{
                     borderColor: theme === t ? "rgb(147,210,255)" : "var(--c-border)",
                     background: t === "dark" ? "#1a1a1e" : "#f0f0f4",
@@ -184,7 +184,7 @@ function GeneralTab() {
                 className="flex flex-col items-center gap-0.5"
               >
                 <div
-                  className="w-9 h-8 rounded-xl flex items-center justify-center transition-all border"
+                  className="w-9 h-8 rounded-lg flex items-center justify-center transition-all border"
                   style={{
                     background: textSize === s ? "var(--c-surface-3)" : "var(--c-surface-2)",
                     borderColor: textSize === s ? "rgb(147,210,255)" : "var(--c-border)",
@@ -209,7 +209,7 @@ function GeneralTab() {
             ] as { value: WindowMode; label: string; w: number; h: number }[]).map((m) => (
               <button key={m.value} onClick={() => set("windowMode", m.value)} className="flex flex-col items-center gap-1">
                 <div
-                  className="rounded-xl border-2 transition-all flex flex-col overflow-hidden"
+                  className="rounded-lg border-2 transition-all flex flex-col overflow-hidden"
                   style={{
                     width: m.w, height: m.h,
                     borderColor: windowMode === m.value ? "rgb(147,210,255)" : "var(--c-border)",
@@ -235,7 +235,7 @@ function GeneralTab() {
         <SettingRow label="Reset all settings" hint="Restore defaults">
           <button
             onClick={reset}
-            className="px-3 py-1 rounded-xl text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
+            className="px-3 py-1 rounded-lg text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
             style={{ background: "var(--c-surface-2)" }}
           >
             Reset
@@ -270,7 +270,7 @@ function GuideTab() {
       {guideSections.map((section) => (
         <div key={section.title} className="mb-4">
           <p className="px-1 pb-1 text-[11px] text-t4 font-medium select-none">{section.title}</p>
-          <div className="rounded-xl overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
+          <div className="rounded-lg overflow-hidden" style={{ background: "var(--c-surface-1)" }}>
             {section.items.map((item, i) => (
               <div key={i} className={`flex items-center gap-3 px-4 py-2 ${i < section.items.length - 1 ? "border-b border-s" : ""}`}>
                 <div className="flex items-center gap-1 shrink-0 flex-wrap">
@@ -311,7 +311,7 @@ export default function SettingsPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-1.5 rounded-xl text-[12px] font-medium transition-colors ${tab === t.id ? "text-t1" : "text-t4 hover:text-t2"}`}
+            className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${tab === t.id ? "text-t1" : "text-t4 hover:text-t2"}`}
             style={tab === t.id ? { background: "var(--c-surface-3)" } : {}}
           >
             {t.label}
