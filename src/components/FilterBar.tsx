@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
 
 export type TodoFilter = "all" | "active" | "done";
 export type TodoSort = "manual" | "due" | "priority" | "az";
@@ -81,13 +82,9 @@ function SortMenu({
           open ? "text-white/70 bg-white/[0.07]" : "text-white/30 hover:text-white/55 hover:bg-white/[0.05]"
         }`}
       >
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-          <path d="M1 2.5h9M2.5 5.5h6M4 8.5h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
+        <SlidersHorizontal size={11} />
         <span>{SORT_LABELS[value]}</span>
-        <svg width="8" height="8" viewBox="0 0 8 8" fill="none" className={`transition-transform ${open ? "rotate-180" : ""}`}>
-          <path d="M1.5 3l2.5 2.5L6.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <ChevronDown size={8} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (

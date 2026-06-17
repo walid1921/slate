@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { Plus, X, PanelLeft } from "lucide-react";
 import { useNotesStore, Note } from "../notesStore";
 import FilterBar, { NoteSort } from "./FilterBar";
 
@@ -72,9 +73,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
             title="New note"
             className="w-5 h-5 flex items-center justify-center rounded text-white/30 hover:text-white/60 hover:bg-white/10 transition-colors"
           >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <Plus size={11} />
           </button>
         </div>
         <div className="overflow-y-auto flex-1">
@@ -99,9 +98,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
                   title="Delete"
                   className="absolute right-1.5 top-1.5 opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded text-white/25 hover:text-red-400 hover:bg-white/10 transition-colors"
                 >
-                  <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                  <X size={9} />
                 </button>
               </div>
             ))
@@ -118,12 +115,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
             title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
             className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
           >
-            <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
-              <rect x="0.5" y="0.5" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.1" />
-              <line x1="4" y1="0.5" x2="4" y2="10.5" stroke="currentColor" strokeWidth="1.1" />
-              {sidebarOpen && <path d="M2 5.5L1 5.5M2 3l-1.5 2.5L2 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />}
-              {!sidebarOpen && <path d="M2 5.5L3 5.5M2 3l1.5 2.5L2 8" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />}
-            </svg>
+            <PanelLeft size={13} />
           </button>
           {!sidebarOpen && (
             <button
@@ -131,9 +123,7 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
               title="New note"
               className="w-6 h-6 flex items-center justify-center rounded text-white/25 hover:text-white/55 hover:bg-white/10 transition-colors"
             >
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                <path d="M5.5 1v9M1 5.5h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <Plus size={11} />
             </button>
           )}
         </div>

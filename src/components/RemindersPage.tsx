@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { Pencil, X } from "lucide-react";
 import { useReminderStore, Reminder } from "../reminderStore";
 import FilterBar, { ReminderFilter, ReminderSort } from "./FilterBar";
 
@@ -118,17 +119,13 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
           title="Edit text"
           className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/25 hover:text-white/60"
         >
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Pencil size={11} />
         </button>
         <button
           onClick={() => onDeleteRequest()}
           className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/25 hover:text-red-400"
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <X size={10} />
         </button>
       </div>
     </div>

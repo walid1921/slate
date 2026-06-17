@@ -1,4 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  GripVertical,
+  Check,
+  Pencil,
+  X,
+  RotateCcw,
+  Search,
+  ChevronLeft,
+  CheckSquare,
+  Clock,
+  FileText,
+  Settings as SettingsIcon,
+  Trash2,
+} from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
@@ -171,11 +185,7 @@ function TodoRow({
           showMeta || focused ? "opacity-100" : "opacity-0"
         }`}
       >
-        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor">
-          <circle cx="3" cy="2.5" r="1.2" /><circle cx="7" cy="2.5" r="1.2" />
-          <circle cx="3" cy="7" r="1.2" /><circle cx="7" cy="7" r="1.2" />
-          <circle cx="3" cy="11.5" r="1.2" /><circle cx="7" cy="11.5" r="1.2" />
-        </svg>
+        <GripVertical size={12} />
       </div>
 
       {/* Checkbox */}
@@ -185,9 +195,7 @@ function TodoRow({
         style={todo.done ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
       >
         {todo.done && (
-          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-            <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Check size={8} stroke="white" />
         )}
       </button>
 
@@ -253,9 +261,7 @@ function TodoRow({
           title="Edit task"
           className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-white/60"
         >
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M7.5 1.5l2 2-6 6H1.5v-2l6-6z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Pencil size={11} />
         </button>
 
         {/* Delete */}
@@ -264,9 +270,7 @@ function TodoRow({
           title="Delete"
           className="w-5 h-5 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400"
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <X size={10} />
         </button>
       </div>
     </div>
@@ -503,9 +507,7 @@ export default function App() {
 
   const BackButton = () => (
     <button onClick={() => navigate("main")} className="text-white/40 hover:text-white/70 transition-colors mr-3">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <ChevronLeft size={14} />
     </button>
   );
 
@@ -567,10 +569,7 @@ export default function App() {
       {view === "main" && (
         <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
           <div className="flex items-center gap-3 px-5 shrink-0 border-b border-white/[0.06]" style={{ height: 48 }}>
-            <svg className="text-white/30 shrink-0" width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
-              <path d="M11 11l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
+            <Search size={15} className="text-white/30 shrink-0" />
             <input
               ref={inputRef}
               type="text"
@@ -588,9 +587,9 @@ export default function App() {
             {inputVal && (
               <button
                 onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-                className="text-white/25 hover:text-white/50 transition-colors text-xs shrink-0"
+                className="text-white/25 hover:text-white/50 transition-colors shrink-0"
               >
-                ✕
+                <X size={11} />
               </button>
             )}
           </div>
@@ -659,23 +658,16 @@ export default function App() {
                   style={selected.has(todo.id) ? { background: "rgba(255,255,255,0.15)", borderColor: "transparent" } : {}}
                 >
                   {selected.has(todo.id) && (
-                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
-                      <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <Check size={8} stroke="white" />
                   )}
                 </button>
                 <span className="flex-1 text-[14px] text-white/40 line-through truncate">{todo.text}</span>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-green-400">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6a4 4 0 1 0 1-2.5L1 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M1 2v2.5h2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <RotateCcw size={12} />
                   </button>
                   <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors text-white/30 hover:text-red-400">
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
+                    <X size={10} />
                   </button>
                 </div>
               </div>
@@ -731,40 +723,28 @@ export default function App() {
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Tasks</span>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="1.5" y="1.5" width="11" height="11" rx="3" stroke="currentColor" strokeWidth="1.3" />
-                    <path d="M4.5 7l2 2 3-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <CheckSquare size={14} />
                 </button>
                 <button
                   onClick={() => navigate("reminders")}
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "reminders" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Reminders</span>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
-                    <path d="M7 4v3.2l2 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Clock size={14} />
                 </button>
                 <button
                   onClick={() => navigate("notes")}
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "notes" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Notes</span>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-                    <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                  </svg>
+                  <FileText size={14} />
                 </button>
                 <button
                   onClick={() => navigate("settings")}
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "settings" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Settings</span>
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                    <circle cx="6.5" cy="6.5" r="2" stroke="currentColor" strokeWidth="1.2" />
-                    <path d="M6.5 1v1.2M6.5 10.8V12M1 6.5h1.2M10.8 6.5H12M2.4 2.4l.85.85M9.75 9.75l.85.85M9.75 3.25l-.85.85M3.25 9.75l-.85.85" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                  </svg>
+                  <SettingsIcon size={13} />
                 </button>
               </div>
             </div>
@@ -774,9 +754,7 @@ export default function App() {
                   onClick={openTrash}
                   className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
                 >
-                  <svg width="14" height="15" viewBox="0 0 12 13" fill="none">
-                    <path d="M1 3.5h10M4.5 3.5V2.5h3v1M2 3.5l.6 7.5h6.8l.6-7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Trash2 size={14} />
                 </button>
                 <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Deleted</span>
               </div>
