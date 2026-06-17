@@ -11,19 +11,20 @@ const guideSections = [
     ],
   },
   {
-    title: "Keyboard Navigation",
+    title: "Keyboard Shortcuts",
     items: [
-      { keys: ["↑ ↓"], desc: "Navigate through tasks" },
-      { keys: ["Space"], desc: "Toggle task done / undone" },
-      { keys: ["⌫ Delete"], desc: "Move focused task to trash" },
-      { keys: ["Esc"], desc: "Close Slate" },
       { keys: ["⌥S"], desc: "Toggle Slate from anywhere" },
+      { keys: ["⌥N"], desc: "Open quick-note window from anywhere" },
+      { keys: ["Esc"], desc: "Close Slate (or clear search if text is entered)" },
+      { keys: ["↑ ↓"], desc: "Navigate through the list" },
+      { keys: ["Space"], desc: "Toggle task done / undone" },
+      { keys: ["⌫ Delete"], desc: "Move focused item to trash" },
     ],
   },
   {
     title: "Task Actions",
     items: [
-      { keys: ["Right-click task"], desc: "Open context menu — edit, set priority, delete" },
+      { keys: ["Right-click task"], desc: "Open context menu — edit text, set priority, delete" },
       { keys: ["Double-click text"], desc: "Edit task text inline — Enter to save, Esc to cancel" },
       { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks manually" },
     ],
@@ -38,11 +39,12 @@ const guideSections = [
     ],
   },
   {
-    title: "Due Dates & Countdown",
+    title: "Due Dates & Notifications",
     items: [
       { keys: ["/tm", "task", "↵"], desc: "Set deadline via date & time picker" },
       { keys: ["Countdown"], desc: "Shows months · days · hours · minutes · seconds live" },
-      { keys: ["Red label"], desc: "Task is overdue — notification fired" },
+      { keys: ["Red label"], desc: "Task is overdue" },
+      { keys: ["Red dot on ✓ icon"], desc: "A deadline notification fired — click the tab to dismiss" },
     ],
   },
   {
@@ -51,15 +53,18 @@ const guideSections = [
       { keys: ["Footer → ⏱"], desc: "View all upcoming and sent reminders" },
       { keys: ["Right-click reminder"], desc: "Send now, edit text/time, or delete" },
       { keys: ["Blue dot"], desc: "Upcoming reminder" },
-      { keys: ["Red dot"], desc: "Overdue — notification hasn't fired yet" },
+      { keys: ["Red dot on reminder text"], desc: "Overdue — notification hasn't fired yet" },
       { keys: ["Grey dot · sent"], desc: "Notification already fired" },
+      { keys: ["Red dot on ⏱ icon"], desc: "A reminder notification fired — click the tab to dismiss" },
     ],
   },
   {
     title: "Notes",
     items: [
-      { keys: ["Footer → 📄"], desc: "Open notes — split view with list and editor" },
+      { keys: ["Footer → 📄"], desc: "Open notes — editor with collapsible sidebar" },
+      { keys: ["⊞ button"], desc: "Toggle sidebar to browse all notes" },
       { keys: ["+ button"], desc: "Create a new note" },
+      { keys: ["Right-click note"], desc: "Delete note from sidebar" },
       { keys: ["Auto-save"], desc: "Notes save automatically after 500ms" },
     ],
   },
