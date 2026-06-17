@@ -27,7 +27,8 @@ import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import { useSettingsStore } from "./settingsStore";
-import logoMark from "./assets/logo-mark.svg";
+import logoMarkLight from "./assets/logo-light.png";
+import logoMarkDark from "./assets/logo-dark.png";
 import {
   DndContext,
   closestCenter,
@@ -629,7 +630,7 @@ export default function App() {
       >
         {view !== "main" && <BackButton />}
         {view === "main" ? (
-          <img src={logoMark} alt="Slate" className="w-5 h-5 opacity-60" style={{ filter: "var(--logo-filter)" }} />
+          <img src={theme === "dark" ? logoMarkLight : logoMarkDark} alt="Slate" className="w-5 h-5 opacity-70" style={{ imageRendering: "pixelated" }} />
         ) : (
           <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         )}
