@@ -258,7 +258,7 @@ function TodoRow({
                 >
                   <span
                     className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
-                    style={todo.priority === p ? { boxShadow: "0 0 0 1.5px rgba(255,255,255,0.5)" } : {}}
+                    style={todo.priority === p ? { border: "2px solid white" } : {}}
                   />
                 </button>
                 <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 capitalize" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>
