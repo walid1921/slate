@@ -37,9 +37,6 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
-
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
 
@@ -50,13 +47,8 @@ pub fn run() {
 
                 let win = window.clone();
                 window.on_window_event(move |event| {
-                    match event {
-                        tauri::WindowEvent::Focused(false) => { let _ = win.hide(); }
-                        tauri::WindowEvent::CloseRequested { api, .. } => {
-                            api.prevent_close();
-                            let _ = win.hide();
-                        }
-                        _ => {}
+                    if let tauri::WindowEvent::Focused(false) = event {
+                        let _ = win.hide();
                     }
                 });
             }
