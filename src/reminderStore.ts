@@ -13,6 +13,8 @@ export interface Reminder {
 interface ReminderState {
   reminders: Reminder[];
   trash: Reminder[];
+  hasUnread: boolean;
+  clearUnread: () => void;
   load: () => Promise<void>;
   loadTrash: () => Promise<void>;
   add: (text: string, remind_at: string) => Promise<void>;
@@ -27,6 +29,8 @@ interface ReminderState {
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
   trash: [],
+  hasUnread: false,
+  clearUnread: () => set({ hasUnread: false }),
 
   load: async () => {
     const db = await getDb();
@@ -83,7 +87,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const r = get().reminders.find((r) => r.id === id);
     if (r) await notify("Slate Reminder", r.text);
     await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [id]);
-    set((s) => ({ reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r) }));
+    set((s) => ({ reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r), hasUnread: true }));
   },
 
   checkDue: async () => {
@@ -100,6 +104,6 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       await notify("Slate Reminder", r.text);
       await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [r.id]);
     }
-    if (due.length > 0) await get().load();
+    if (due.length > 0) { set({ hasUnread: true }); await get().load(); }
   },
 }));
