@@ -335,7 +335,7 @@ function TodoRow({
 }
 
 export default function App() {
-  const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
+  const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
@@ -385,9 +385,10 @@ export default function App() {
   // Background notification checker — runs every 30s
   useEffect(() => {
     checkDue();
-    const interval = setInterval(checkDue, reminderInterval * 1000);
+    checkDueTodos();
+    const interval = setInterval(() => { checkDue(); checkDueTodos(); }, reminderInterval * 1000);
     return () => clearInterval(interval);
-  }, [checkDue, reminderInterval]);
+  }, [checkDue, checkDueTodos, reminderInterval]);
 
   const openTrash = useCallback(() => {
     loadTrash();
@@ -820,11 +821,12 @@ export default function App() {
                   }}
                 />
                 <button
-                  onClick={() => navigate("main")}
+                  onClick={() => { navigate("main"); clearTodoUnread(); }}
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-t1" : "text-t4 hover:text-t2"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Tasks</span>
                   <CheckSquare size={14} />
+                  {todoHasUnread && <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-red-500" />}
                 </button>
                 <button
                   onClick={() => { navigate("reminders"); clearReminderUnread(); }}

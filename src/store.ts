@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getDb } from "./db";
+import { notify } from "./notifications";
 
 export type Priority = "none" | "low" | "medium" | "high";
 
@@ -10,6 +11,7 @@ export interface Todo {
   priority: Priority;
   due_date: string | null;
   due_time: string | null;
+  deadline_notified: boolean;
   position: number;
   created_at: string;
   deleted_at?: string | null;
@@ -20,8 +22,11 @@ interface State {
   trash: Todo[];
   query: string;
   loading: boolean;
+  hasUnread: boolean;
+  clearUnread: () => void;
   setQuery: (q: string) => void;
   load: () => Promise<void>;
+  checkDueTodos: () => Promise<void>;
   loadTrash: () => Promise<void>;
   add: (text: string, priority?: Priority, due_date?: string | null) => Promise<void>;
   toggle: (id: number) => Promise<void>;
@@ -40,15 +45,42 @@ export const useTodoStore = create<State>((set, get) => ({
   trash: [],
   query: "",
   loading: true,
+  hasUnread: false,
+  clearUnread: () => set({ hasUnread: false }),
 
   setQuery: (query) => set({ query }),
 
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, position, created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
-    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done) })), loading: false });
+    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified) })), loading: false });
+  },
+
+  checkDueTodos: async () => {
+    const db = await getDb();
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const now = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const today = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+    const due = await db.select<{ id: number; text: string; due_time: string | null }[]>(
+      `SELECT id, text, due_time FROM todos
+       WHERE deadline_notified = 0 AND done = 0 AND deleted_at IS NULL
+         AND due_date IS NOT NULL
+         AND (
+           (due_time IS NOT NULL AND (due_date || 'T' || due_time) <= ?)
+           OR (due_time IS NULL AND due_date <= ?)
+         )`,
+      [now, today]
+    );
+
+    for (const t of due) {
+      await notify("Slate — Task due", t.text);
+      await db.execute("UPDATE todos SET deadline_notified = 1 WHERE id = ?", [t.id]);
+    }
+    if (due.length > 0) { set({ hasUnread: true }); await get().load(); }
   },
 
   loadTrash: async () => {
@@ -113,7 +145,7 @@ export const useTodoStore = create<State>((set, get) => ({
 
   setDueDate: async (id, due_date) => {
     const db = await getDb();
-    await db.execute("UPDATE todos SET due_date = ? WHERE id = ?", [due_date, id]);
+    await db.execute("UPDATE todos SET due_date = ?, deadline_notified = 0 WHERE id = ?", [due_date, id]);
     await get().load();
   },
 
