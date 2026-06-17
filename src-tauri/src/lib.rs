@@ -119,6 +119,7 @@ pub fn run() {
                     .ok();
                 #[cfg(target_os = "macos")]
                 set_fullscreen_overlay(&window);
+                center_on_cursor_screen(&window, app.handle());
             }
 
             Ok(())
