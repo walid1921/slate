@@ -258,7 +258,7 @@ function TodoRow({
               >
                 <span
                   className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
-                  style={todo.priority === p ? { outline: "1.5px solid white", outlineOffset: "1.5px" } : {}}
+                  style={todo.priority === p ? { outline: "0.3px solid white", outlineOffset: "1.5px" } : {}}
                 />
               </button>
             ))}
