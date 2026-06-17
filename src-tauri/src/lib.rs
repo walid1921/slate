@@ -9,8 +9,9 @@ fn set_fullscreen_overlay(window: &WebviewWindow) {
             let win = ns_window as *mut AnyObject;
             // NSPopUpMenuWindowLevel (101) — floats above fullscreen spaces like Raycast
             let _: () = msg_send![win, setLevel: 101i64];
-            // CanJoinAllSpaces | Transient (no FullScreenAuxiliary — that causes split-view)
-            let behavior: u64 = (1 << 0) | (1 << 2);
+            // Stationary (1<<4) | Transient (1<<3) | IgnoresCycle (1<<6)
+            // Stationary = visible on all spaces simultaneously (true overlay, not split-view)
+            let behavior: u64 = (1 << 3) | (1 << 4) | (1 << 6);
             let _: () = msg_send![win, setCollectionBehavior: behavior];
         }
     }
