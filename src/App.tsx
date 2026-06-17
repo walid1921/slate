@@ -363,6 +363,7 @@ export default function App() {
   type NavView = "main" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
   const [lastNavView, setLastNavView] = useState<NavView>("main");
+  const [newNoteRequested, setNewNoteRequested] = useState(false);
 
   const navigate = useCallback((v: View) => {
     if (v === "main" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
@@ -446,10 +447,9 @@ export default function App() {
 
   // ⌥N global shortcut: open app and create a new note
   useEffect(() => {
-    const unlisten = listen("new-note", async () => {
+    const unlisten = listen("new-note", () => {
       navigate("notes");
-      const { add: addN } = useNotesStore.getState();
-      await addN("Untitled", "");
+      setNewNoteRequested(true);
     });
     return () => { unlisten.then((fn) => fn()); };
   }, []);
@@ -785,7 +785,7 @@ export default function App() {
       {view === "guide" && <GuidePage />}
 
       {/* Notes view */}
-      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} />}
+      {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} autoNew={newNoteRequested} onAutoNewDone={() => setNewNoteRequested(false)} />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}

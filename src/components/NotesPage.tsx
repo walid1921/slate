@@ -14,7 +14,7 @@ function relativeDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: number) => void }) {
+export default function NotesPage({ onDeleteRequest, autoNew, onAutoNewDone }: { onDeleteRequest: (id: number) => void; autoNew?: boolean; onAutoNewDone?: () => void }) {
   const { notes, load, add, update } = useNotesStore();
   const [sort, setSort] = useState<NoteSort>("updated");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -25,6 +25,10 @@ export default function NotesPage({ onDeleteRequest }: { onDeleteRequest: (id: n
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (autoNew) { handleNew(); onAutoNewDone?.(); }
+  }, [autoNew]);
 
   const sortedNotes = [...notes].sort((a, b) => {
     if (sort === "az") return a.title.localeCompare(b.title);
