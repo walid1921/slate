@@ -44,12 +44,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const PRIORITY_COLOR: Record<Priority, string> = {
-  none: "bg-white/10 text-t3",
-  low: "bg-blue-500/20 text-blue-400",
-  medium: "bg-yellow-500/20 text-yellow-400",
-  high: "bg-red-500/20 text-red-400",
-};
 
 const PRIORITY_DOT: Record<Priority, string> = {
   none: "bg-t5",
@@ -177,7 +171,7 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
           return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>{cd.label}</span>;
         })()}
         {todo.priority !== "none" && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${todo.done ? "bg-t6 text-t4" : PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${todo.done ? "bg-t6" : PRIORITY_DOT[todo.priority]}`} />
         )}
       </div>
     </div>
@@ -230,15 +224,7 @@ function TodoRow({
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
-  const cycleP = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const order: Priority[] = ["none", "low", "medium", "high"];
-      const next = order[(order.indexOf(todo.priority) + 1) % order.length];
-      setPriority(todo.id, next);
-    },
-    [todo.id, todo.priority, setPriority]
-  );
+
 
   return (
     <div
@@ -263,9 +249,19 @@ function TodoRow({
           <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
             <Pencil size={12} className="text-t4" /><span>Edit task</span>
           </button>
-          <button onClick={(e) => { cycleP(e); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
-            <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[todo.priority]}`} /><span>Cycle priority</span>
-          </button>
+          <div className="flex items-center gap-2 px-3 py-2">
+            {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+              <button
+                key={p}
+                title={p}
+                onClick={() => { setPriority(todo.id, p); setMenu(null); }}
+                className="flex items-center justify-center w-6 h-6 rounded-full transition-colors hover:bg-s3"
+                style={todo.priority === p ? { outline: "2px solid var(--c-text-3)", outlineOffset: 1 } : {}}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[p]}`} />
+              </button>
+            ))}
+          </div>
           <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
           <button onClick={() => { onDeleteRequest(); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
             <X size={12} /><span>Delete</span>
@@ -328,9 +324,7 @@ function TodoRow({
             </span>
           )}
           {todo.priority !== "none" && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${todo.done ? "bg-t6 text-t4" : PRIORITY_COLOR[todo.priority]}`}>
-              {todo.priority}
-            </span>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${todo.done ? "bg-t6" : PRIORITY_DOT[todo.priority]}`} />
           )}
         </div>
       </div>
