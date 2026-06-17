@@ -52,6 +52,7 @@
 .text-t5 { color: var(--c-text-5); }
 .text-t6 { color: var(--c-text-6); }
 .bg-t5 { background-color: var(--c-text-5); }
+.bg-t6 { background-color: var(--c-text-6); }
 .hover\:text-t1:hover { color: var(--c-text-1); }
 .hover\:text-t2:hover { color: var(--c-text-2); }
 .hover\:text-t3:hover { color: var(--c-text-3); }

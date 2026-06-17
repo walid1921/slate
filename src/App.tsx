@@ -176,7 +176,7 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
           return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>{cd.label}</span>;
         })()}
         {todo.priority !== "none" && (
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${todo.done ? "bg-t6 text-t4" : PRIORITY_COLOR[todo.priority]}`}>{todo.priority}</span>
         )}
       </div>
     </div>
@@ -305,7 +305,7 @@ function TodoRow({
             </span>
           )}
           {todo.priority !== "none" && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PRIORITY_COLOR[todo.priority]}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${todo.done ? "bg-t6 text-t4" : PRIORITY_COLOR[todo.priority]}`}>
               {todo.priority}
             </span>
           )}
