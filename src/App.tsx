@@ -246,9 +246,7 @@ function TodoRow({
         zIndex: isDragging ? 50 : "auto",
         background: focused ? "var(--c-surface-2)" : undefined,
       }}
-      className={`group flex items-center gap-3 px-5 cursor-default transition-colors mx-1.5 ${
-        "border-b border-s rounded-none"
-      } ${focused ? "" : "hover:bg-s1"}`}
+      className={`group flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}
     >
       {/* Drag handle */}
       <div
