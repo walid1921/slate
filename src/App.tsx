@@ -584,6 +584,15 @@ export default function App() {
         });
         return;
       }
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const tabs: NavView[] = ["main", "reminders", "notes", "settings"];
+        const cur = tabs.indexOf(lastNavView);
+        const next = e.key === "ArrowRight"
+          ? tabs[(cur + 1) % tabs.length]
+          : tabs[(cur - 1 + tabs.length) % tabs.length];
+        navigate(next);
+        return;
+      }
       // Any printable char → focus input
       if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
         inputRef.current?.focus();
@@ -591,7 +600,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, focusedIdx]);
+  }, [filtered, focusedIdx, lastNavView]);
 
   const BackButton = () => (
     <button onClick={() => navigate("main")} className="text-t3 hover:text-t2 transition-colors mr-3">
