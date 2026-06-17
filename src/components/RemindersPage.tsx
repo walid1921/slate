@@ -264,7 +264,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
       if (e.key === "ArrowUp")   { e.preventDefault(); setFocusedIdx((i) => Math.max(i - 1, 0)); return; }
       if (e.key === "Backspace" || e.key === "Delete") {
         const r = visible[focusedIdx];
-        if (r) onConfirm("Delete reminder?", `"${r.text}" will be deleted.`, () => onDeleteRequest(r.id));
+        if (r) onDeleteRequest(r.id);
         return;
       }
       if (e.key === " ") {
