@@ -350,8 +350,8 @@ function TodoRow({
 
 export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
-  const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
-  const { notes, add: addNote } = useNotesStore();
+  const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently } = useReminderStore();
+  const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
@@ -405,9 +405,11 @@ export default function App() {
 
   const openTrash = useCallback(() => {
     loadTrash();
+    loadReminderTrash();
+    loadNoteTrash();
     setSelected(new Set());
     navigate("trash");
-  }, [loadTrash]);
+  }, [loadTrash, loadReminderTrash, loadNoteTrash]);
 
   const toggleSelect = useCallback((id: number) => {
     setSelected((s) => {
@@ -747,35 +749,44 @@ export default function App() {
       {/* Trash view */}
       {view === "trash" && (
         <div key="trash" className="view-animate overflow-y-auto flex-1 py-1.5">
-          {trash.length === 0 ? (
+          {trash.length === 0 && reminderTrash.length === 0 && noteTrash.length === 0 ? (
             <div className="px-5 py-10 text-center text-t5 text-sm select-none">Trash is empty</div>
           ) : (
-            trash.map((todo) => (
-              <div
-                key={todo.id}
-                className="flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-s1 transition-colors"
-                style={{ minHeight: 48 }}
-              >
-                <button
-                  onClick={() => toggleSelect(todo.id)}
-                  className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors"
-                  style={selected.has(todo.id) ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
-                >
-                  {selected.has(todo.id) && (
-                    <Check size={8} stroke="white" />
-                  )}
-                </button>
-                <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400">
-                    <RotateCcw size={12} />
+            <>
+              {trash.map((todo) => (
+                <div key={`task-${todo.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                  <button onClick={() => toggleSelect(todo.id)} className="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors" style={selected.has(todo.id) ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}>
+                    {selected.has(todo.id) && <Check size={8} stroke="white" />}
                   </button>
-                  <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} title="Delete permanently" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400">
-                    <X size={10} />
-                  </button>
+                  <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
+                  <span className="text-[10px] text-t5 shrink-0">Task</span>
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                    <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {reminderTrash.map((r) => (
+                <div key={`reminder-${r.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                  <span className="flex-1 text-[14px] text-t3 line-through truncate">{r.text}</span>
+                  <span className="text-[10px] text-t5 shrink-0">Reminder</span>
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => restoreReminder(r.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                    <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deleteReminderPermanently(r.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                  </div>
+                </div>
+              ))}
+              {noteTrash.map((n) => (
+                <div key={`note-${n.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                  <span className="flex-1 text-[14px] text-t3 line-through truncate">{n.title}</span>
+                  <span className="text-[10px] text-t5 shrink-0">Note</span>
+                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => restoreNote(n.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                    <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deleteNotePermanently(n.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                  </div>
+                </div>
+              ))}
+            </>
           )}
         </div>
       )}

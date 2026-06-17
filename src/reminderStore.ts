@@ -12,23 +12,36 @@ export interface Reminder {
 
 interface ReminderState {
   reminders: Reminder[];
+  trash: Reminder[];
   load: () => Promise<void>;
+  loadTrash: () => Promise<void>;
   add: (text: string, remind_at: string) => Promise<void>;
   update: (id: number, text: string, remind_at: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  restore: (id: number) => Promise<void>;
+  deletePermanently: (id: number) => Promise<void>;
   markSent: (id: number) => Promise<void>;
   checkDue: () => Promise<void>;
 }
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
+  trash: [],
 
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Reminder[]>(
-      "SELECT id, text, remind_at, notified, created_at FROM reminders ORDER BY remind_at ASC"
+      "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NULL ORDER BY remind_at ASC"
     );
     set({ reminders: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
+  },
+
+  loadTrash: async () => {
+    const db = await getDb();
+    const rows = await db.select<Reminder[]>(
+      "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+    );
+    set({ trash: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
   },
 
   add: async (text, remind_at) => {
@@ -48,8 +61,21 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
 
   remove: async (id) => {
     const db = await getDb();
-    await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
+    await db.execute("UPDATE reminders SET deleted_at = datetime('now') WHERE id = ?", [id]);
     set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
+  },
+
+  restore: async (id) => {
+    const db = await getDb();
+    await db.execute("UPDATE reminders SET deleted_at = NULL WHERE id = ?", [id]);
+    set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
+    await get().load();
+  },
+
+  deletePermanently: async (id) => {
+    const db = await getDb();
+    await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
+    set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
   },
 
   markSent: async (id) => {
