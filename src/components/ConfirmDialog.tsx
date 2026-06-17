@@ -9,7 +9,7 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: P
   return (
     <div
       className="absolute inset-0 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.4)", zIndex: 20, borderRadius: 12 }}
+      style={{ background: "rgba(0,0,0,0.35)", zIndex: 20, borderRadius: 12 }}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") onConfirm();
@@ -17,17 +17,17 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }: P
       }}
     >
       <div
-        className="w-72 rounded-xl border border-white/10 shadow-2xl p-5 flex flex-col gap-4"
-        style={{ background: "rgba(28,28,32,0.97)" }}
+        className="w-72 rounded-xl shadow-2xl p-5 flex flex-col gap-4"
+        style={{ background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
       >
         <div>
-          <p className="text-white/80 text-sm font-medium">{title}</p>
-          <p className="text-white/35 text-xs mt-0.5">{message}</p>
+          <p className="text-t1 text-sm font-medium">{title}</p>
+          <p className="text-t4 text-xs mt-0.5">{message}</p>
         </div>
         <div className="flex gap-2 justify-end">
           <button
             onMouseDown={(e) => { e.preventDefault(); onCancel(); }}
-            className="px-3 py-1 rounded-md text-xs text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+            className="px-3 py-1 rounded-md text-xs text-t3 hover:text-t2 hover:bg-s2 transition-colors"
           >
             Cancel
           </button>

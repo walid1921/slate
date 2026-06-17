@@ -52,7 +52,7 @@ const PRIORITY_COLOR: Record<Priority, string> = {
 };
 
 const PRIORITY_DOT: Record<Priority, string> = {
-  none: "bg-white/20",
+  none: "bg-t5",
   low: "bg-blue-400",
   medium: "bg-yellow-400",
   high: "bg-red-400",

@@ -18,26 +18,30 @@
   --c-text-6: rgba(255,255,255,0.10);
   --c-input-placeholder: rgba(255,255,255,0.22);
   --c-scrollbar: rgba(255,255,255,0.12);
+  --c-root-bg: rgba(20,20,22,0.6);
+  --c-root-border: rgba(255,255,255,0.08);
 }
 
 [data-theme="light"] {
-  --c-bg: #ebebee;
-  --c-nav: rgba(220,220,226,0.97);
-  --c-surface-1: rgba(0,0,0,0.04);
-  --c-surface-2: rgba(0,0,0,0.07);
-  --c-surface-3: rgba(0,0,0,0.12);
-  --c-border-subtle: rgba(0,0,0,0.07);
-  --c-border: rgba(0,0,0,0.12);
-  --c-tooltip: rgba(220,220,226,0.98);
-  --c-dropdown: rgba(218,218,224,0.99);
-  --c-text-1: rgba(0,0,0,0.85);
-  --c-text-2: rgba(0,0,0,0.60);
-  --c-text-3: rgba(0,0,0,0.40);
-  --c-text-4: rgba(0,0,0,0.28);
-  --c-text-5: rgba(0,0,0,0.18);
-  --c-text-6: rgba(0,0,0,0.10);
-  --c-input-placeholder: rgba(0,0,0,0.25);
-  --c-scrollbar: rgba(0,0,0,0.15);
+  --c-bg: #f4f4f6;
+  --c-nav: rgba(232,232,236,0.98);
+  --c-surface-1: rgba(255,255,255,0.70);
+  --c-surface-2: rgba(255,255,255,0.85);
+  --c-surface-3: rgba(0,0,0,0.07);
+  --c-border-subtle: rgba(0,0,0,0.06);
+  --c-border: rgba(0,0,0,0.10);
+  --c-tooltip: rgba(255,255,255,0.97);
+  --c-dropdown: rgba(252,252,254,0.99);
+  --c-text-1: rgba(0,0,0,0.86);
+  --c-text-2: rgba(0,0,0,0.58);
+  --c-text-3: rgba(0,0,0,0.38);
+  --c-text-4: rgba(0,0,0,0.26);
+  --c-text-5: rgba(0,0,0,0.16);
+  --c-text-6: rgba(0,0,0,0.08);
+  --c-input-placeholder: rgba(0,0,0,0.22);
+  --c-scrollbar: rgba(0,0,0,0.14);
+  --c-root-bg: rgba(244,244,246,1);
+  --c-root-border: rgba(0,0,0,0.10);
 }
 
 /* Semantic text utilities */
@@ -47,6 +51,7 @@
 .text-t4 { color: var(--c-text-4); }
 .text-t5 { color: var(--c-text-5); }
 .text-t6 { color: var(--c-text-6); }
+.bg-t5 { background-color: var(--c-text-5); }
 .hover\:text-t1:hover { color: var(--c-text-1); }
 .hover\:text-t2:hover { color: var(--c-text-2); }
 .hover\:text-t3:hover { color: var(--c-text-3); }
@@ -109,9 +114,9 @@ body {
 #root {
   width: 100vw;
   height: 100vh;
-  background: rgba(20, 20, 22, 0.6);
+  background: var(--c-root-bg);
   border-radius: 12px;
   overflow: hidden;
-  outline: 1px solid rgba(255, 255, 255, 0.08);
+  outline: 1px solid var(--c-root-border);
   outline-offset: -1px;
 }
