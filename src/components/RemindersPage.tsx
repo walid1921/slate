@@ -116,8 +116,17 @@ function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: ()
   );
 }
 
-function ReminderRow({ r, onDeleteRequest, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; focused?: boolean; onFocus?: () => void }) {
-  const { update } = useReminderStore();
+function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; onConfirm: (title: string, msg: string, fn: () => void) => void; focused?: boolean; onFocus?: () => void }) {
+  const { update, markSent } = useReminderStore();
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(null); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menu]);
   const [editingText, setEditingText] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
   const [textVal, setTextVal] = useState(r.text);
@@ -149,9 +158,45 @@ function ReminderRow({ r, onDeleteRequest, focused, onFocus }: { r: Reminder; on
   return (
     <div
       onClick={onFocus}
-      className={`group/row flex items-center gap-3 px-5 py-3 border-b border-s transition-colors cursor-default ${!focused ? "hover:bg-s1" : ""}`}
+      onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
+      className={`group/row relative flex items-center gap-3 px-5 py-3 border-b border-s transition-colors cursor-default ${!focused ? "hover:bg-s1" : ""}`}
       style={{ minHeight: 56, background: focused ? "var(--c-surface-2)" : undefined }}
     >
+      {menu && (
+        <div
+          ref={menuRef}
+          className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]"
+          style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
+        >
+          {!r.notified && (
+            <button
+              onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id)); setMenu(null); }}
+              className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
+            >
+              Send now
+            </button>
+          )}
+          <button
+            onClick={() => { setEditingText(true); setMenu(null); }}
+            className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
+          >
+            Edit text
+          </button>
+          <button
+            onClick={() => { setEditingTime(true); setMenu(null); }}
+            className="w-full text-left px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors"
+          >
+            Edit time
+          </button>
+          <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
+          <button
+            onClick={() => { onDeleteRequest(); setMenu(null); }}
+            className="w-full text-left px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      )}
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
         r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
       }`} style={r.notified ? { background: "var(--c-text-5)" } : {}} />
@@ -298,13 +343,13 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
             {filter !== "sent" && upcoming.length > 0 && (
               <>
                 <p className="px-5 pt-2 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Upcoming</p>
-                {upcoming.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {upcoming.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} onConfirm={onConfirm} />)}
               </>
             )}
             {filter !== "upcoming" && done.length > 0 && (
               <>
                 <p className="px-5 pt-3 pb-1 text-[10px] text-t4 uppercase tracking-widest select-none">Sent</p>
-                {done.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} />)}
+                {done.map((r) => <ReminderRow key={r.id} r={r} focused={visible.indexOf(r) === focusedIdx} onFocus={() => setFocusedIdx(visible.indexOf(r))} onDeleteRequest={() => onDeleteRequest(r.id)} onConfirm={onConfirm} />)}
               </>
             )}
           </>
