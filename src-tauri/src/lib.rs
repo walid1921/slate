@@ -1,14 +1,7 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
-use tauri::tray::{TrayIconBuilder, TrayIconEvent};
+use tauri::tray::TrayIconEvent;
 
 use tauri_plugin_autostart::MacosLauncher;
-
-#[tauri::command]
-fn set_tray_icon(app: AppHandle, visible: bool) {
-    if let Some(tray) = app.tray_by_id("slate-tray") {
-        let _ = tray.set_visible(visible);
-    }
-}
 
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
@@ -78,7 +71,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note, set_tray_icon])
+        .invoke_handler(tauri::generate_handler![close_quick_note])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
@@ -96,13 +89,6 @@ pub fn run() {
                     }
                 });
             }
-
-            // Create tray icon (hidden by default; toggled via set_tray_icon command)
-            let tray = TrayIconBuilder::with_id("slate-tray")
-                .icon(tauri::include_image!("icons/tray-icon.png"))
-                .icon_as_template(true)
-                .build(app)?;
-            tray.set_visible(false)?;
 
             // Wire tray click → toggle main window
             app.on_tray_icon_event(|tray, event| {
