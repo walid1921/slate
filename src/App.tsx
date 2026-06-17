@@ -196,7 +196,7 @@ function TodoRow({
   onDeleteRequest: () => void;
 }) {
   const { toggle, setPriority, updateText } = useTodoStore();
-  const { density, showDividers } = useSettingsStore();
+  const { density } = useSettingsStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
@@ -247,7 +247,7 @@ function TodoRow({
         background: focused ? "var(--c-surface-2)" : undefined,
       }}
       className={`group flex items-center gap-3 px-5 cursor-default transition-colors mx-1.5 ${
-        showDividers ? "border-b border-s rounded-none" : "rounded-lg"
+        "border-b border-s rounded-none"
       } ${focused ? "" : "hover:bg-s1"}`}
     >
       {/* Drag handle */}

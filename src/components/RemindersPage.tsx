@@ -148,7 +148,7 @@ function ReminderRow({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () 
 
   return (
     <div
-      className="group/row flex items-center gap-3 px-5 rounded-lg mx-1.5 hover:bg-s1 transition-colors"
+      className="group/row flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors"
       style={{ minHeight: 52 }}
     >
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${

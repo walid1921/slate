@@ -14,7 +14,6 @@ export interface Settings {
   defaultPriority: Priority;
   defaultSort: DefaultSort;
   showDoneAtBottom: boolean;
-  showDividers: boolean;
   tasksViewMode: ViewMode;
   remindersViewMode: ViewMode;
   reminderInterval: 30 | 60 | 300;
@@ -32,7 +31,6 @@ const DEFAULTS: Settings = {
   defaultPriority: "none",
   defaultSort: "manual",
   showDoneAtBottom: false,
-  showDividers: false,
   tasksViewMode: "list",
   remindersViewMode: "list",
   reminderInterval: 30,

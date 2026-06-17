@@ -79,7 +79,7 @@ function Divider() {
 }
 
 export default function SettingsPage() {
-  const { theme, density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, showDividers, reminderInterval, set, reset } = useSettingsStore();
+  const { theme, density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, reminderInterval, set, reset } = useSettingsStore();
 
   return (
     <div className="view-animate overflow-y-auto flex-1 py-3">
@@ -105,10 +105,6 @@ export default function SettingsPage() {
             value={density}
             onChange={(v) => set("density", v)}
           />
-        </Row>
-        <Divider />
-        <Row label="Dividers between tasks" hint="Show a soft line separating each task">
-          <Toggle value={showDividers} onChange={(v) => set("showDividers", v)} />
         </Row>
       </Section>
 
