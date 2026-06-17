@@ -11,6 +11,8 @@ import GuidePage from "./components/GuidePage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
+import SettingsPage from "./components/SettingsPage";
+import { useSettingsStore } from "./settingsStore";
 import {
   DndContext,
   closestCenter,
@@ -108,6 +110,7 @@ function TodoRow({
   onDeleteRequest: () => void;
 }) {
   const { toggle, setPriority, updateText } = useTodoStore();
+  const { density } = useSettingsStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
@@ -150,7 +153,7 @@ function TodoRow({
       onMouseEnter={() => setShowMeta(true)}
       onMouseLeave={() => setShowMeta(false)}
       style={{
-        minHeight: 52,
+        minHeight: density === "compact" ? 40 : density === "comfortable" ? 64 : 52,
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
@@ -274,17 +277,18 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue } = useReminderStore();
   const { notes, add: addNote } = useNotesStore();
+  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
-  type View = "main" | "trash" | "reminders" | "guide" | "notes";
-  type NavView = "main" | "reminders" | "notes";
+  type View = "main" | "trash" | "reminders" | "guide" | "notes" | "settings";
+  type NavView = "main" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
   const [lastNavView, setLastNavView] = useState<NavView>("main");
 
   const navigate = useCallback((v: View) => {
-    if (v === "main" || v === "reminders" || v === "notes") setLastNavView(v);
+    if (v === "main" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -296,6 +300,7 @@ export default function App() {
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void) => {
+    if (!settingsConfirmDelete) { onConfirm(); return; }
     setConfirmDelete({ title, message, onConfirm });
   }, []);
 
@@ -314,9 +319,9 @@ export default function App() {
   // Background notification checker — runs every 30s
   useEffect(() => {
     checkDue();
-    const interval = setInterval(checkDue, 30_000);
+    const interval = setInterval(checkDue, reminderInterval * 1000);
     return () => clearInterval(interval);
-  }, [checkDue]);
+  }, [checkDue, reminderInterval]);
 
   const openTrash = useCallback(() => {
     loadTrash();
@@ -359,6 +364,8 @@ export default function App() {
 
   const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
+  const activeSort = todoSort === "manual" ? defaultSort : todoSort;
+
   const filtered = todos
     .filter((t) => query ? t.text.toLowerCase().includes(query.toLowerCase()) : true)
     .filter((t) => {
@@ -367,10 +374,11 @@ export default function App() {
       return true;
     })
     .sort((a, b) => {
-      if (todoSort === "manual") return 0; // preserve store order
-      if (todoSort === "az") return a.text.localeCompare(b.text);
-      if (todoSort === "priority") return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
-      if (todoSort === "due") {
+      if (showDoneAtBottom && a.done !== b.done) return a.done ? 1 : -1;
+      if (activeSort === "manual") return 0;
+      if (activeSort === "az") return a.text.localeCompare(b.text);
+      if (activeSort === "priority") return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      if (activeSort === "due") {
         const da = a.due_date ? new Date(`${a.due_date}T${a.due_time ?? "23:59:59"}`) : null;
         const db = b.due_date ? new Date(`${b.due_date}T${b.due_time ?? "23:59:59"}`) : null;
         if (!da && !db) return 0;
@@ -432,7 +440,7 @@ export default function App() {
           setQuery("");
           return;
         }
-        add(val);
+        add(val, defaultPriority);
         setInputVal("");
         setQuery("");
         setFocusedIdx(-1);
@@ -501,7 +509,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", guide: "Guide", notes: "Notes" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", guide: "Guide", notes: "Notes", settings: "Settings" };
 
   return (
     <div
@@ -684,6 +692,7 @@ export default function App() {
 
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => askConfirm("Delete note?", "This note will be permanently deleted.", () => useNotesStore.getState().remove(id))} />}
+      {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}
       {true && (
@@ -698,6 +707,8 @@ export default function App() {
                 ? `${trash.length} deleted`
                 : view === "guide"
                 ? "Guide"
+                : view === "settings"
+                ? "Settings"
                 : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
             </span>
             <div className="absolute left-1/2 -translate-x-1/2">
@@ -712,7 +723,7 @@ export default function App() {
                     borderRadius: 5,
                     background: "rgba(255,255,255,0.12)",
                     left: "2px",
-                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "reminders" ? "32px" : "64px"})`,
+                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "reminders" ? "32px" : lastNavView === "notes" ? "64px" : "96px"})`,
                   }}
                 />
                 <button
@@ -743,6 +754,16 @@ export default function App() {
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
                     <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => navigate("settings")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "settings" ? "text-white/80" : "text-white/30 hover:text-white/55"}`}
+                >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Settings</span>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="6.5" cy="6.5" r="2" stroke="currentColor" strokeWidth="1.2" />
+                    <path d="M6.5 1v1.2M6.5 10.8V12M1 6.5h1.2M10.8 6.5H12M2.4 2.4l.85.85M9.75 9.75l.85.85M9.75 3.25l-.85.85M3.25 9.75l-.85.85" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>
