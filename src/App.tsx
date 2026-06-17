@@ -251,16 +251,20 @@ function TodoRow({
           </button>
           <div className="flex items-center gap-2 px-3 py-1.5">
             {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => { setPriority(todo.id, p); setMenu(null); }}
-                className="rounded-full transition-opacity hover:opacity-80"
-              >
-                <span
-                  className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
-                  style={todo.priority === p ? { outline: "0.3px solid white", outlineOffset: "1.5px" } : {}}
-                />
-              </button>
+              <div key={p} className="group/dot relative">
+                <button
+                  onClick={() => { setPriority(todo.id, p); setMenu(null); }}
+                  className="rounded-full transition-opacity hover:opacity-80"
+                >
+                  <span
+                    className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
+                    style={todo.priority === p ? { outline: "0.3px solid white", outlineOffset: "1.5px" } : {}}
+                  />
+                </button>
+                <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 capitalize" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>
+                  {p === "none" ? "No priority" : p}
+                </span>
+              </div>
             ))}
           </div>
           <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
