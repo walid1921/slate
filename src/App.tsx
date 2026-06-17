@@ -253,7 +253,6 @@ function TodoRow({
             {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
               <button
                 key={p}
-                title={p}
                 onClick={() => { setPriority(todo.id, p); setMenu(null); }}
                 className="flex items-center justify-center w-6 h-6 rounded-full transition-colors hover:bg-s3"
                 style={todo.priority === p ? { outline: "1.5px solid var(--c-text-3)", outlineOffset: "0.5px" } : {}}
