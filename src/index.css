@@ -9,7 +9,7 @@
   --c-border-subtle: rgba(255,255,255,0.05);
   --c-border: rgba(255,255,255,0.09);
   --c-tooltip: rgba(30,30,34,0.97);
-  --c-dropdown: rgba(28,28,32,0.98);
+  --c-dropdown: rgba(22,22,26,0.75);
   --c-text-1: rgba(255,255,255,0.88);
   --c-text-2: rgba(255,255,255,0.65);
   --c-text-3: rgba(255,255,255,0.42);
@@ -31,7 +31,7 @@
   --c-border-subtle: rgba(0,0,0,0.06);
   --c-border: rgba(0,0,0,0.10);
   --c-tooltip: rgba(255,255,255,0.97);
-  --c-dropdown: rgba(252,252,254,0.99);
+  --c-dropdown: rgba(240,240,244,0.75);
   --c-text-1: rgba(0,0,0,0.86);
   --c-text-2: rgba(0,0,0,0.58);
   --c-text-3: rgba(0,0,0,0.38);
@@ -61,6 +61,14 @@
 .hover\:bg-s1:hover { background: var(--c-surface-1); }
 .hover\:bg-s2:hover { background: var(--c-surface-2); }
 .hover\:bg-s3:hover { background: var(--c-surface-3); }
+
+/* Frosted-glass dropdown / modal */
+.dropdown {
+  background: var(--c-dropdown);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--c-border);
+}
 
 /* Border */
 .border-s { border-color: var(--c-border-subtle); }

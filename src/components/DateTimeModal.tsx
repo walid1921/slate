@@ -45,8 +45,7 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
       onKeyDown={(e) => { e.stopPropagation(); handleKey(e); }}
     >
       <div
-        className="w-72 rounded-xl shadow-2xl p-5 flex flex-col gap-4"
-        style={{ background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
+        className="dropdown w-72 rounded-xl shadow-2xl p-5 flex flex-col gap-4"
       >
         <div>
           <p className="text-t1 text-sm font-medium truncate">{title}</p>

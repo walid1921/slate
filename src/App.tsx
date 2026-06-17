@@ -245,7 +245,7 @@ function TodoRow({
       className={`group relative flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}
     >
       {menu && (
-        <div ref={menuRef} className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[170px]" style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}>
+        <div ref={menuRef} className="dropdown fixed z-50 rounded-lg shadow-xl py-1 min-w-[170px]" style={{ left: menu.x, top: menu.y }}>
           <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
             <Pencil size={12} className="text-t4" /><span>Edit task</span>
           </button>

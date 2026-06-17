@@ -88,8 +88,8 @@ function SortMenu({
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-1 z-50 py-0.5 min-w-[110px]"
-          style={{ background: "var(--c-dropdown)", border: "1px solid var(--c-border)", borderRadius: 8 }}
+          className="dropdown absolute right-0 top-full mt-1 z-50 py-0.5 min-w-[110px]"
+          style={{ borderRadius: 8 }}
         >
           {options.map((opt) => (
             <button

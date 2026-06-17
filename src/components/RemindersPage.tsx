@@ -165,8 +165,8 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
       {menu && (
         <div
           ref={menuRef}
-          className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]"
-          style={{ left: menu.x, top: menu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}
+          className="dropdown fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]"
+          style={{ left: menu.x, top: menu.y }}
         >
           {!r.notified && (
             <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-blue-400 bg-blue-500/20 hover:bg-blue-500/30"); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">

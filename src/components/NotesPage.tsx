@@ -121,7 +121,7 @@ export default function NotesPage({ onDeleteRequest }: {
           )}
         </div>
       {noteMenu && (
-        <div ref={noteMenuRef} className="fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]" style={{ left: noteMenu.x, top: noteMenu.y, background: "var(--c-dropdown)", border: "1px solid var(--c-border)" }}>
+        <div ref={noteMenuRef} className="dropdown fixed z-50 rounded-lg shadow-xl py-1 min-w-[160px]" style={{ left: noteMenu.x, top: noteMenu.y }}>
           <button onClick={() => { onDeleteRequest(noteMenu.id); setNoteMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
             <Trash2 size={12} /><span>Delete</span>
           </button>
