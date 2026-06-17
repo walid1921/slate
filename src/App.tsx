@@ -12,6 +12,7 @@ import {
   FileText,
   Settings as SettingsIcon,
   Trash2,
+  CheckCheck,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -791,12 +792,26 @@ export default function App() {
             </div>
             <div className="ml-auto flex items-center gap-2">
               {view === "main" && todos.some((t) => t.done) && (
-                <button
-                  onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
-                  className="text-[11px] text-white/25 hover:text-white/55 transition-colors px-1"
-                >
-                  Clear done
-                </button>
+                <div className="group/clear relative">
+                  <button
+                    onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
+                    className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                  >
+                    <CheckCheck size={13} />
+                  </button>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/clear:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Clear done</span>
+                </div>
+              )}
+              {view === "reminders" && allReminders.some((r) => r.notified) && (
+                <div className="group/clearsent relative">
+                  <button
+                    onClick={() => askConfirm("Clear sent?", "All sent reminders will be deleted.", () => allReminders.filter((r) => r.notified).forEach((r) => useReminderStore.getState().remove(r.id)))}
+                    className="w-7 h-5 flex items-center justify-center text-white/25 hover:text-white/55 transition-colors"
+                  >
+                    <CheckCheck size={13} />
+                  </button>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-white/70 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "rgba(30,30,34,0.95)", border: "1px solid rgba(255,255,255,0.08)" }}>Clear sent</span>
+                </div>
               )}
               <div className="group/trash relative">
                 <button
