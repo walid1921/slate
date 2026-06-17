@@ -549,8 +549,8 @@ export default function App() {
   // Global keydown — Delete focused row, ArrowUp/Down when input not focused
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (document.activeElement === inputRef.current) return;
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
+      if (document.activeElement === inputRef.current) return;
       if (e.key === "Backspace" || e.key === "Delete") {
         const todo = filtered[focusedIdx];
         if (todo) askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id));
