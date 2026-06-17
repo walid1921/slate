@@ -256,7 +256,7 @@ function TodoRow({
                 title={p}
                 onClick={() => { setPriority(todo.id, p); setMenu(null); }}
                 className="flex items-center justify-center w-6 h-6 rounded-full transition-colors hover:bg-s3"
-                style={todo.priority === p ? { outline: "2px solid var(--c-text-3)", outlineOffset: 1 } : {}}
+                style={todo.priority === p ? { outline: "1.5px solid var(--c-text-3)", outlineOffset: "0.5px" } : {}}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${PRIORITY_DOT[p]}`} />
               </button>
