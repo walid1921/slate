@@ -22,7 +22,6 @@ import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import RemindersPage from "./components/RemindersPage";
-import GuidePage from "./components/GuidePage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
@@ -342,12 +341,12 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
-  const { showDoneAtBottom, confirmDelete: settingsConfirmDelete, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
+  const { showDoneAtBottom, defaultSort, defaultPriority, reminderInterval, tasksViewMode, set: setSetting, theme } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
-  type View = "main" | "trash" | "reminders" | "guide" | "notes" | "settings";
+  type View = "main" | "trash" | "reminders" | "notes" | "settings";
   type NavView = "main" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
   const [lastNavView, setLastNavView] = useState<NavView>("main");
@@ -365,7 +364,6 @@ export default function App() {
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
-    if (!settingsConfirmDelete) { onConfirm(); return; }
     setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
   }, []);
 
@@ -594,7 +592,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", guide: "Guide", notes: "Notes", settings: "Settings" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", notes: "Notes", settings: "Settings" };
 
   return (
     <div
@@ -611,18 +609,6 @@ export default function App() {
         {view !== "main" && <BackButton />}
         <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         <div className="ml-auto flex items-center gap-3">
-          {view === "main" && (
-            <div className="group/guide relative">
-              <button
-                onClick={() => navigate("guide")}
-                className="text-t5 hover:text-t2 transition-colors text-[11px] w-4 h-4 rounded-full border flex items-center justify-center"
-                style={{ borderColor: "var(--c-border-subtle)" }}
-              >
-                ?
-              </button>
-              <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/guide:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Guide</span>
-            </div>
-          )}
           {view === "trash" && trash.length > 0 && (
             <>
               <button
@@ -785,9 +771,6 @@ export default function App() {
       {/* Reminders view */}
       {view === "reminders" && <RemindersPage key="reminders" onDeleteRequest={(id) => { const r = useReminderStore.getState().reminders.find(r => r.id === id); askConfirm("Delete reminder?", `"${r?.text ?? "This reminder"}" will be deleted.`, () => useReminderStore.getState().remove(id)); }} onConfirm={askConfirm} />}
 
-      {/* Guide view */}
-      {view === "guide" && <GuidePage />}
-
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => { const n = useNotesStore.getState().notes.find(n => n.id === id); askConfirm("Delete note?", `"${n?.title ?? "This note"}" will be permanently deleted.`, () => useNotesStore.getState().remove(id)); }} />}
       {view === "settings" && <SettingsPage />}
@@ -803,8 +786,6 @@ export default function App() {
                 ? `${notes.length} note${notes.length !== 1 ? "s" : ""}`
                 : view === "trash"
                 ? `${trash.length} deleted`
-                : view === "guide"
-                ? "Guide"
                 : view === "settings"
                 ? "Settings"
                 : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}

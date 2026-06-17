@@ -1,5 +1,77 @@
-import { useSettingsStore, Density, DefaultSort, Theme } from "../settingsStore";
-import { Priority } from "../store";
+import { useSettingsStore, Density, Theme } from "../settingsStore";
+
+const guideSections = [
+  {
+    title: "Adding Tasks",
+    items: [
+      { keys: ["Type anything", "↵"], desc: "Add a new task" },
+      { keys: ["/tm", "task name", "↵"], desc: "Add a task with a deadline — picks date & time" },
+      { keys: ["/rm", "reminder text", "↵"], desc: "Add a reminder — navigates to Reminders after" },
+      { keys: ["/nt", "title", "↵"], desc: "Create a new note — opens it immediately" },
+    ],
+  },
+  {
+    title: "Keyboard Navigation",
+    items: [
+      { keys: ["↑ ↓"], desc: "Navigate through tasks" },
+      { keys: ["Space"], desc: "Toggle task done / undone" },
+      { keys: ["⌫ Delete"], desc: "Move focused task to trash" },
+      { keys: ["Esc"], desc: "Close Slate" },
+      { keys: ["⌥S"], desc: "Toggle Slate from anywhere" },
+    ],
+  },
+  {
+    title: "Task Actions",
+    items: [
+      { keys: ["Right-click task"], desc: "Open context menu — edit, set priority, delete" },
+      { keys: ["Double-click text"], desc: "Edit task text inline — Enter to save, Esc to cancel" },
+      { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks manually" },
+    ],
+  },
+  {
+    title: "Search & Filter",
+    items: [
+      { keys: ["Type to search"], desc: "Input doubles as a live search filter" },
+      { keys: ["✕ button"], desc: "Clear search and return to full list" },
+      { keys: ["Filter bar"], desc: "Filter by All / Active / Done" },
+      { keys: ["Sort menu"], desc: "Sort by manual order, due date, priority, or A–Z" },
+    ],
+  },
+  {
+    title: "Due Dates & Countdown",
+    items: [
+      { keys: ["/tm", "task", "↵"], desc: "Set deadline via date & time picker" },
+      { keys: ["Countdown"], desc: "Shows months · days · hours · minutes · seconds live" },
+      { keys: ["Red label"], desc: "Task is overdue — notification fired" },
+    ],
+  },
+  {
+    title: "Reminders",
+    items: [
+      { keys: ["Footer → ⏱"], desc: "View all upcoming and sent reminders" },
+      { keys: ["Right-click reminder"], desc: "Send now, edit text/time, or delete" },
+      { keys: ["Blue dot"], desc: "Upcoming reminder" },
+      { keys: ["Red dot"], desc: "Overdue — notification hasn't fired yet" },
+      { keys: ["Grey dot · sent"], desc: "Notification already fired" },
+    ],
+  },
+  {
+    title: "Notes",
+    items: [
+      { keys: ["Footer → 📄"], desc: "Open notes — split view with list and editor" },
+      { keys: ["+ button"], desc: "Create a new note" },
+      { keys: ["Auto-save"], desc: "Notes save automatically after 500ms" },
+    ],
+  },
+  {
+    title: "Deleted",
+    items: [
+      { keys: ["Footer → 🗑"], desc: "View all deleted tasks, reminders and notes" },
+      { keys: ["↺"], desc: "Restore an item back to its list" },
+      { keys: ["✕"], desc: "Permanently delete an item" },
+    ],
+  },
+];
 
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -38,9 +110,7 @@ function SegmentedControl<T extends string>({
           key={opt.value}
           onClick={() => onChange(opt.value)}
           className={`flex-1 px-2 py-0.5 rounded-md text-[11px] transition-colors ${
-            value === opt.value
-              ? "text-t1"
-              : "text-t4 hover:text-t3"
+            value === opt.value ? "text-t1" : "text-t4 hover:text-t3"
           }`}
           style={value === opt.value ? { background: "var(--c-surface-3)" } : {}}
         >
@@ -79,7 +149,7 @@ function Divider() {
 }
 
 export default function SettingsPage() {
-  const { theme, density, confirmDelete, defaultPriority, defaultSort, showDoneAtBottom, reminderInterval, set, reset } = useSettingsStore();
+  const { theme, density, showDoneAtBottom, reminderInterval, set, reset } = useSettingsStore();
 
   return (
     <div className="view-animate overflow-y-auto flex-1 py-3">
@@ -106,34 +176,6 @@ export default function SettingsPage() {
             onChange={(v) => set("density", v)}
           />
         </Row>
-      </Section>
-
-      <Section title="Tasks">
-        <Row label="Default priority" hint="Priority assigned to new tasks">
-          <SegmentedControl<Priority>
-            options={[
-              { value: "none", label: "None" },
-              { value: "low", label: "Low" },
-              { value: "medium", label: "Med" },
-              { value: "high", label: "High" },
-            ]}
-            value={defaultPriority}
-            onChange={(v) => set("defaultPriority", v)}
-          />
-        </Row>
-        <Divider />
-        <Row label="Default sort" hint="How new tasks are ordered">
-          <SegmentedControl<DefaultSort>
-            options={[
-              { value: "manual", label: "Manual" },
-              { value: "due", label: "Due" },
-              { value: "priority", label: "Priority" },
-              { value: "az", label: "A–Z" },
-            ]}
-            value={defaultSort}
-            onChange={(v) => set("defaultSort", v)}
-          />
-        </Row>
         <Divider />
         <Row label="Done tasks at bottom" hint="Separate completed tasks visually">
           <Toggle value={showDoneAtBottom} onChange={(v) => set("showDoneAtBottom", v)} />
@@ -141,10 +183,6 @@ export default function SettingsPage() {
       </Section>
 
       <Section title="Behavior">
-        <Row label="Confirm before delete" hint="Show a confirmation dialog on delete">
-          <Toggle value={confirmDelete} onChange={(v) => set("confirmDelete", v)} />
-        </Row>
-        <Divider />
         <Row label="Reminder check interval" hint="How often to check for due reminders">
           <SegmentedControl<string>
             options={[
@@ -170,6 +208,39 @@ export default function SettingsPage() {
           </button>
         </Row>
       </Section>
+
+      <div className="mb-4">
+        <p className="px-4 pb-1.5 text-[10px] text-t4 uppercase tracking-widest select-none">Guide</p>
+        {guideSections.map((section) => (
+          <div key={section.title} className="mb-3">
+            <p className="px-4 pb-1 text-[10px] text-t5 uppercase tracking-widest select-none">{section.title}</p>
+            <div className="rounded-xl overflow-hidden mx-1" style={{ background: "var(--c-surface-1)" }}>
+              {section.items.map((item, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center gap-3 px-4 py-2 ${i < section.items.length - 1 ? "border-b border-s" : ""}`}
+                >
+                  <div className="flex items-center gap-1 shrink-0 flex-wrap">
+                    {item.keys.map((k, ki) => (
+                      <span key={ki} className="flex items-center gap-1">
+                        <kbd
+                          className="px-1.5 py-0.5 rounded text-[11px] font-mono text-t2"
+                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+                        >
+                          {k}
+                        </kbd>
+                        {ki < item.keys.length - 1 && <span className="text-t5 text-[10px]">+</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-[12px] text-t3 ml-auto text-right">{item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        <p className="text-center text-[11px] text-t5 pt-1 pb-1 select-none">Type / in the main input to see all available commands</p>
+      </div>
 
       <p className="text-center text-[10px] text-t6 pb-2 select-none">Slate · settings are saved locally</p>
     </div>
