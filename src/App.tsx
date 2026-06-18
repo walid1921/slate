@@ -761,6 +761,14 @@ export default function App() {
 
             {/* Preview cards */}
             <div className="grid grid-cols-4 gap-3">
+              {/* Weather */}
+              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(125,125,125,0.07)", border: "1px solid rgba(125,125,125,0.2)" }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Weather</span>
+                </div>
+                <WeatherWidget />
+              </div>
+
               {/* Tasks */}
               <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
                 <div className="flex items-center gap-1.5">
@@ -806,13 +814,6 @@ export default function App() {
                 </div>
               </button>
 
-              {/* Weather */}
-              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(125,125,125,0.07)", border: "1px solid rgba(125,125,125,0.2)" }}>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Weather</span>
-                </div>
-                <WeatherWidget />
-              </div>
             </div>
           </div>
         </div>
