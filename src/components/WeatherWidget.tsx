@@ -1,78 +1,102 @@
 import { useEffect, useState } from "react";
 
 const WMO: Record<number, { label: string; emoji: string }> = {
-  0:  { label: "Clear sky",       emoji: "☀️" },
-  1:  { label: "Mainly clear",    emoji: "🌤️" },
-  2:  { label: "Partly cloudy",   emoji: "⛅" },
-  3:  { label: "Overcast",        emoji: "☁️" },
-  45: { label: "Fog",             emoji: "🌫️" },
-  48: { label: "Icy fog",         emoji: "🌫️" },
-  51: { label: "Light drizzle",   emoji: "🌦️" },
-  53: { label: "Drizzle",         emoji: "🌦️" },
-  55: { label: "Heavy drizzle",   emoji: "🌧️" },
-  61: { label: "Light rain",      emoji: "🌧️" },
-  63: { label: "Rain",            emoji: "🌧️" },
-  65: { label: "Heavy rain",      emoji: "🌧️" },
-  71: { label: "Light snow",      emoji: "🌨️" },
-  73: { label: "Snow",            emoji: "❄️" },
-  75: { label: "Heavy snow",      emoji: "❄️" },
-  80: { label: "Rain showers",    emoji: "🌦️" },
-  81: { label: "Showers",         emoji: "🌧️" },
-  82: { label: "Heavy showers",   emoji: "⛈️" },
-  95: { label: "Thunderstorm",    emoji: "⛈️" },
-  96: { label: "Thunderstorm",    emoji: "⛈️" },
-  99: { label: "Thunderstorm",    emoji: "⛈️" },
+  113: { label: "Clear",          emoji: "☀️" },
+  116: { label: "Partly cloudy",  emoji: "⛅" },
+  119: { label: "Cloudy",         emoji: "☁️" },
+  122: { label: "Overcast",       emoji: "☁️" },
+  143: { label: "Fog",            emoji: "🌫️" },
+  176: { label: "Light rain",     emoji: "🌦️" },
+  179: { label: "Light snow",     emoji: "🌨️" },
+  182: { label: "Sleet",          emoji: "🌧️" },
+  185: { label: "Freezing drizzle", emoji: "🌧️" },
+  200: { label: "Thundery",       emoji: "⛈️" },
+  227: { label: "Blowing snow",   emoji: "❄️" },
+  230: { label: "Blizzard",       emoji: "❄️" },
+  248: { label: "Fog",            emoji: "🌫️" },
+  260: { label: "Freezing fog",   emoji: "🌫️" },
+  263: { label: "Drizzle",        emoji: "🌦️" },
+  266: { label: "Drizzle",        emoji: "🌦️" },
+  281: { label: "Freezing drizzle", emoji: "🌧️" },
+  284: { label: "Freezing drizzle", emoji: "🌧️" },
+  293: { label: "Light rain",     emoji: "🌦️" },
+  296: { label: "Light rain",     emoji: "🌦️" },
+  299: { label: "Moderate rain",  emoji: "🌧️" },
+  302: { label: "Moderate rain",  emoji: "🌧️" },
+  305: { label: "Heavy rain",     emoji: "🌧️" },
+  308: { label: "Heavy rain",     emoji: "🌧️" },
+  311: { label: "Sleet",          emoji: "🌧️" },
+  314: { label: "Sleet",          emoji: "🌧️" },
+  317: { label: "Sleet",          emoji: "🌧️" },
+  320: { label: "Light snow",     emoji: "🌨️" },
+  323: { label: "Light snow",     emoji: "🌨️" },
+  326: { label: "Light snow",     emoji: "🌨️" },
+  329: { label: "Moderate snow",  emoji: "❄️" },
+  332: { label: "Moderate snow",  emoji: "❄️" },
+  335: { label: "Heavy snow",     emoji: "❄️" },
+  338: { label: "Heavy snow",     emoji: "❄️" },
+  350: { label: "Ice pellets",    emoji: "🌧️" },
+  353: { label: "Light showers",  emoji: "🌦️" },
+  356: { label: "Showers",        emoji: "🌧️" },
+  359: { label: "Heavy showers",  emoji: "🌧️" },
+  362: { label: "Sleet showers",  emoji: "🌧️" },
+  365: { label: "Sleet showers",  emoji: "🌧️" },
+  368: { label: "Snow showers",   emoji: "🌨️" },
+  371: { label: "Snow showers",   emoji: "🌨️" },
+  374: { label: "Ice showers",    emoji: "🌧️" },
+  377: { label: "Ice showers",    emoji: "🌧️" },
+  386: { label: "Thunderstorm",   emoji: "⛈️" },
+  389: { label: "Thunderstorm",   emoji: "⛈️" },
+  392: { label: "Snowy thunder",  emoji: "⛈️" },
+  395: { label: "Snowy thunder",  emoji: "⛈️" },
 };
 
-function wmo(code: number) {
-  return WMO[code] ?? { label: "Unknown", emoji: "🌡️" };
+interface WeatherState {
+  temp: number;
+  label: string;
+  emoji: string;
+  city: string;
 }
 
 export default function WeatherWidget() {
-  const [temp, setTemp] = useState<number | null>(null);
-  const [code, setCode] = useState<number | null>(null);
-  const [city, setCity] = useState<string | null>(null);
-  const [error, setError] = useState(false);
+  const [weather, setWeather] = useState<WeatherState | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        try {
-          const { latitude: lat, longitude: lon } = coords;
-
-          const [weatherRes, geoRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
-          ]);
-
-          const weather = await weatherRes.json();
-          setTemp(Math.round(weather.current.temperature_2m));
-          setCode(weather.current.weather_code);
-
-          const geo = await geoRes.json();
-          setCity(geo.address?.city || geo.address?.town || geo.address?.village || null);
-        } catch {
-          setError(true);
-        }
-      },
-      () => setError(true),
-      { timeout: 8000 }
-    );
+    fetch("https://wttr.in/?format=j1")
+      .then((r) => r.json())
+      .then((data) => {
+        const current = data.current_condition?.[0];
+        const area = data.nearest_area?.[0];
+        const code = parseInt(current?.weatherCode ?? "113", 10);
+        const temp = parseInt(current?.temp_C ?? "0", 10);
+        const city = area?.areaName?.[0]?.value ?? area?.region?.[0]?.value ?? "";
+        const { label, emoji } = WMO[code] ?? { label: "", emoji: "🌡️" };
+        setWeather({ temp, label, emoji, city });
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  if (error || (temp === null && code === null)) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1.5 select-none">
+        <span className="text-[11px] text-t5">Fetching weather…</span>
+      </div>
+    );
+  }
 
-  const w = code !== null ? wmo(code) : null;
+  if (!weather) return null;
 
   return (
     <div className="flex items-center gap-2 select-none">
-      {w && <span className="text-[18px] leading-none">{w.emoji}</span>}
-      <div className="flex flex-col">
-        <span className="text-[13px] font-medium text-t2 leading-none">
-          {temp !== null ? `${temp}°C` : "—"}
-          {w && <span className="text-t4 font-normal ml-1.5 text-[11px]">{w.label}</span>}
-        </span>
-        {city && <span className="text-[11px] text-t5 mt-0.5">{city}</span>}
+      <span className="text-[20px] leading-none">{weather.emoji}</span>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[13px] font-medium text-t2">{weather.temp}°C</span>
+          <span className="text-[11px] text-t4">{weather.label}</span>
+        </div>
+        {weather.city && <span className="text-[11px] text-t5">{weather.city}</span>}
       </div>
     </div>
   );
