@@ -563,6 +563,36 @@ function DataTab() {
   );
 }
 
+const PRIVACY_POINTS = [
+  { icon: "🔒", label: "All data stored locally", desc: "Your tasks, reminders, and notes never leave your device." },
+  { icon: "📡", label: "No internet connection required", desc: "Slate works fully offline. No server, no cloud sync." },
+  { icon: "🚫", label: "No tracking or analytics", desc: "Zero telemetry. We have no idea how you use the app." },
+  { icon: "👤", label: "No account or login", desc: "Open the app and start using it — no sign-up required." },
+  { icon: "🗄️", label: "SQLite database on your machine", desc: "Data lives in ~/Library/Application Support/slate-db/ — yours to keep or delete." },
+  { icon: "🔔", label: "Notifications only when you ask", desc: "Notification permission is requested only when you create a reminder." },
+  { icon: "🛡️", label: "No microphone, camera, or location", desc: "Slate requests no sensitive system permissions." },
+];
+
+function PrivacyTab() {
+  return (
+    <div className="overflow-y-auto flex-1 py-4 px-4">
+      <p className="px-1 pb-3 text-[11px] text-t4 select-none">Slate is built with privacy by default — no exceptions.</p>
+      <div className="flex flex-col gap-2">
+        {PRIVACY_POINTS.map((p) => (
+          <div key={p.label} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: "var(--c-surface-1)" }}>
+            <span className="text-[18px] leading-none mt-0.5 shrink-0">{p.icon}</span>
+            <div>
+              <p className="text-[13px] font-medium text-t1">{p.label}</p>
+              <p className="text-[11px] text-t4 mt-0.5">{p.desc}</p>
+            </div>
+            <span className="ml-auto text-green-400 text-[11px] font-medium shrink-0 mt-0.5">✓</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AboutTab() {
   return (
     <div className="overflow-y-auto flex-1 flex flex-col items-center justify-center gap-3 py-8 px-4">
@@ -627,7 +657,7 @@ function GuideTab() {
   );
 }
 
-type Tab = "general" | "data" | "guide" | "about";
+type Tab = "general" | "data" | "guide" | "about" | "privacy";
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
@@ -636,6 +666,7 @@ export default function SettingsPage() {
     { id: "general", label: "General" },
     { id: "data", label: "Data" },
     { id: "guide", label: "Guide" },
+    { id: "privacy", label: "Privacy" },
     { id: "about", label: "About" },
   ];
 
@@ -658,6 +689,7 @@ export default function SettingsPage() {
       {tab === "general" && <GeneralTab />}
       {tab === "data" && <DataTab />}
       {tab === "guide" && <GuideTab />}
+      {tab === "privacy" && <PrivacyTab />}
       {tab === "about" && <AboutTab />}
     </div>
   );
