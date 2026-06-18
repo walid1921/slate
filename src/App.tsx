@@ -379,8 +379,8 @@ function TodoRow({
 
 export default function App() {
   const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
-  const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
-  const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
+  const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
+  const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
@@ -666,27 +666,21 @@ export default function App() {
           <span className="text-[11px] font-semibold text-t3 tracking-widest uppercase">{VIEW_TITLE[view]}</span>
         )}
         <div className="ml-auto flex items-center gap-3">
-          {view === "trash" && trash.length > 0 && (
-            <>
-              <button
-                onClick={selected.size === trash.length ? () => setSelected(new Set()) : selectAll}
-                className="text-[11px] text-t4 hover:text-t2 transition-colors"
-              >
-                {selected.size === trash.length ? "Deselect all" : "Select all"}
-              </button>
-              {selected.size > 0 && (
-                <button
-                  onClick={() => askConfirm(
-                    "Delete selected?",
-                    `${selected.size} task${selected.size !== 1 ? "s" : ""} will be permanently deleted.`,
-                    deleteSelected
-                  )}
-                  className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
-                >
-                  Delete {selected.size === trash.length ? "all" : `(${selected.size})`}
-                </button>
+          {view === "trash" && (trash.length > 0 || reminderTrash.length > 0 || noteTrash.length > 0) && (
+            <button
+              onClick={() => askConfirm(
+                "Empty trash?",
+                "All deleted tasks, reminders, and notes will be permanently removed. This cannot be undone.",
+                async () => {
+                  await deleteAllPermanently();
+                  await deleteAllRemindersPermanently();
+                  await deleteAllNotesPermanently();
+                }
               )}
-            </>
+              className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
+            >
+              Empty trash
+            </button>
           )}
           {view === "main" && <span className="text-[11px] text-t5">⌥S</span>}
         </div>

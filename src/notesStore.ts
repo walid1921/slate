@@ -19,6 +19,7 @@ interface NotesState {
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
   deletePermanently: (id: number) => Promise<void>;
+  deleteAllPermanently: () => Promise<void>;
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
@@ -77,5 +78,11 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     const db = await getDb();
     await db.execute("DELETE FROM notes WHERE id = ?", [id]);
     set((s) => ({ trash: s.trash.filter((n) => n.id !== id) }));
+  },
+
+  deleteAllPermanently: async () => {
+    const db = await getDb();
+    await db.execute("DELETE FROM notes WHERE deleted_at IS NOT NULL");
+    set({ trash: [] });
   },
 }));

@@ -24,6 +24,7 @@ interface ReminderState {
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
   deletePermanently: (id: number) => Promise<void>;
+  deleteAllPermanently: () => Promise<void>;
   markSent: (id: number) => Promise<void>;
   checkDue: () => Promise<void>;
 }
@@ -94,6 +95,12 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
     set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
+  },
+
+  deleteAllPermanently: async () => {
+    const db = await getDb();
+    await db.execute("DELETE FROM reminders WHERE deleted_at IS NOT NULL");
+    set({ trash: [] });
   },
 
   markSent: async (id) => {
