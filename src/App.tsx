@@ -888,15 +888,17 @@ export default function App() {
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear sent</span>
                 </div>
               )}
-              <div className="group/trash relative">
-                <button
-                  onClick={openTrash}
-                  className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Deleted</span>
-              </div>
+              {view === "todos" && (
+                <div className="group/trash relative">
+                  <button
+                    onClick={openTrash}
+                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/trash:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Deleted</span>
+                </div>
+              )}
             </div>
           </div>
         </>
