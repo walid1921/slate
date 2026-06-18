@@ -4,7 +4,7 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
-import { appDataDir } from "@tauri-apps/api/path";
+import { appDataDir, join } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { getDb } from "../db";
@@ -286,7 +286,7 @@ function DataTab() {
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
       const today = new Date().toISOString().slice(0, 10);
       const dir = await appDataDir();
-      await writeTextFile(`${dir}slate-${today}.json`, payload);
+      await writeTextFile(await join(dir, `slate-${today}.json`), payload);
       showStatus("Exported successfully", true);
     } catch (e) {
       showStatus("Export failed", false);
@@ -313,7 +313,7 @@ function DataTab() {
       const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
       const backupDate = new Date().toISOString().slice(0, 10);
       const dir = await appDataDir();
-      await writeTextFile(`${dir}slate-backup-${backupDate}.json`, backupPayload);
+      await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
       if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
