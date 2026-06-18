@@ -274,7 +274,7 @@ function DataPreview() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] text-t4 uppercase tracking-widest select-none">Preview</span>
+        <span className="px-1 text-[11px] text-t4 font-medium select-none">Preview</span>
         <div className="flex gap-1">
           {tabs.map((t) => (
             <button
