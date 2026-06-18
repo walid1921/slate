@@ -11,6 +11,7 @@ interface Props {
 export default function AddReminderModal({ initialText = "", onClose, onSaved }: Props) {
   const { add } = useReminderStore();
   const [text, setText] = useState(initialText);
+  const [saving, setSaving] = useState(false);
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
@@ -26,7 +27,8 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
   }, []);
 
   const handleSave = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || saving) return;
+    setSaving(true);
     await add(text.trim(), `${date}T${time}:00`);
     onSaved();
   };
@@ -70,7 +72,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
         </div>
         <div className="flex gap-2 justify-end px-4 pb-4">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-          <button onClick={handleSave} disabled={!text.trim()} className="px-3 py-1.5 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors" style={{ background: "rgba(99,102,241,0.15)" }}>Add Reminder</button>
+          <button onClick={handleSave} disabled={!text.trim() || saving} className="px-3 py-1.5 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors" style={{ background: "rgba(99,102,241,0.15)" }}>{saving ? "Adding…" : "Add Reminder"}</button>
         </div>
       </div>
     </div>
