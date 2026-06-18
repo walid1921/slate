@@ -84,25 +84,15 @@ export default function WeatherWidget() {
 
   if (!weather) return null;
 
-  const today = weather.days[0];
-  const { label, emoji } = wmo(weather.currentCode);
+  function tempColor(t: number) {
+    if (t > 30) return "#f87171";
+    if (t > 20) return "#fb923c";
+    return undefined;
+  }
 
   return (
-    <div className="flex flex-col gap-3 w-full select-none">
-      {/* Current */}
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] text-t4 font-medium">{weather.city}</p>
-          <p className="text-[28px] font-semibold text-t1 leading-none mt-1">{weather.currentTemp}°</p>
-          <p className="text-[11px] text-t4 mt-1">{label}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[22px] leading-none">{emoji}</p>
-          <p className="text-[11px] text-t4 mt-1">H:{today.max}° L:{today.min}°</p>
-        </div>
-      </div>
-
-      {/* 7-day row */}
+    <div className="flex flex-col gap-2 w-full select-none">
+      <p className="text-[10px] text-t4 font-medium">{weather.city}</p>
       <div className="flex justify-between gap-1">
         {weather.days.map((day, i) => {
           const d = new Date(day.date + "T12:00:00");
@@ -111,9 +101,9 @@ export default function WeatherWidget() {
           return (
             <div key={day.date} className="flex flex-col items-center gap-0.5 flex-1">
               <p className={`text-[10px] font-medium ${i === 0 ? "text-t2" : "text-t4"}`}>{label}</p>
-              <span className="text-[14px] leading-none">{w.emoji}</span>
-              <p className="text-[10px] text-t2">{day.max}°</p>
-              <p className="text-[10px] text-t5">{day.min}°</p>
+              <span className="text-[13px] leading-none">{w.emoji}</span>
+              <p className="text-[10px] font-medium" style={{ color: tempColor(day.max) ?? "var(--c-text-2)" }}>{day.max}°</p>
+              <p className="text-[10px]" style={{ color: tempColor(day.min) ?? "var(--c-text-5)" }}>{day.min}°</p>
             </div>
           );
         })}

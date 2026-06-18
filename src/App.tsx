@@ -760,14 +760,11 @@ export default function App() {
             </div>
 
             {/* Preview cards */}
-            <div className="flex flex-col gap-3">
-              {/* Weather — full width */}
-              <div className="rounded-xl p-4" style={{ background: "rgba(100,120,160,0.08)", border: "1px solid rgba(100,120,160,0.2)" }}>
+            <div className="grid grid-cols-4 gap-3">
+              {/* Weather */}
+              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(100,120,160,0.08)", border: "1px solid rgba(100,120,160,0.2)" }}>
                 <WeatherWidget />
               </div>
-
-              {/* Section cards */}
-              <div className="grid grid-cols-3 gap-3">
                 {/* Tasks */}
                 <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
                   <div className="flex items-center gap-1.5">
@@ -812,7 +809,6 @@ export default function App() {
                     {notes.length === 0 && <p className="text-[11px] text-t5">No notes yet</p>}
                   </div>
                 </button>
-              </div>
             </div>
           </div>
         </div>
