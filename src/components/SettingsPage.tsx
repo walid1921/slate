@@ -316,7 +316,6 @@ function DataTab() {
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
       if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
-      const db = await getDb();
       await db.execute("DELETE FROM todos");
       await db.execute("DELETE FROM reminders");
       await db.execute("DELETE FROM notes");
