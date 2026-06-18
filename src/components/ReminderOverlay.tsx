@@ -103,7 +103,7 @@ export default function ReminderOverlay() {
             {!rescheduling ? (
               <button
                 onClick={() => setRescheduling(true)}
-                className="flex-1 flex items-center justify-center gap-2 py-4 text-[13px] text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-3 text-[12px] text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
                 style={{ borderRight: "1px solid var(--c-border-subtle)" }}
               >
                 <Clock size={13} />
@@ -112,7 +112,7 @@ export default function ReminderOverlay() {
             ) : (
               <button
                 onClick={() => setRescheduling(false)}
-                className="flex-1 flex items-center justify-center gap-2 py-4 text-[13px] text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 py-3 text-[12px] text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
                 style={{ borderRight: "1px solid var(--c-border-subtle)" }}
               >
                 Cancel
@@ -120,7 +120,7 @@ export default function ReminderOverlay() {
             )}
             <button
               onClick={rescheduling ? handleReschedule : handleDone}
-              className="flex-1 flex items-center justify-center gap-2 py-4 text-[13px] font-medium text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 text-[12px] font-medium text-indigo-400 hover:text-indigo-300 hover:bg-white/5 transition-colors"
             >
               <Check size={13} />
               {rescheduling ? "Save" : "Done"}
