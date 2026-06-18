@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { openUrl } from "@tauri-apps/plugin-opener";
+import { openUrl, openPath } from "@tauri-apps/plugin-opener";
+import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
+import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { appDataDir } from "@tauri-apps/api/path";
+import { getDb } from "../db";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
 const guideSections = [
@@ -248,6 +252,157 @@ function GeneralTab() {
   );
 }
 
+function DataTab() {
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importFile, setImportFile] = useState<string | null>(null);
+  const [importConfirm, setImportConfirm] = useState(false);
+  const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+
+  const showStatus = (msg: string, ok: boolean) => {
+    setStatus({ msg, ok });
+    setTimeout(() => setStatus(null), 3000);
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const db = await getDb();
+      const todos = await db.select("SELECT * FROM todos");
+      const reminders = await db.select("SELECT * FROM reminders");
+      const notes = await db.select("SELECT * FROM notes");
+      const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
+      const path = await save({ defaultPath: "slate-backup.json", filters: [{ name: "JSON", extensions: ["json"] }] });
+      if (path) { await writeTextFile(path, payload); showStatus("Exported successfully", true); }
+    } catch (e) {
+      showStatus("Export failed", false);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handlePickImport = async () => {
+    const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }], multiple: false });
+    if (typeof path === "string") { setImportFile(path); setImportConfirm(true); }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    try {
+      setImporting(true);
+      setImportConfirm(false);
+      const raw = await readTextFile(importFile);
+      const data = JSON.parse(raw);
+      if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
+      const db = await getDb();
+      await db.execute("DELETE FROM todos");
+      await db.execute("DELETE FROM reminders");
+      await db.execute("DELETE FROM notes");
+      for (const t of data.todos) {
+        await db.execute(
+          "INSERT INTO todos (id, text, done, priority, due_date, due_time, deadline_notified, description, position, created_at, deleted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+          [t.id, t.text, t.done, t.priority, t.due_date, t.due_time, t.deadline_notified, t.description ?? "", t.position, t.created_at, t.deleted_at ?? null]
+        );
+      }
+      for (const r of data.reminders) {
+        await db.execute(
+          "INSERT INTO reminders (id, text, remind_at, notified, created_at, deleted_at) VALUES (?,?,?,?,?,?)",
+          [r.id, r.text, r.remind_at, r.notified, r.created_at, r.deleted_at ?? null]
+        );
+      }
+      for (const n of data.notes) {
+        await db.execute(
+          "INSERT INTO notes (id, title, content, created_at, updated_at, deleted_at) VALUES (?,?,?,?,?,?)",
+          [n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at ?? null]
+        );
+      }
+      showStatus("Imported — restart Slate to reload data", true);
+    } catch {
+      showStatus("Import failed — invalid file", false);
+    } finally {
+      setImporting(false);
+      setImportFile(null);
+    }
+  };
+
+  const handleOpenFolder = async () => {
+    const dir = await appDataDir();
+    await openPath(dir);
+  };
+
+  return (
+    <div className="overflow-y-auto flex-1 py-4 px-4">
+      <Section title="Backup">
+        <SettingRow label="Export data" hint="Save all tasks, reminders and notes as JSON">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors disabled:opacity-40"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            {exporting ? "Exporting…" : "Export"}
+          </button>
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Import data" hint="Restore from a previous export file">
+          <button
+            onClick={handlePickImport}
+            disabled={importing}
+            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors disabled:opacity-40"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            {importing ? "Importing…" : "Import"}
+          </button>
+        </SettingRow>
+      </Section>
+
+      <Section title="Storage">
+        <SettingRow label="Open data folder" hint="Browse the folder where Slate stores its database">
+          <button
+            onClick={handleOpenFolder}
+            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            Open in Finder
+          </button>
+        </SettingRow>
+      </Section>
+
+      {status && (
+        <p className={`text-center text-[11px] mt-2 ${status.ok ? "text-green-400" : "text-red-400"}`}>{status.msg}</p>
+      )}
+
+      {/* Import confirm modal */}
+      {importConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="dropdown rounded-lg p-5 max-w-xs w-full mx-4 flex flex-col gap-3">
+            <p className="text-[14px] font-semibold text-t1">Replace all data?</p>
+            <p className="text-[12px] text-t3 leading-relaxed">
+              Importing will permanently delete your current tasks, reminders and notes. This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end mt-1">
+              <button
+                onClick={() => { setImportConfirm(false); setImportFile(null); }}
+                className="px-3 py-1.5 rounded text-[12px] text-t3 hover:text-t2 transition-colors"
+                style={{ background: "var(--c-surface-2)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImport}
+                className="px-3 py-1.5 rounded text-[12px] text-red-400 hover:text-red-300 transition-colors"
+                style={{ background: "rgba(239,68,68,0.15)" }}
+              >
+                Replace & Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AboutTab() {
   return (
     <div className="overflow-y-auto flex-1 flex flex-col items-center justify-center gap-3 py-8 px-4">
@@ -305,13 +460,14 @@ function GuideTab() {
   );
 }
 
-type Tab = "general" | "guide" | "about";
+type Tab = "general" | "data" | "guide" | "about";
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "general", label: "General" },
+    { id: "data", label: "Data" },
     { id: "guide", label: "Guide" },
     { id: "about", label: "About" },
   ];
@@ -333,6 +489,7 @@ export default function SettingsPage() {
       </div>
 
       {tab === "general" && <GeneralTab />}
+      {tab === "data" && <DataTab />}
       {tab === "guide" && <GuideTab />}
       {tab === "about" && <AboutTab />}
     </div>
