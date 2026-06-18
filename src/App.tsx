@@ -26,6 +26,7 @@ import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
+import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
 import logoMarkLight from "./assets/logo-light.png";
 import logoMarkDark from "./assets/logo-dark.png";
@@ -613,6 +614,7 @@ export default function App() {
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
+    <ReminderAlert />
     <div
       className={`relative flex flex-col overflow-hidden transition-opacity duration-200 ${
         visible ? "opacity-100" : "opacity-0"

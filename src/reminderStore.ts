@@ -14,7 +14,9 @@ interface ReminderState {
   reminders: Reminder[];
   trash: Reminder[];
   hasUnread: boolean;
+  pendingAlert: Reminder | null;
   clearUnread: () => void;
+  dismissAlert: () => void;
   load: () => Promise<void>;
   loadTrash: () => Promise<void>;
   add: (text: string, remind_at: string) => Promise<void>;
@@ -30,7 +32,9 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
   trash: [],
   hasUnread: false,
+  pendingAlert: null,
   clearUnread: () => set({ hasUnread: false }),
+  dismissAlert: () => set({ pendingAlert: null }),
 
   load: async () => {
     const db = await getDb();
@@ -91,6 +95,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   },
 
   checkDue: async () => {
+    if (get().pendingAlert) return;
     const db = await getDb();
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -100,10 +105,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       "SELECT id, text, remind_at, notified FROM reminders WHERE notified = 0 AND remind_at <= ?",
       [now]
     );
-    for (const r of due) {
-      await notify("Slate Reminder", r.text);
-      await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [r.id]);
+    if (due.length > 0) {
+      set({ pendingAlert: due[0] });
     }
-    if (due.length > 0) { set({ hasUnread: true }); await get().load(); }
   },
 }));
