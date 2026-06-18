@@ -272,7 +272,8 @@ function DataTab() {
       const reminders = await db.select("SELECT * FROM reminders");
       const notes = await db.select("SELECT * FROM notes");
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
-      const path = await save({ defaultPath: "slate-backup.json", filters: [{ name: "JSON", extensions: ["json"] }] });
+      const today = new Date().toISOString().slice(0, 10);
+      const path = await save({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
       if (path) { await writeTextFile(path, payload); showStatus("Exported successfully", true); }
     } catch (e) {
       showStatus("Export failed", false);
