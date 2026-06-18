@@ -1,7 +1,5 @@
 # Slate
 
-[![GitHub Repo](https://img.shields.io/github/stars/walid1921/slate?style=social)](https://github.com/walid1921/slate)
-
 A minimal, keyboard-first productivity app for macOS. Manage tasks, set reminders, and write notes — all from a single floating window that lives quietly in your workflow.
 
 Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
