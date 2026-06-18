@@ -15,11 +15,12 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
   const [time, setTime] = useState(`${pad((today.getHours()+1) % 24)}:00`);
   const textRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTimeout(() => {
-      textRef.current?.focus();
-      if (initialText) textRef.current?.select();
+      if (initialText) timeRef.current?.focus();
+      else textRef.current?.focus();
     }, 10);
   }, []);
 
@@ -56,6 +57,7 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
             <input
+              ref={timeRef}
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
