@@ -730,10 +730,8 @@ export default function App() {
                 page="todos"
                 filter={todoFilter}
                 sort={todoSort}
-                viewMode="list"
                 onFilter={setTodoFilter}
                 onSort={setTodoSort}
-                onViewMode={() => {}}
               />
               <div className="overflow-y-auto flex-1 py-1.5">
                 {loading ? (

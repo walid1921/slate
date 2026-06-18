@@ -1,9 +1,7 @@
 import { useEffect, useState, useRef } from "react";
-import { Pencil, X, Clock, Send, Trash2 } from "lucide-react";
+import { Pencil, Clock, Send, Trash2 } from "lucide-react";
 import { useReminderStore, Reminder } from "../reminderStore";
 import FilterBar, { ReminderFilter, ReminderSort } from "./FilterBar";
-import { useSettingsStore, ViewMode } from "../settingsStore";
-
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -19,102 +17,6 @@ function isOverdue(iso: string): boolean {
   return new Date(iso) < new Date();
 }
 
-function ReminderCard({ r, onDeleteRequest }: { r: Reminder; onDeleteRequest: () => void }) {
-  const { update } = useReminderStore();
-  const [editingText, setEditingText] = useState(false);
-  const [editingTime, setEditingTime] = useState(false);
-  const [textVal, setTextVal] = useState(r.text);
-  const [dateVal, setDateVal] = useState(r.remind_at.slice(0, 10));
-  const [timeVal, setTimeVal] = useState(r.remind_at.slice(11, 16));
-  const textRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editingText) { setTextVal(r.text); setTimeout(() => textRef.current?.select(), 10); }
-  }, [editingText]);
-
-  useEffect(() => {
-    if (editingTime) { setDateVal(r.remind_at.slice(0, 10)); setTimeVal(r.remind_at.slice(11, 16)); }
-  }, [editingTime]);
-
-  const commitText = () => {
-    const trimmed = textVal.trim();
-    if (trimmed && trimmed !== r.text) update(r.id, trimmed, r.remind_at);
-    setEditingText(false);
-  };
-
-  const commitTime = () => {
-    const newIso = `${dateVal}T${timeVal}:00`;
-    if (newIso !== r.remind_at) update(r.id, r.text, newIso);
-    setEditingTime(false);
-  };
-
-  return (
-    <div
-      className="rounded-xl p-3 flex flex-col gap-1.5"
-      style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}
-    >
-      <div className="flex items-start justify-between gap-1">
-        <div className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"}`} style={r.notified ? { background: "var(--c-text-5)" } : {}} />
-        <button onClick={onDeleteRequest} className="text-t5 hover:text-red-400 transition-colors shrink-0">
-          <X size={10} />
-        </button>
-      </div>
-      {editingText ? (
-        <input
-          ref={textRef}
-          value={textVal}
-          onChange={(e) => setTextVal(e.target.value)}
-          onBlur={commitText}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); commitText(); }
-            if (e.key === "Escape") setEditingText(false);
-            e.stopPropagation();
-          }}
-          className="text-[12px] font-medium text-t1 bg-transparent outline-none border-b leading-snug"
-          style={{ borderColor: "var(--c-border)" }}
-        />
-      ) : (
-        <p
-          onDoubleClick={() => setEditingText(true)}
-          className={`text-[12px] font-medium leading-snug ${r.notified ? "text-t4" : "text-t1"}`}
-        >
-          {r.text}
-        </p>
-      )}
-      <div className="flex items-center gap-1 mt-auto pt-1">
-        <Clock size={9} className={r.notified ? "text-t5" : isOverdue(r.remind_at) ? "text-red-400/60" : "text-t4"} />
-        {editingTime ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="date"
-              value={dateVal}
-              onChange={(e) => setDateVal(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-[10px] text-t2 bg-transparent outline-none border-b"
-              style={{ borderColor: "var(--c-border)" }}
-            />
-            <input
-              type="time"
-              value={timeVal}
-              onChange={(e) => setTimeVal(e.target.value)}
-              onBlur={commitTime}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTime(); } if (e.key === "Escape") setEditingTime(false); e.stopPropagation(); }}
-              className="text-[10px] text-t2 bg-transparent outline-none border-b"
-              style={{ borderColor: "var(--c-border)" }}
-            />
-          </div>
-        ) : (
-          <p
-            onDoubleClick={() => setEditingTime(true)}
-            className={`text-[10px] ${r.notified ? "text-t5" : isOverdue(r.remind_at) ? "text-red-400/70" : "text-t4"}`}
-          >
-            {formatDateTime(r.remind_at)}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: Reminder; onDeleteRequest: () => void; onConfirm: (title: string, msg: string, fn: () => void, confirmLabel?: string, confirmClassName?: string) => void; focused?: boolean; onFocus?: () => void }) {
   const { update, markSent } = useReminderStore();
@@ -257,7 +159,6 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
   const [focusedIdx, setFocusedIdx] = useState(0);
-  const { remindersViewMode, set: setSetting } = useSettingsStore();
 
   useEffect(() => { load(); }, [load]);
 
@@ -297,7 +198,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
 
   return (
     <div className="view-animate flex flex-col flex-1 overflow-hidden">
-      <FilterBar page="reminders" filter={filter} sort={sort} viewMode={remindersViewMode} onFilter={setFilter} onSort={setSort} onViewMode={(v: ViewMode) => setSetting("remindersViewMode", v)} />
+      <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} />
       <div className="overflow-y-auto flex-1 py-1.5">
         {reminders.length === 0 ? (
           <div className="px-5 py-10 text-center text-t5 text-sm select-none">
@@ -305,12 +206,6 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
           </div>
         ) : visible.length === 0 ? (
           <div className="px-5 py-10 text-center text-t5 text-sm select-none">No reminders match this filter</div>
-        ) : remindersViewMode === "cards" ? (
-          <div className="grid grid-cols-2 gap-2 px-3 py-2">
-            {visible.map((r) => (
-              <ReminderCard key={r.id} r={r} onDeleteRequest={() => onDeleteRequest(r.id)} />
-            ))}
-          </div>
         ) : (
           <>
             {filter !== "sent" && upcoming.length > 0 && (
