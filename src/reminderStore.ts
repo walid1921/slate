@@ -136,7 +136,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
 
     const fresh = due.filter((r) => r.remind_at > cutoff);
     if (fresh.length > 0) {
-      set({ pendingAlert: fresh[0] });
+      const r = fresh[0];
+      // Mark as notified immediately so it never re-fires even if the overlay crashes
+      await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [r.id]);
+      set({ pendingAlert: r });
     }
   },
 }));
