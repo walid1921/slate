@@ -70,7 +70,17 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   remove: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET deleted_at = datetime('now') WHERE id = ?", [id]);
-    set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) }));
+    set((s) => ({
+      reminders: s.reminders.filter((r) => r.id !== id),
+      pendingAlert: s.pendingAlert?.id === id ? null : s.pendingAlert,
+    }));
+    try {
+      if (get().pendingAlert === null) {
+        const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+        const overlay = await WebviewWindow.getByLabel("reminder-overlay");
+        if (overlay) await overlay.close();
+      }
+    } catch {}
   },
 
   restore: async (id) => {
