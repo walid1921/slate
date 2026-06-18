@@ -138,7 +138,7 @@ function Divider() {
 }
 
 function GeneralTab() {
-  const { theme, textSize, windowMode, set, reset } = useSettingsStore();
+  const { theme, textSize, windowMode, set } = useSettingsStore();
   const [loginEnabled, setLoginEnabled] = useState(false);
 
   useEffect(() => {
@@ -242,18 +242,6 @@ function GeneralTab() {
         </SettingRow>
       </Section>
 
-      <Section title="Data">
-        <Divider />
-        <SettingRow label="Reset all settings" hint="Restore defaults">
-          <button
-            onClick={reset}
-            className="px-3 py-1 rounded text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
-            style={{ background: "var(--c-surface-2)" }}
-          >
-            Reset
-          </button>
-        </SettingRow>
-      </Section>
     </div>
   );
 }
