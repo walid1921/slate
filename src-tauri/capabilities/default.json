@@ -24,6 +24,8 @@
     "autostart:allow-is-enabled",
     "core:window:allow-set-size",
     "core:window:allow-set-always-on-top",
+    "core:window:allow-create",
+    "core:webview:allow-create-webview-window",
     "dialog:allow-save",
     "dialog:allow-open",
     "fs:allow-write-text-file",
