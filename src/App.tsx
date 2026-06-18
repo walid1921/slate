@@ -361,6 +361,7 @@ export default function App() {
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
     setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
@@ -673,8 +674,15 @@ export default function App() {
       {view === "main" && (
         <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
           {/* Search input — full width at top */}
-          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
-            <Search size={15} className="text-t4 shrink-0" />
+          <div
+            className="flex items-center gap-3 px-5 shrink-0 border-b transition-colors"
+            style={{
+              height: 48,
+              borderBottomColor: inputFocused ? "rgba(180,180,190,0.35)" : "var(--c-border-subtle)",
+              boxShadow: inputFocused ? "0 1px 0 0 rgba(180,180,190,0.1)" : "none",
+            }}
+          >
+            <Search size={15} className="shrink-0 transition-colors" style={{ color: inputFocused ? "rgba(180,180,190,0.7)" : "var(--c-text-4)" }} />
             <input
               ref={inputRef}
               type="text"
@@ -686,6 +694,8 @@ export default function App() {
                 setCmdIdx(0);
               }}
               onKeyDown={handleKeyDown}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               placeholder="Add task · /tm deadline · /rm reminder…"
               className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
             />
