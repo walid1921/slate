@@ -1,7 +1,15 @@
 use tauri::{Emitter, Manager, WebviewWindow, WebviewWindowBuilder, WebviewUrl, AppHandle};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 
 use tauri_plugin_autostart::MacosLauncher;
+
+struct AutoHide(Arc<AtomicBool>);
+
+#[tauri::command]
+fn set_auto_hide(state: tauri::State<AutoHide>, enabled: bool) {
+    state.0.store(enabled, Ordering::Relaxed);
+}
 
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
@@ -22,6 +30,7 @@ fn show_window(window: &WebviewWindow) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(AutoHide(Arc::new(AtomicBool::new(true))))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
@@ -73,7 +82,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note])
+        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
@@ -85,9 +94,10 @@ pub fn run() {
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
                 let win = window.clone();
+                let auto_hide_flag = app.state::<AutoHide>().0.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(false) = event {
-                        let _ = win.hide();
+                        if auto_hide_flag.load(Ordering::Relaxed) { let _ = win.hide(); }
                     }
                 });
             }

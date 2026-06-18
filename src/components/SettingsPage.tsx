@@ -6,6 +6,7 @@ import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import { getDb } from "../db";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
@@ -267,8 +268,12 @@ function DataTab() {
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
+    await invoke("set_auto_hide", { enabled: false });
     await win.setAlwaysOnTop(false);
-    try { return await fn(); } finally { await win.setAlwaysOnTop(true); }
+    try { return await fn(); } finally {
+      await win.setAlwaysOnTop(true);
+      await invoke("set_auto_hide", { enabled: true });
+    }
   };
 
   const handleExport = async () => {
