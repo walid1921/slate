@@ -5,7 +5,6 @@ import {
   Pencil,
   X,
   RotateCcw,
-  Search,
   ChevronLeft,
   CheckSquare,
   Clock,
@@ -20,8 +19,6 @@ import { useTodoStore, Priority, Todo } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
-import DateTimeModal from "./components/DateTimeModal";
-import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -339,27 +336,24 @@ function TodoRow({
 }
 
 export default function App() {
-  const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
+  const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
-  const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
+  const { notes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
-  type View = "main" | "trash" | "reminders" | "notes" | "settings";
-  type NavView = "main" | "reminders" | "notes" | "settings";
+  type View = "main" | "todos" | "trash" | "reminders" | "notes" | "settings";
+  type NavView = "todos" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
-  const [lastNavView, setLastNavView] = useState<NavView>("main");
+  const [lastNavView, setLastNavView] = useState<NavView>("todos");
 
   const navigate = useCallback((v: View) => {
-    if (v === "main" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
+    if (v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  // Pending modal state: type + text extracted from /tm or /rm
-  const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
-  const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
@@ -369,15 +363,6 @@ export default function App() {
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
     setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
   }, []);
-
-  const COMMANDS = [
-    { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
-    { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
-    { prefix: "/nt ", label: "/nt", desc: "Create a new note" },
-  ];
-
-  const showCmdPalette = inputVal === "/" || inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal));
-  const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
 
   // Apply theme and text size to document root
   useEffect(() => {
@@ -441,7 +426,6 @@ export default function App() {
       setVisible(true);
       navigate("main");
       setInputVal("");
-      setQuery("");
       setTimeout(() => inputRef.current?.focus(), 50);
     });
     // Also trigger on initial mount (first open)
@@ -455,7 +439,6 @@ export default function App() {
   const activeSort = todoSort === "manual" ? defaultSort : todoSort;
 
   const filtered = todos
-    .filter((t) => query ? t.text.toLowerCase().includes(query.toLowerCase()) : true)
     .filter((t) => {
       if (todoFilter === "active") return !t.done;
       if (todoFilter === "done") return t.done;
@@ -501,73 +484,25 @@ export default function App() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Command palette navigation
-      if (showCmdPalette && filteredCmds.length > 0) {
-        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCmds.length); return; }
-        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredCmds.length) % filteredCmds.length); return; }
-        if (e.key === "Tab" || (e.key === "Enter" && inputVal === "/")) {
-          e.preventDefault();
-          setInputVal(filteredCmds[cmdIdx].prefix);
-          setQuery(filteredCmds[cmdIdx].prefix);
-          return;
-        }
-        if (e.key === "Escape") {
-          if (inputVal.trim()) { setInputVal(""); setQuery(""); }
-          else { getCurrentWindow().hide(); }
-          return;
-        }
-      }
-
       if (e.key === "Enter" && inputVal.trim()) {
-        const val = inputVal.trim();
-        if (val.startsWith("/tm ") || val === "/tm") {
-          const text = val.slice(4).trim();
-          if (text) { setPendingModal({ type: "task", text }); setInputVal(""); setQuery(""); }
-          return;
-        }
-        if (val.startsWith("/rm ") || val === "/rm") {
-          const text = val.slice(4).trim();
-          if (text) { setPendingModal({ type: "reminder", text }); setInputVal(""); setQuery(""); }
-          return;
-        }
-        if (val.startsWith("/nt ") || val === "/nt") {
-          const title = val.slice(4).trim();
-          addNote(title || "Untitled", "");
-          navigate("notes");
-          setInputVal("");
-          setQuery("");
-          return;
-        }
-        add(val, defaultPriority);
+        add(inputVal.trim(), defaultPriority);
         setInputVal("");
-        setQuery("");
-        setFocusedIdx(-1);
-        return;
-      }
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setFocusedIdx((i) => Math.min(i + 1, filtered.length - 1));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setFocusedIdx((i) => Math.max(i - 1, -1));
-        if (focusedIdx <= 0) inputRef.current?.focus();
         return;
       }
       if (e.key === "Escape") {
+        if (inputVal.trim()) { setInputVal(""); return; }
         getCurrentWindow().hide();
       }
     },
-    [inputVal, filtered.length, focusedIdx, query, add, setQuery]
+    [inputVal, add, defaultPriority]
   );
 
-  // Global keydown — Delete focused row, ArrowUp/Down when input not focused
+  // Global keydown
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["main", "reminders", "notes", "settings"];
+        const tabs: NavView[] = ["todos", "reminders", "notes", "settings"];
         const cur = tabs.indexOf(lastNavView);
         const next = e.key === "ArrowRight"
           ? tabs[(cur + 1) % tabs.length]
@@ -576,8 +511,7 @@ export default function App() {
         return;
       }
       if (document.activeElement === inputRef.current) return;
-      if (view !== "main") return;
-
+      if (view !== "todos") return;
       if (e.key === " ") {
         const todo = filtered[focusedIdx];
         if (todo) { e.preventDefault(); useTodoStore.getState().toggle(todo.id); }
@@ -591,20 +525,15 @@ export default function App() {
       if (e.key === "ArrowUp") {
         e.preventDefault();
         setFocusedIdx((i) => {
-          if (i <= 0) { inputRef.current?.focus(); return -1; }
+          if (i <= 0) { return -1; }
           return i - 1;
         });
         return;
       }
-      // Any printable char → focus input (skip if focus is inside another input/textarea)
-      const tag = (document.activeElement as HTMLElement)?.tagName;
-      if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && tag !== "INPUT" && tag !== "TEXTAREA") {
-        inputRef.current?.focus();
-      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, focusedIdx, lastNavView]);
+  }, [filtered, focusedIdx, lastNavView, view]);
 
   const BackButton = () => (
     <button onClick={() => navigate("main")} className="text-t3 hover:text-t2 transition-colors mr-3">
@@ -612,7 +541,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", trash: "Deleted", reminders: "Reminders", notes: "Notes", settings: "Settings" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", todos: "Tasks", trash: "Deleted", reminders: "Reminders", notes: "Notes", settings: "Settings" };
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
@@ -634,7 +563,7 @@ export default function App() {
         className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-s"
         style={{ height: 38, background: "var(--c-nav)" }}
       >
-        {view !== "main" && <BackButton />}
+        {view === "trash" && <BackButton />}
         {view === "main" ? (
           <div className="flex items-center gap-1.5">
             <img src={theme === "dark" ? logoMarkDark : logoMarkLight} alt="Slate" className="w-4 h-4 opacity-70" />
@@ -670,10 +599,9 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main view */}
+      {/* Main view — quick capture input */}
       {view === "main" && (
         <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
-          {/* Search input — full width at top */}
           <div
             className="flex items-center gap-3 px-5 shrink-0 border-b transition-colors"
             style={{
@@ -682,50 +610,35 @@ export default function App() {
               boxShadow: inputFocused ? "0 1px 0 0 rgba(180,180,190,0.1)" : "none",
             }}
           >
-            <Search size={15} className="shrink-0 transition-colors" style={{ color: inputFocused ? "rgba(180,180,190,0.7)" : "var(--c-text-4)" }} />
             <input
               ref={inputRef}
               type="text"
               value={inputVal}
-              onChange={(e) => {
-                setInputVal(e.target.value);
-                setQuery(e.target.value);
-                setFocusedIdx(-1);
-                setCmdIdx(0);
-              }}
+              onChange={(e) => setInputVal(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder="Add task · /tm deadline · /rm reminder…"
+              placeholder="Add a task…"
               className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
             />
             {inputVal && (
               <button
-                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
+                onClick={() => { setInputVal(""); inputRef.current?.focus(); }}
                 className="text-t4 hover:text-t2 transition-colors shrink-0"
               >
                 <X size={11} />
               </button>
             )}
           </div>
+          <div className="flex-1 flex items-center justify-center">
+            <p className="text-t5 text-xs select-none">Type a task and press ↵</p>
+          </div>
+        </div>
+      )}
 
-          {showCmdPalette && filteredCmds.length > 0 && (
-            <div className="shrink-0 border-b border-s py-1">
-              {filteredCmds.map((cmd, i) => (
-                <button
-                  key={cmd.prefix}
-                  onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
-                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
-                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
-                >
-                  <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
-                  <span className="text-[12px] text-t3">{cmd.desc}</span>
-                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
-                </button>
-              ))}
-            </div>
-          )}
-
+      {/* Todos view — task list */}
+      {view === "todos" && (
+        <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
           {/* Split panel */}
           <div className="flex flex-row flex-1 overflow-hidden">
             {/* Left: filter + list */}
@@ -741,9 +654,7 @@ export default function App() {
                 {loading ? (
                   <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
                 ) : filtered.length === 0 ? (
-                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">
-                    {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
-                  </div>
+                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">No tasks yet</div>
                 ) : (
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
@@ -828,7 +739,9 @@ export default function App() {
                 ? `${trash.length} deleted`
                 : view === "settings"
                 ? "Settings"
-                : `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`}
+                : view === "todos"
+                ? `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`
+                : ""}
             </span>
             <div className="absolute left-1/2 -translate-x-1/2">
               <div
@@ -842,12 +755,12 @@ export default function App() {
                     borderRadius: 5,
                     background: "var(--c-surface-3)",
                     left: "2px",
-                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "reminders" ? "32px" : lastNavView === "notes" ? "64px" : "96px"})`,
+                    transform: `translateX(${lastNavView === "todos" ? "0px" : lastNavView === "reminders" ? "32px" : lastNavView === "notes" ? "64px" : "96px"})`,
                   }}
                 />
                 <button
-                  onClick={() => { navigate("main"); clearTodoUnread(); }}
-                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 nav-todo ${lastNavView === "main" ? "text-blue-400" : "text-t4"}`}
+                  onClick={() => { navigate("todos"); clearTodoUnread(); }}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 nav-todo ${lastNavView === "todos" ? "text-blue-400" : "text-t4"}`}
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Tasks</span>
                   <CheckSquare size={14} />
@@ -878,7 +791,7 @@ export default function App() {
               </div>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              {view === "main" && todos.some((t) => t.done) && (
+              {view === "todos" && todos.some((t) => t.done) && (
                 <div className="group/clear relative">
                   <button
                     onClick={() => askConfirm("Clear completed?", "All done tasks will be moved to trash.", () => todos.filter((t) => t.done).forEach((t) => useTodoStore.getState().remove(t.id)))}
@@ -925,46 +838,6 @@ export default function App() {
         />
       )}
 
-      {/* Date/time picker modal */}
-      {pendingModal?.type === "task" && (
-        <DateTimeModal
-          title="Set deadline"
-          subtitle={pendingModal.text}
-          showDate={true}
-          onConfirm={async (datetime) => {
-            const snapshot = pendingModal;
-            setPendingModal(null);
-            setTimeout(() => inputRef.current?.focus(), 50);
-            try {
-              const date = datetime.split("T")[0];
-              const time = datetime.split("T")[1]?.slice(0, 5);
-              await useTodoStore.getState().add(snapshot.text);
-              const db = await import("./db").then((m) => m.getDb());
-              await db.execute(
-                "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
-                [date, time, snapshot.text]
-              );
-              await load();
-            } catch (e) {
-              console.error("confirm failed", e);
-            }
-          }}
-          onCancel={() => {
-            setPendingModal(null);
-            setTimeout(() => inputRef.current?.focus(), 50);
-          }}
-        />
-      )}
-      {pendingModal?.type === "reminder" && (
-        <AddReminderModal
-          initialText={pendingModal.text}
-          onClose={() => {
-            setPendingModal(null);
-            setTimeout(() => inputRef.current?.focus(), 50);
-            navigate("reminders");
-          }}
-        />
-      )}
     </div>
     </div>
   );
