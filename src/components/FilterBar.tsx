@@ -125,7 +125,7 @@ export default function FilterBar(props: Props) {
     };
 
     return (
-      <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-s shrink-0">
+      <div className="flex items-center gap-1.5 px-4 py-1.5 shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
           {REMINDER_FILTERS.map((f) => (
             <button
