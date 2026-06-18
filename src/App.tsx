@@ -835,9 +835,10 @@ export default function App() {
                   className="absolute top-0.5 h-5 w-7 transition-transform duration-200 ease-out"
                   style={{
                     borderRadius: 5,
-                    background: "var(--c-surface-3)",
+                    background: lastNavView === "todos" ? "rgba(59,130,246,0.15)" : lastNavView === "reminders" ? "rgba(99,102,241,0.15)" : lastNavView === "notes" ? "rgba(16,185,129,0.15)" : "var(--c-surface-3)",
                     left: "2px",
                     transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : "128px"})`,
+                    transition: "transform 0.2s ease-out, background 0.2s ease-out",
                   }}
                 />
                 <button
