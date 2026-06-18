@@ -18,7 +18,9 @@ export default function ReminderOverlay() {
   useEffect(() => {
     document.documentElement.classList.add("dark");
     const t = setTimeout(() => setVisible(true), 30);
-    return () => clearTimeout(t);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => { clearTimeout(t); window.removeEventListener("keydown", onKey); };
   }, []);
 
   const close = async () => {
