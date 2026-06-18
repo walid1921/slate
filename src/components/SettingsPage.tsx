@@ -12,6 +12,7 @@ import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore"
 import { useTodoStore } from "../store";
 import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
+import { Toast, ToastType } from "./Toast";
 
 const guideSections = [
   {
@@ -379,12 +380,7 @@ function DataTab() {
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const [exportedPath, setExportedPath] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
-
-  const showStatus = (msg: string, ok: boolean) => {
-    setStatus({ msg, ok });
-    setTimeout(() => setStatus(null), 3000);
-  };
+  const [toast, setToast] = useState<ToastType | null>(null);
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -409,8 +405,8 @@ function DataTab() {
       const filePath = await join(dir, `slate-${today}.json`);
       await writeTextFile(filePath, payload);
       setExportedPath(filePath);
+      setToast("exported");
     } catch (e) {
-      showStatus("Export failed", false);
     } finally {
       setExporting(false);
     }
@@ -461,9 +457,8 @@ function DataTab() {
         );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
-      showStatus("Data imported successfully", true);
+      setToast(withBackup ? "exported-imported" : "imported");
     } catch {
-      showStatus("Import failed — invalid file", false);
     } finally {
       setImporting(false);
       setImportFile(null);
@@ -514,9 +509,7 @@ function DataTab() {
         </SettingRow>
       </Section>
 
-      {status && (
-        <p className={`text-center text-[11px] mt-2 ${status.ok ? "text-green-400" : "text-red-400"}`}>{status.msg}</p>
-      )}
+      {toast && <Toast type={toast} onDone={() => setToast(null)} />}
 
       {/* Import confirm modal */}
       {importConfirm && (
