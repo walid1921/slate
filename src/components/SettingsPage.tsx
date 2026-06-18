@@ -5,6 +5,7 @@ import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { appDataDir } from "@tauri-apps/api/path";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getDb } from "../db";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
 
@@ -264,6 +265,12 @@ function DataTab() {
     setTimeout(() => setStatus(null), 3000);
   };
 
+  const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    const win = getCurrentWindow();
+    await win.setAlwaysOnTop(false);
+    try { return await fn(); } finally { await win.setAlwaysOnTop(true); }
+  };
+
   const handleExport = async () => {
     try {
       setExporting(true);
@@ -273,7 +280,7 @@ function DataTab() {
       const notes = await db.select("SELECT * FROM notes");
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
       const today = new Date().toISOString().slice(0, 10);
-      const path = await save({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] });
+      const path = await withDialogFocus(() => save({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] }));
       if (path) { await writeTextFile(path, payload); showStatus("Exported successfully", true); }
     } catch (e) {
       showStatus("Export failed", false);
@@ -283,7 +290,7 @@ function DataTab() {
   };
 
   const handlePickImport = async () => {
-    const path = await openDialog({ filters: [{ name: "JSON", extensions: ["json"] }], multiple: false });
+    const path = await withDialogFocus(() => openDialog({ filters: [{ name: "JSON", extensions: ["json"] }], multiple: false }));
     if (typeof path === "string") { setImportFile(path); setImportConfirm(true); }
   };
 

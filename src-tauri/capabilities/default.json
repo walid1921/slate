@@ -23,6 +23,7 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "core:window:allow-set-size",
+    "core:window:allow-set-always-on-top",
     "dialog:allow-save",
     "dialog:allow-open",
     "fs:allow-write-text-file",
