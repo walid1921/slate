@@ -396,7 +396,6 @@ export default function App() {
     if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
   const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
@@ -451,30 +450,9 @@ export default function App() {
     loadTrash();
     loadReminderTrash();
     loadNoteTrash();
-    setSelected(new Set());
     navigate("trash");
   }, [view, loadTrash, loadReminderTrash, loadNoteTrash]);
 
-  const toggleSelect = useCallback((id: number) => {
-    setSelected((s) => {
-      const next = new Set(s);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }, []);
-
-  const selectAll = useCallback(() => {
-    setSelected(new Set(trash.map((t) => t.id)));
-  }, [trash]);
-
-  const deleteSelected = useCallback(async () => {
-    if (selected.size === trash.length) {
-      await deleteAllPermanently();
-    } else {
-      for (const id of selected) await deletePermanently(id);
-    }
-    setSelected(new Set());
-  }, [selected, trash.length, deletePermanently, deleteAllPermanently]);
 
   // Listen for window-shown event to auto-focus input + animate in
   useEffect(() => {
@@ -839,21 +817,19 @@ export default function App() {
         </div>
       )}
 
-      {/* Trash view */}
+      {/* Trash view — contextual per originating page */}
       {view === "trash" && (
         <div key="trash" className="view-animate overflow-y-auto flex-1 py-1.5">
-          {trash.length === 0 && reminderTrash.length === 0 && noteTrash.length === 0 ? (
-            <div className="px-5 py-10 text-center text-t5 text-sm select-none">Trash is empty</div>
-          ) : (
-            <>
-              {trash.length > 0 && (
-                <>
+          {preTrashView === "todos" && (
+            trash.length === 0
+              ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted tasks</div>
+              : <>
                   <div className="flex items-center justify-between px-5 py-1.5">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">Tasks</span>
+                    <span className="text-[10px] text-t5 uppercase tracking-wider">{trash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all tasks?", "All deleted tasks will be permanently removed.", () => deleteAllPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {trash.map((todo) => (
-                    <div key={`task-${todo.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                    <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
                       <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
                       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
@@ -862,15 +838,17 @@ export default function App() {
                     </div>
                   ))}
                 </>
-              )}
-              {reminderTrash.length > 0 && (
-                <>
-                  <div className="flex items-center justify-between px-5 py-1.5 mt-1">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">Reminders</span>
+          )}
+          {preTrashView === "reminders" && (
+            reminderTrash.length === 0
+              ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted reminders</div>
+              : <>
+                  <div className="flex items-center justify-between px-5 py-1.5">
+                    <span className="text-[10px] text-t5 uppercase tracking-wider">{reminderTrash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all reminders?", "All deleted reminders will be permanently removed.", () => deleteAllRemindersPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {reminderTrash.map((r) => (
-                    <div key={`reminder-${r.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                    <div key={r.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
                       <span className="flex-1 text-[14px] text-t3 line-through truncate">{r.text}</span>
                       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => restoreReminder(r.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
@@ -879,15 +857,17 @@ export default function App() {
                     </div>
                   ))}
                 </>
-              )}
-              {noteTrash.length > 0 && (
-                <>
-                  <div className="flex items-center justify-between px-5 py-1.5 mt-1">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">Notes</span>
+          )}
+          {preTrashView === "notes" && (
+            noteTrash.length === 0
+              ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted notes</div>
+              : <>
+                  <div className="flex items-center justify-between px-5 py-1.5">
+                    <span className="text-[10px] text-t5 uppercase tracking-wider">{noteTrash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all notes?", "All deleted notes will be permanently removed.", () => deleteAllNotesPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {noteTrash.map((n) => (
-                    <div key={`note-${n.id}`} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                    <div key={n.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
                       <span className="flex-1 text-[14px] text-t3 line-through truncate">{n.title}</span>
                       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => restoreNote(n.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
@@ -896,8 +876,6 @@ export default function App() {
                     </div>
                   ))}
                 </>
-              )}
-            </>
           )}
         </div>
       )}
