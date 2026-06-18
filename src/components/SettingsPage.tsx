@@ -600,6 +600,13 @@ function AboutTab() {
           Send Feedback
         </button>
       </div>
+      <button
+        onClick={() => openUrl("https://github.com/kouider-ayad-walid/slate")}
+        className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium transition-colors mt-1"
+        style={{ background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.25)", color: "rgb(250,204,21)" }}
+      >
+        <span style={{ opacity: 0.9 }}>⭐</span> Star on GitHub
+      </button>
     </div>
   );
 }
