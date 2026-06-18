@@ -27,8 +27,8 @@
     "dialog:allow-open",
     "fs:allow-write-text-file",
     "fs:allow-read-text-file",
-    "fs:default",
-    "opener:allow-open-path",
+    "fs:scope-home-recursive",
+    "opener:allow-reveal-item-in-dir",
     "core:path:default"
   ]
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { openUrl, openPath } from "@tauri-apps/plugin-opener";
+import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { appDataDir } from "@tauri-apps/api/path";
@@ -327,7 +327,7 @@ function DataTab() {
 
   const handleOpenFolder = async () => {
     const dir = await appDataDir();
-    await openPath(dir);
+    await revealItemInDir(dir);
   };
 
   return (
