@@ -26,6 +26,7 @@
     "core:window:allow-set-always-on-top",
     "core:window:allow-create",
     "core:webview:allow-create-webview-window",
+    "core:event:allow-emit-to",
     "dialog:allow-save",
     "dialog:allow-open",
     "fs:allow-write-text-file",

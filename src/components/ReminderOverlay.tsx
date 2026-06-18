@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bell, Check, Clock } from "lucide-react";
-import { emit } from "@tauri-apps/api/event";
+import { emitTo } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export default function ReminderOverlay() {
@@ -28,12 +28,12 @@ export default function ReminderOverlay() {
   };
 
   const handleDone = async () => {
-    await emit("reminder-done", {});
+    await emitTo("main", "reminder-done", {});
     await close();
   };
 
   const handleReschedule = async () => {
-    await emit("reminder-reschedule", { date, time });
+    await emitTo("main", "reminder-reschedule", { date, time });
     await close();
   };
 
