@@ -24,7 +24,6 @@ import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
-import WeatherWidget from "./components/WeatherWidget";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
@@ -760,11 +759,7 @@ export default function App() {
             </div>
 
             {/* Preview cards */}
-            <div className="grid grid-cols-4 gap-3">
-              {/* Weather */}
-              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(100,120,160,0.08)", border: "1px solid rgba(100,120,160,0.2)" }}>
-                <WeatherWidget />
-              </div>
+            <div className="grid grid-cols-3 gap-3">
                 {/* Tasks */}
                 <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
                   <div className="flex items-center gap-1.5">

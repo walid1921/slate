@@ -28,8 +28,7 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 ## Privacy & Safety
 
 - **All data is stored locally** — tasks, reminders, and notes live in a SQLite database on your machine (`~/Library/Application Support/slate-db/`). Nothing is synced or uploaded.
-- **No accounts, no telemetry, no analytics** — Slate has no backend.
-- **Weather only** — the only outbound network requests are to `freeipapi.com` (IP-based city lookup) and `api.open-meteo.com` (7-day forecast). No personal data beyond your IP is sent, and only when the app is open.
+- **No accounts, no telemetry, no analytics, no network requests** — Slate has no backend and never phones home.
 - **Permissions requested:**
   - Notifications — used only when a reminder fires
   - Autostart — only if you enable it in Settings
@@ -42,7 +41,7 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 ### Home
 - Type and press Enter to add a task instantly
 - Slash commands: `/tm`, `/rm`, `/nt` to create tasks, reminders, or notes
-- Preview cards at the bottom for Tasks, Reminders, Notes, and a 7-day weather forecast
+- Preview cards at the bottom for Tasks, Reminders, and Notes
 - Click any card to jump straight to that section
 
 ### Tasks
@@ -112,7 +111,6 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 | State | Zustand |
 | Icons | lucide-react |
 | Drag & drop | @dnd-kit |
-| Weather | Open-Meteo (free, no API key) |
 
 ---
 

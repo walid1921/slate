@@ -6,7 +6,7 @@ const sections = [
       { keys: ["/tm", "task name", "↵"], desc: "Add a task with a deadline — picks date & time" },
       { keys: ["/rm", "reminder text", "↵"], desc: "Add a reminder — navigates to Reminders after" },
       { keys: ["/nt", "title", "↵"], desc: "Create a new note — opens it immediately" },
-      { keys: ["Preview cards"], desc: "Click Tasks, Reminders, Notes or Weather cards to navigate" },
+      { keys: ["Preview cards"], desc: "Click Tasks, Reminders, or Notes cards to navigate" },
     ],
   },
   {
