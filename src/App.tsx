@@ -774,11 +774,12 @@ export default function App() {
                 sort={todoSort}
                 onFilter={setTodoFilter}
                 onSort={setTodoSort}
+                onRefresh={async () => { await load(); }}
               />
             </div>
             <button
               onClick={() => setAddTaskOpen(true)}
-              className="p-1 mr-2 rounded nav-todo text-t4 hover:bg-s1 transition-colors shrink-0"
+              className="p-1 mr-2 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors shrink-0"
               title="Add task"
             >
               <Plus size={12} />

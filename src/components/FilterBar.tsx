@@ -12,6 +12,7 @@ interface FilterBarProps {
   sort: TodoSort;
   onFilter: (f: TodoFilter) => void;
   onSort: (s: TodoSort) => void;
+  onRefresh?: () => void;
 }
 
 interface ReminderFilterBarProps {
@@ -89,7 +90,20 @@ function SortMenu({ options, value, onChange }: { options: string[]; value: stri
 
 export default function FilterBar(props: Props) {
   if (props.page === "todos") {
-    const { filter, sort, onFilter, onSort } = props;
+    const { filter, sort, onFilter, onSort, onRefresh } = props;
+    const [spinning, setSpinning] = useState(false);
+    const [refreshed, setRefreshed] = useState(false);
+
+    const handleRefresh = async () => {
+      if (!onRefresh || spinning) return;
+      setSpinning(true);
+      setRefreshed(false);
+      await onRefresh();
+      setSpinning(false);
+      setRefreshed(true);
+      setTimeout(() => setRefreshed(false), 1800);
+    };
+
     return (
       <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-s shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
@@ -104,6 +118,14 @@ export default function FilterBar(props: Props) {
             </button>
           ))}
         </div>
+        {onRefresh && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-green-400 transition-opacity duration-300" style={{ opacity: refreshed ? 1 : 0 }}>Refreshed</span>
+            <button onClick={handleRefresh} className="p-1 rounded text-t4 hover:text-t2 hover:bg-s1 transition-colors" title="Refresh">
+              <RefreshCw size={12} className={spinning ? "animate-spin" : ""} />
+            </button>
+          </div>
+        )}
         <SortMenu options={["manual", "due", "priority", "az"]} value={sort} onChange={(v) => onSort(v as TodoSort)} />
       </div>
     );
