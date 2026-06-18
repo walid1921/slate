@@ -579,6 +579,7 @@ export default function App() {
         add(val, defaultPriority);
         setInputVal("");
         setQuery("");
+        navigate("todos");
         return;
       }
       if (e.key === "Escape") {
@@ -1053,6 +1054,7 @@ export default function App() {
                 [date, time, snapshot.text]
               );
               await load();
+              navigate("todos");
             } catch (e) {
               console.error("confirm failed", e);
             }
