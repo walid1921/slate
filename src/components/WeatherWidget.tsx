@@ -51,8 +51,10 @@ export default function WeatherWidget() {
   useEffect(() => {
     (async () => {
       try {
-        const geo = await fetch("https://ipapi.co/json/").then(r => r.json());
-        const { latitude: lat, longitude: lon, city } = geo;
+        const geo = await fetch("https://freeipapi.com/api/json").then(r => r.json());
+        const lat = geo.latitude;
+        const lon = geo.longitude;
+        const city = geo.cityName;
 
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
         const data = await fetch(url).then(r => r.json());
