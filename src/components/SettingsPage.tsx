@@ -265,6 +265,7 @@ function DataTab() {
   const [importing, setImporting] = useState(false);
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
+  const [exportedPath, setExportedPath] = useState<string | null>(null);
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const showStatus = (msg: string, ok: boolean) => {
@@ -292,8 +293,9 @@ function DataTab() {
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
       const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
-      await writeTextFile(await join(dir, `slate-${today}.json`), payload);
-      showStatus("Exported successfully", true);
+      const filePath = await join(dir, `slate-${today}.json`);
+      await writeTextFile(filePath, payload);
+      setExportedPath(filePath);
     } catch (e) {
       showStatus("Export failed", false);
     } finally {
@@ -431,6 +433,32 @@ function DataTab() {
                 style={{ background: "rgba(59,130,246,0.15)" }}
               >
                 Yes, export then import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export success modal */}
+      {exportedPath && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="dropdown rounded-lg p-5 mx-4 flex flex-col gap-3" style={{ width: "fit-content", minWidth: 320 }}>
+            <p className="text-[14px] font-semibold text-t1">Data exported</p>
+            <p className="text-[12px] text-t3 leading-relaxed break-all">{exportedPath}</p>
+            <div className="flex gap-2 justify-end mt-1">
+              <button
+                onClick={() => setExportedPath(null)}
+                className="px-3 py-1.5 rounded text-[12px] text-t3 hover:text-t2 transition-colors"
+                style={{ background: "var(--c-surface-2)" }}
+              >
+                Close
+              </button>
+              <button
+                onClick={async () => { await revealItemInDir(exportedPath); setExportedPath(null); }}
+                className="px-3 py-1.5 rounded text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
+                style={{ background: "rgba(59,130,246,0.15)" }}
+              >
+                Open Folder
               </button>
             </div>
           </div>
