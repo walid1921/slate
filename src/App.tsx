@@ -109,75 +109,6 @@ function useNow(dueDate: string | null, dueTime: string | null): Date {
   return now;
 }
 
-function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
-  const now = useNow(todo.due_date, todo.due_time);
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(todo.text);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) { setVal(todo.text); setTimeout(() => inputRef.current?.select(), 10); }
-  }, [editing]);
-
-  const commit = () => {
-    const trimmed = val.trim();
-    if (trimmed && trimmed !== todo.text) useTodoStore.getState().updateText(todo.id, trimmed);
-    setEditing(false);
-  };
-
-  return (
-    <div
-      className="rounded-xl p-3 flex flex-col gap-1.5 cursor-default"
-      style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <button
-          onClick={() => useTodoStore.getState().toggle(todo.id)}
-          className="mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors"
-          style={todo.done ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
-        >
-          {todo.done && <Check size={8} stroke="white" />}
-        </button>
-        <button
-          onClick={onDelete}
-          className="text-t5 hover:text-red-400 transition-colors shrink-0"
-        >
-          <X size={10} />
-        </button>
-      </div>
-      {editing ? (
-        <input
-          ref={inputRef}
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") setEditing(false);
-            e.stopPropagation();
-          }}
-          className="text-[12px] font-medium text-t1 bg-transparent outline-none border-b leading-snug" style={{ borderColor: "var(--c-border)" }}
-        />
-      ) : (
-        <p
-          onDoubleClick={() => setEditing(true)}
-          className={`text-[12px] leading-snug font-medium ${todo.done ? "line-through text-t4" : "text-t1"}`}
-        >
-          {todo.text}
-        </p>
-      )}
-      <div className="flex items-center gap-1.5 flex-wrap mt-auto pt-1">
-        {todo.due_date && (() => {
-          const cd = formatCountdown(todo.due_date, todo.due_time, now);
-          return <span className={`text-[10px] ${cd.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>{cd.label}</span>;
-        })()}
-        {todo.priority !== "none" && (
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${todo.done ? "bg-t6" : PRIORITY_DOT[todo.priority]}`} />
-        )}
-      </div>
-    </div>
-  );
-}
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
   const { updateText, setPriority, setDescription } = useTodoStore();
@@ -408,7 +339,7 @@ export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
   const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
-  const { defaultSort, defaultPriority, tasksViewMode, set: setSetting, theme, textSize, windowMode } = useSettingsStore();
+  const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -454,9 +385,9 @@ export default function App() {
   useEffect(() => {
     const win = getCurrentWindow();
     if (windowMode === "compact") {
-      win.setSize({ type: "Logical", width: 480, height: 420 } as any);
+      win.setSize({ type: "Logical", width: 640, height: 480 } as any);
     } else {
-      win.setSize({ type: "Logical", width: 640, height: 520 } as any);
+      win.setSize({ type: "Logical", width: 860, height: 560 } as any);
     }
   }, [windowMode]);
 
@@ -665,8 +596,9 @@ export default function App() {
         });
         return;
       }
-      // Any printable char → focus input
-      if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+      // Any printable char → focus input (skip if focus is inside another input/textarea)
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && tag !== "INPUT" && tag !== "TEXTAREA") {
         inputRef.current?.focus();
       }
     };
@@ -737,97 +669,88 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main view: search input + command palette + todo list */}
+      {/* Main view */}
       {view === "main" && (
-        <div key="main" className="view-animate flex flex-row flex-1 overflow-hidden">
-          {/* Left panel: input + list */}
-          <div className="flex flex-col overflow-hidden border-r border-s" style={{ width: 260 }}>
-            <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
-              <Search size={15} className="text-t4 shrink-0" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputVal}
-                onChange={(e) => {
-                  setInputVal(e.target.value);
-                  setQuery(e.target.value);
-                  setFocusedIdx(-1);
-                  setCmdIdx(0);
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="Add task · /tm deadline · /rm reminder…"
-                className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
-              />
-              {inputVal && (
-                <button
-                  onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-                  className="text-t4 hover:text-t2 transition-colors shrink-0"
-                >
-                  <X size={11} />
-                </button>
-              )}
-            </div>
-
-            {showCmdPalette && filteredCmds.length > 0 && (
-              <div className="shrink-0 border-b border-s py-1">
-                {filteredCmds.map((cmd, i) => (
-                  <button
-                    key={cmd.prefix}
-                    onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
-                    className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${
-                      i === cmdIdx ? "" : "hover:bg-s1"
-                    }`}
-                    style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
-                  >
-                    <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
-                    <span className="text-[12px] text-t3">{cmd.desc}</span>
-                    {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <FilterBar
-              page="todos"
-              filter={todoFilter}
-              sort={todoSort}
-              viewMode={tasksViewMode}
-              onFilter={setTodoFilter}
-              onSort={setTodoSort}
-              onViewMode={(v) => setSetting("tasksViewMode", v)}
+        <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
+          {/* Search input — full width at top */}
+          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
+            <Search size={15} className="text-t4 shrink-0" />
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputVal}
+              onChange={(e) => {
+                setInputVal(e.target.value);
+                setQuery(e.target.value);
+                setFocusedIdx(-1);
+                setCmdIdx(0);
+              }}
+              onKeyDown={handleKeyDown}
+              placeholder="Add task · /tm deadline · /rm reminder…"
+              className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
             />
-
-            <div className="overflow-y-auto flex-1 py-1.5">
-              {loading ? (
-                <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
-              ) : filtered.length === 0 ? (
-                <div className="px-5 py-10 text-center text-t5 text-sm select-none">
-                  {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
-                </div>
-              ) : tasksViewMode === "cards" ? (
-                <div className="grid grid-cols-2 gap-2 px-3 py-2">
-                  {filtered.map((todo) => (
-                    <TodoCard
-                      key={todo.id}
-                      todo={todo}
-                      onDelete={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                    {filtered.map((todo, i) => (
-                      <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} onSelect={() => setSelectedTodoId(todo.id)} />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              )}
-            </div>
+            {inputVal && (
+              <button
+                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
+                className="text-t4 hover:text-t2 transition-colors shrink-0"
+              >
+                <X size={11} />
+              </button>
+            )}
           </div>
-          {/* Right panel: task detail */}
-          <div className="flex flex-col flex-1 overflow-hidden">
-            {selectedTodo ? <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} /> : <EmptyTaskDetail />}
+
+          {showCmdPalette && filteredCmds.length > 0 && (
+            <div className="shrink-0 border-b border-s py-1">
+              {filteredCmds.map((cmd, i) => (
+                <button
+                  key={cmd.prefix}
+                  onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
+                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
+                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                >
+                  <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
+                  <span className="text-[12px] text-t3">{cmd.desc}</span>
+                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Split panel */}
+          <div className="flex flex-row flex-1 overflow-hidden">
+            {/* Left: filter + list */}
+            <div className="flex flex-col overflow-hidden border-r border-s" style={{ width: 300 }}>
+              <FilterBar
+                page="todos"
+                filter={todoFilter}
+                sort={todoSort}
+                viewMode="list"
+                onFilter={setTodoFilter}
+                onSort={setTodoSort}
+                onViewMode={() => {}}
+              />
+              <div className="overflow-y-auto flex-1 py-1.5">
+                {loading ? (
+                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
+                ) : filtered.length === 0 ? (
+                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">
+                    {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
+                  </div>
+                ) : (
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                      {filtered.map((todo, i) => (
+                        <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} onSelect={() => setSelectedTodoId(todo.id)} />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </div>
+            </div>
+            {/* Right: task detail */}
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {selectedTodo ? <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} /> : <EmptyTaskDetail />}
+            </div>
           </div>
         </div>
       )}
