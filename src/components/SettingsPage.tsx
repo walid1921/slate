@@ -306,20 +306,21 @@ function DataTab() {
     if (typeof path === "string") { setImportFile(path); setImportConfirm(true); }
   };
 
-  const handleImport = async () => {
+  const handleImport = async (withBackup: boolean) => {
     if (!importFile) return;
     try {
       setImporting(true);
       setImportConfirm(false);
-      // Auto-backup current data before replacing
       const db = await getDb();
-      const backupTodos = await db.select("SELECT * FROM todos");
-      const backupReminders = await db.select("SELECT * FROM reminders");
-      const backupNotes = await db.select("SELECT * FROM notes");
-      const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
-      const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
-      const dir = await appDataDir();
-      await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
+      if (withBackup) {
+        const backupTodos = await db.select("SELECT * FROM todos");
+        const backupReminders = await db.select("SELECT * FROM reminders");
+        const backupNotes = await db.select("SELECT * FROM notes");
+        const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
+        const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
+        const dir = await appDataDir();
+        await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
+      }
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
       if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
@@ -405,9 +406,9 @@ function DataTab() {
       {importConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="dropdown rounded-lg p-5 max-w-xs w-full mx-4 flex flex-col gap-3">
-            <p className="text-[14px] font-semibold text-t1">Import new data?</p>
+            <p className="text-[14px] font-semibold text-t1">Export current data first?</p>
             <p className="text-[12px] text-t3 leading-relaxed">
-              Your current data will be backed up automatically before importing. You'll find the backup in your data folder.
+              Your current tasks, reminders and notes will be lost after importing. Do you want to export them first?
             </p>
             <div className="flex gap-2 justify-end mt-1">
               <button
@@ -418,11 +419,18 @@ function DataTab() {
                 Cancel
               </button>
               <button
-                onClick={handleImport}
+                onClick={() => handleImport(false)}
+                className="px-3 py-1.5 rounded text-[12px] text-t2 hover:text-t1 transition-colors"
+                style={{ background: "var(--c-surface-2)" }}
+              >
+                No, just import
+              </button>
+              <button
+                onClick={() => handleImport(true)}
                 className="px-3 py-1.5 rounded text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
                 style={{ background: "rgba(59,130,246,0.15)" }}
               >
-                Backup & Import
+                Yes, export then import
               </button>
             </div>
           </div>
