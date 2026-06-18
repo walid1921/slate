@@ -119,13 +119,24 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const now = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    const fiveMinAgo = new Date(d.getTime() - 5 * 60 * 1000);
+    const cutoff = `${fiveMinAgo.getFullYear()}-${pad(fiveMinAgo.getMonth()+1)}-${pad(fiveMinAgo.getDate())}T${pad(fiveMinAgo.getHours())}:${pad(fiveMinAgo.getMinutes())}:${pad(fiveMinAgo.getSeconds())}`;
 
     const due = await db.select<Reminder[]>(
       "SELECT id, text, remind_at, notified FROM reminders WHERE notified = 0 AND remind_at <= ?",
       [now]
     );
-    if (due.length > 0) {
-      set({ pendingAlert: due[0] });
+
+    // Silently mark stale reminders (older than 5 min) without showing overlay
+    const stale = due.filter((r) => r.remind_at <= cutoff);
+    for (const r of stale) {
+      await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [r.id]);
+    }
+    if (stale.length > 0) { set({ hasUnread: true }); await get().load(); }
+
+    const fresh = due.filter((r) => r.remind_at > cutoff);
+    if (fresh.length > 0) {
+      set({ pendingAlert: fresh[0] });
     }
   },
 }));
