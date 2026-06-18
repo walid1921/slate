@@ -85,8 +85,8 @@ export default function WeatherWidget() {
   if (!weather) return null;
 
   function tempColor(t: number) {
-    if (t > 30) return "#f87171";
-    if (t > 20) return "#fb923c";
+    if (t > 30) return "rgba(220,60,60,0.75)";
+    if (t > 20) return "rgba(210,120,40,0.75)";
     return undefined;
   }
 
@@ -101,7 +101,7 @@ export default function WeatherWidget() {
           return (
             <div key={day.date} className="flex flex-col items-center gap-0.5 flex-1">
               <p className={`text-[10px] font-medium ${i === 0 ? "text-t2" : "text-t4"}`}>{label}</p>
-              <span className="text-[13px] leading-none">{w.emoji}</span>
+              <span className="text-[13px] leading-none" style={{ opacity: 0.5 }}>{w.emoji}</span>
               <p className="text-[10px] font-medium" style={{ color: tempColor(day.max) ?? "var(--c-text-2)" }}>{day.max}°</p>
               <p className="text-[10px]" style={{ color: tempColor(day.min) ?? "var(--c-text-5)" }}>{day.min}°</p>
             </div>
