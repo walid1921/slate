@@ -51,7 +51,7 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
               className="flex-1 px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
@@ -59,7 +59,7 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              onKeyDown={(e) => e.stopPropagation()}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
               className="px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 100 }}
             />
