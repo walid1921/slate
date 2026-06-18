@@ -278,11 +278,10 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
         </div>
         <button
           onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1 px-3 py-1.5 mr-2 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 transition-colors shrink-0"
-          style={{ background: "rgba(99,102,241,0.12)" }}
+          className="p-1 mr-2 rounded text-indigo-400 hover:text-indigo-300 hover:bg-s1 transition-colors shrink-0"
+          title="Add reminder"
         >
           <Plus size={12} />
-          Add
         </button>
       </div>
       <div className="overflow-y-auto flex-1 py-1.5">
