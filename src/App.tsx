@@ -721,17 +721,17 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
+          <FilterBar
+            page="todos"
+            filter={todoFilter}
+            sort={todoSort}
+            onFilter={setTodoFilter}
+            onSort={setTodoSort}
+          />
           {/* Split panel */}
           <div className="flex flex-row flex-1 overflow-hidden">
-            {/* Left: filter + list */}
+            {/* Left: list */}
             <div className="flex flex-col overflow-hidden border-r border-s" style={{ width: 300 }}>
-              <FilterBar
-                page="todos"
-                filter={todoFilter}
-                sort={todoSort}
-                onFilter={setTodoFilter}
-                onSort={setTodoSort}
-              />
               <div className="overflow-y-auto flex-1 py-1.5">
                 {loading ? (
                   <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
