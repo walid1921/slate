@@ -5,6 +5,7 @@
   "windows": ["reminder-overlay"],
   "permissions": [
     "core:default",
-    "core:event:allow-emit-to"
+    "core:event:allow-emit-to",
+    "core:window:allow-close"
   ]
 }
