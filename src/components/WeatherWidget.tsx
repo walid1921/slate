@@ -92,7 +92,7 @@ export default function WeatherWidget() {
 
   return (
     <div className="flex flex-col gap-2 w-full select-none">
-      <p className="text-[10px] text-t4 font-medium">{weather.city}</p>
+      <p className="text-[10px] text-t2 font-medium">{weather.city}</p>
       <div className="flex justify-between gap-1">
         {weather.days.map((day, i) => {
           const d = new Date(day.date + "T12:00:00");
