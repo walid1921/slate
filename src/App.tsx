@@ -21,6 +21,7 @@ import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
+import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -338,7 +339,7 @@ function TodoRow({
 
 export default function App() {
   const { todos, trash, query, loading, setQuery, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
-  const { reminders: allReminders, add: addReminder, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
+  const { reminders: allReminders, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -924,9 +925,9 @@ export default function App() {
       )}
 
       {/* Date/time picker modal */}
-      {pendingModal && (
+      {pendingModal?.type === "task" && (
         <DateTimeModal
-          title={pendingModal.type === "task" ? "Set deadline" : "Set reminder"}
+          title="Set deadline"
           subtitle={pendingModal.text}
           showDate={true}
           onConfirm={async (datetime) => {
@@ -934,20 +935,15 @@ export default function App() {
             setPendingModal(null);
             setTimeout(() => inputRef.current?.focus(), 50);
             try {
-              if (snapshot.type === "task") {
-                const date = datetime.split("T")[0];
-                const time = datetime.split("T")[1]?.slice(0, 5);
-                await useTodoStore.getState().add(snapshot.text);
-                const db = await import("./db").then((m) => m.getDb());
-                await db.execute(
-                  "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
-                  [date, time, snapshot.text]
-                );
-                await load();
-              } else {
-                await addReminder(snapshot.text, datetime);
-                navigate("reminders");
-              }
+              const date = datetime.split("T")[0];
+              const time = datetime.split("T")[1]?.slice(0, 5);
+              await useTodoStore.getState().add(snapshot.text);
+              const db = await import("./db").then((m) => m.getDb());
+              await db.execute(
+                "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
+                [date, time, snapshot.text]
+              );
+              await load();
             } catch (e) {
               console.error("confirm failed", e);
             }
@@ -955,6 +951,16 @@ export default function App() {
           onCancel={() => {
             setPendingModal(null);
             setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+        />
+      )}
+      {pendingModal?.type === "reminder" && (
+        <AddReminderModal
+          initialText={pendingModal.text}
+          onClose={() => {
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+            navigate("reminders");
           }}
         />
       )}
