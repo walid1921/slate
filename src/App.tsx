@@ -651,7 +651,7 @@ export default function App() {
 
       {/* Main view — quick capture input */}
       {view === "main" && (
-        <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
+        <div key="main" className="view-animate relative flex flex-col flex-1 overflow-hidden">
           <div
             className="flex items-center gap-3 px-5 shrink-0 border-b transition-colors"
             style={{
@@ -682,7 +682,7 @@ export default function App() {
           </div>
 
           {showCmdPalette && filteredCmds.length > 0 && (
-            <div className="shrink-0 border-b border-s py-1">
+            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
               {filteredCmds.map((cmd, i) => (
                 <button
                   key={cmd.prefix}
