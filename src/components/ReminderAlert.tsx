@@ -1,14 +1,7 @@
 import { useEffect, useRef } from "react";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useReminderStore } from "../reminderStore";
-
-const closeOverlay = async () => {
-  try {
-    const overlay = await WebviewWindow.getByLabel("reminder-overlay");
-    if (overlay) await overlay.close();
-  } catch {}
-};
 
 export default function ReminderAlert() {
   const { pendingAlert, markSent, dismissAlert, update } = useReminderStore();
@@ -20,15 +13,7 @@ export default function ReminderAlert() {
 
     const r = pendingAlert;
 
-    const win = new WebviewWindow("reminder-overlay", {
-      url: `index.html?reminderOverlay=1&text=${encodeURIComponent(r.text)}`,
-      fullscreen: true,
-      transparent: true,
-      decorations: false,
-      alwaysOnTop: true,
-      skipTaskbar: true,
-      focus: true,
-    });
+    invoke("show_reminder_overlay", { text: r.text }).catch(console.error);
 
     const cleanup = () => {
       openRef.current = false;
@@ -39,7 +24,7 @@ export default function ReminderAlert() {
     const unlistenDone = listen("reminder-done", async () => {
       await markSent(r.id);
       dismissAlert();
-      await closeOverlay();
+      await invoke("close_reminder_overlay").catch(() => {});
       cleanup();
     });
 
@@ -47,11 +32,9 @@ export default function ReminderAlert() {
       const { date, time } = e.payload;
       await update(r.id, r.text, `${date}T${time}:00`);
       dismissAlert();
-      await closeOverlay();
+      await invoke("close_reminder_overlay").catch(() => {});
       cleanup();
     });
-
-    win.onCloseRequested(() => cleanup());
   }, [pendingAlert]);
 
   return null;

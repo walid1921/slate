@@ -18,6 +18,35 @@ fn close_quick_note(app: AppHandle) {
     }
 }
 
+#[tauri::command]
+fn show_reminder_overlay(app: AppHandle, text: String) {
+    if let Some(existing) = app.get_webview_window("reminder-overlay") {
+        let _ = existing.close();
+    }
+    let url = format!("index.html?reminderOverlay=1&text={}", urlencoding::encode(&text));
+    if let Ok(win) = WebviewWindowBuilder::new(
+        &app,
+        "reminder-overlay",
+        WebviewUrl::App(url.into()),
+    )
+    .fullscreen(true)
+    .transparent(true)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .focused(true)
+    .build() {
+        let _ = win.set_focus();
+    }
+}
+
+#[tauri::command]
+fn close_reminder_overlay(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("reminder-overlay") {
+        let _ = window.close();
+    }
+}
+
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
@@ -82,7 +111,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide])
+        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide, show_reminder_overlay, close_reminder_overlay])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
