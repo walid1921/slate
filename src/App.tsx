@@ -6,6 +6,7 @@ import {
   X,
   RotateCcw,
   ChevronLeft,
+  Home,
   CheckSquare,
   Clock,
   FileText,
@@ -345,12 +346,12 @@ export default function App() {
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
   type View = "main" | "todos" | "trash" | "reminders" | "notes" | "settings";
-  type NavView = "todos" | "reminders" | "notes" | "settings";
+  type NavView = "main" | "todos" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
-  const [lastNavView, setLastNavView] = useState<NavView>("todos");
+  const [lastNavView, setLastNavView] = useState<NavView>("main");
 
   const navigate = useCallback((v: View) => {
-    if (v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
+    if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -502,7 +503,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["todos", "reminders", "notes", "settings"];
+        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "settings"];
         const cur = tabs.indexOf(lastNavView);
         const next = e.key === "ArrowRight"
           ? tabs[(cur + 1) % tabs.length]
@@ -563,7 +564,7 @@ export default function App() {
         className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-s"
         style={{ height: 38, background: "var(--c-nav)" }}
       >
-        {view === "trash" && <BackButton />}
+        {(view === "trash" || view === "todos") && <BackButton />}
         {view === "main" ? (
           <div className="flex items-center gap-1.5">
             <img src={theme === "dark" ? logoMarkDark : logoMarkLight} alt="Slate" className="w-4 h-4 opacity-70" />
@@ -755,9 +756,16 @@ export default function App() {
                     borderRadius: 5,
                     background: "var(--c-surface-3)",
                     left: "2px",
-                    transform: `translateX(${lastNavView === "todos" ? "0px" : lastNavView === "reminders" ? "32px" : lastNavView === "notes" ? "64px" : "96px"})`,
+                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : "128px"})`,
                   }}
                 />
+                <button
+                  onClick={() => navigate("main")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "main" ? "text-t1" : "text-t4 hover:text-t2"}`}
+                >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Home</span>
+                  <Home size={13} />
+                </button>
                 <button
                   onClick={() => { navigate("todos"); clearTodoUnread(); }}
                   className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 nav-todo ${lastNavView === "todos" ? "text-blue-400" : "text-t4"}`}
