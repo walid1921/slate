@@ -6,45 +6,55 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ---
 
+## Demo
+
+<!-- Screen recording coming soon -->
+
+---
+
 ## Features
 
+### Home
+- Type and press Enter to add a task instantly
+- Slash commands: `/tm`, `/rm`, `/nt` to create tasks, reminders, or notes
+- Preview cards at the bottom for Tasks, Reminders, Notes, and a 7-day weather forecast
+- Click any card to jump straight to that section
+
 ### Tasks
-- Add tasks by typing and pressing Enter
-- Set deadlines with `/tm task name` — a live countdown shows months, days, hours, minutes, and seconds until due
+- Set deadlines with `/tm task name` — a live countdown shows months, days, hours, minutes, and seconds
 - Inline editing by double-clicking any task
 - Priority levels (none / low / medium / high) — click the dot to cycle through
 - Drag and drop to reorder manually
 - Filter by All / Active / Done — sort by manual order, due date, priority, or A–Z
-- List and cards view
 - Done tasks can be pushed to the bottom or cleared to trash in one click
 
 ### Reminders
-- Add a reminder with `/rm reminder text` — navigates to the Reminders page automatically
-- Live status: upcoming (blue), overdue (red), sent (gray)
-- Inline editing for both text and time
+- Add a reminder with `/rm reminder text` — navigates to Reminders automatically
+- Full-screen notification overlay when a reminder fires — dismiss or reschedule in one click
+- Live status: upcoming (indigo dot), overdue (red dot), sent (grey dot)
+- Inline editing for both text and scheduled time
 - Filter by All / Upcoming / Sent — sort by time or A–Z
-- List and cards view
 - Clear all sent reminders in one click
 
 ### Notes
 - Add a note with `/nt title` — opens the editor immediately
 - Split-pane view: collapsible sidebar + full editor
 - Auto-saves after 500 ms
-- Sort by last edited, created date, or A–Z
+- Right-click a note in the sidebar to delete it
 
-### Deleted
-- Soft-delete: all removed tasks land here
-- Restore individual tasks or select multiple to wipe at once
+### Trash
+- Soft-delete for tasks, reminders, and notes — everything lands here first
+- Restore individual items or select multiple to wipe at once
+- Back button returns to the page you came from
 
 ### Settings
 - **Theme** — Dark or Light mode
 - **Row density** — Compact, Normal, or Roomy
-- **Dividers** — Soft lines between tasks
+- **Dividers** — Soft lines between rows
 - **Default priority** — Pre-assign a priority to new tasks
 - **Default sort** — Set the initial sort order
 - **Done tasks at bottom** — Visually separate completed work
 - **Confirm before delete** — Optional confirmation dialog
-- **Reminder check interval** — 30 s, 1 min, or 5 min
 
 ---
 
@@ -53,14 +63,15 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 | Shortcut | Action |
 |---|---|
 | Type anything + ↵ | Add a new task |
-| `/tm task ↵` | Add task with a deadline |
+| `/tm task ↵` | Add task with deadline |
 | `/rm text ↵` | Add a reminder |
 | `/nt title ↵` | Create a new note |
+| `⌥S` | Toggle Slate from anywhere on macOS |
+| `⌥N` | Open quick-note window from anywhere |
 | `↑ ↓` | Navigate tasks |
 | `Space` | Toggle task done / undone |
 | `⌫ Delete` | Move focused task to trash |
 | `Esc` | Close Slate |
-| `⌥S` | Toggle Slate from anywhere |
 | Double-click text | Edit inline |
 
 ---
@@ -73,9 +84,10 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 | UI | React 18 + TypeScript |
 | Styling | Tailwind CSS v4 |
 | Database | SQLite via `tauri-plugin-sql` |
-| State | Zustand (with persistence) |
+| State | Zustand |
 | Icons | lucide-react |
 | Drag & drop | @dnd-kit |
+| Weather | Open-Meteo (free, no API key) |
 
 ---
 
@@ -85,7 +97,7 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 - [Rust](https://rustup.rs)
 - [Node.js](https://nodejs.org) 18+
-- macOS (required for `macOSPrivateApi` vibrancy)
+- macOS (required for vibrancy / `macOSPrivateApi`)
 
 ### Getting started
 
@@ -106,21 +118,24 @@ npm run tauri build
 
 ```
 src/
-├── App.tsx              # Main view, keyboard handler, all top-level logic
+├── App.tsx              # Main layout, routing, keyboard handler
 ├── store.ts             # Todo store (Zustand + SQLite)
-├── reminderStore.ts     # Reminder store
+├── reminderStore.ts     # Reminder store + notification checker
 ├── notesStore.ts        # Notes store
 ├── settingsStore.ts     # Persisted settings (localStorage)
-├── notifications.ts     # macOS notification scheduling
+├── notifications.ts     # macOS notification permission + send
 ├── db.ts                # SQLite init & migrations
 └── components/
-    ├── FilterBar.tsx     # Filter + sort + view toggle bar
-    ├── RemindersPage.tsx # Reminders list/cards with inline editing
-    ├── NotesPage.tsx     # Notes split-pane editor
-    ├── SettingsPage.tsx  # All settings
-    ├── GuidePage.tsx     # Keyboard shortcut reference
-    ├── DateTimeModal.tsx # Due date / reminder time picker
-    └── ConfirmDialog.tsx # Delete confirmation dialog
+    ├── FilterBar.tsx        # Filter + sort bar (todos & reminders)
+    ├── RemindersPage.tsx    # Reminders list with inline editing
+    ├── NotesPage.tsx        # Notes split-pane editor
+    ├── WeatherWidget.tsx    # 7-day weather forecast card
+    ├── ReminderAlert.tsx    # Triggers the notification overlay window
+    ├── ReminderOverlay.tsx  # Full-screen reminder notification UI
+    ├── SettingsPage.tsx     # All settings
+    ├── GuidePage.tsx        # Keyboard shortcut reference
+    ├── DateTimeModal.tsx    # Due date / reminder time picker
+    └── ConfirmDialog.tsx    # Delete confirmation dialog
 ```
 
 ---
