@@ -20,6 +20,8 @@ import { useTodoStore, Priority, Todo } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
+import DateTimeModal from "./components/DateTimeModal";
+import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -337,9 +339,9 @@ function TodoRow({
 }
 
 export default function App() {
-  const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread } = useTodoStore();
+  const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
   const { reminders: allReminders, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
-  const { notes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
+  const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
@@ -355,6 +357,8 @@ export default function App() {
     setView(v);
   }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
+  const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
@@ -364,6 +368,15 @@ export default function App() {
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
     setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
   }, []);
+
+  const COMMANDS = [
+    { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
+    { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
+    { prefix: "/nt ", label: "/nt", desc: "Create a new note" },
+  ];
+
+  const showCmdPalette = inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal)));
+  const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
 
   // Apply theme and text size to document root
   useEffect(() => {
@@ -427,6 +440,7 @@ export default function App() {
       setVisible(true);
       navigate("main");
       setInputVal("");
+      setQuery("");
       setTimeout(() => inputRef.current?.focus(), 50);
     });
     // Also trigger on initial mount (first open)
@@ -485,17 +499,52 @@ export default function App() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (showCmdPalette && filteredCmds.length > 0) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCmds.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredCmds.length) % filteredCmds.length); return; }
+        if (e.key === "Tab" || (e.key === "Enter" && inputVal === "/")) {
+          e.preventDefault();
+          setInputVal(filteredCmds[cmdIdx].prefix);
+          setQuery(filteredCmds[cmdIdx].prefix);
+          return;
+        }
+        if (e.key === "Escape") {
+          if (inputVal.trim()) { setInputVal(""); setQuery(""); }
+          else { getCurrentWindow().hide(); }
+          return;
+        }
+      }
       if (e.key === "Enter" && inputVal.trim()) {
-        add(inputVal.trim(), defaultPriority);
+        const val = inputVal.trim();
+        if (val.startsWith("/tm ") || val === "/tm") {
+          const text = val.slice(4).trim();
+          if (text) { setPendingModal({ type: "task", text }); setInputVal(""); setQuery(""); }
+          return;
+        }
+        if (val.startsWith("/rm ") || val === "/rm") {
+          const text = val.slice(4).trim();
+          if (text) { setPendingModal({ type: "reminder", text }); setInputVal(""); setQuery(""); }
+          return;
+        }
+        if (val.startsWith("/nt ") || val === "/nt") {
+          const title = val.slice(4).trim();
+          addNote(title || "Untitled", "");
+          navigate("notes");
+          setInputVal("");
+          setQuery("");
+          return;
+        }
+        add(val, defaultPriority);
         setInputVal("");
+        setQuery("");
         return;
       }
       if (e.key === "Escape") {
-        if (inputVal.trim()) { setInputVal(""); return; }
+        if (inputVal.trim()) { setInputVal(""); setQuery(""); return; }
         getCurrentWindow().hide();
       }
     },
-    [inputVal, add, defaultPriority]
+    [inputVal, showCmdPalette, filteredCmds, cmdIdx, add, addNote, defaultPriority, setQuery]
   );
 
   // Global keydown
@@ -615,22 +664,40 @@ export default function App() {
               ref={inputRef}
               type="text"
               value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
+              onChange={(e) => { setInputVal(e.target.value); setQuery(e.target.value); setCmdIdx(0); }}
               onKeyDown={handleKeyDown}
               onFocus={() => setInputFocused(true)}
               onBlur={() => setInputFocused(false)}
-              placeholder="Add a task…"
+              placeholder="Add task · /tm deadline · /rm reminder…"
               className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
             />
             {inputVal && (
               <button
-                onClick={() => { setInputVal(""); inputRef.current?.focus(); }}
+                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
                 className="text-t4 hover:text-t2 transition-colors shrink-0"
               >
                 <X size={11} />
               </button>
             )}
           </div>
+
+          {showCmdPalette && filteredCmds.length > 0 && (
+            <div className="shrink-0 border-b border-s py-1">
+              {filteredCmds.map((cmd, i) => (
+                <button
+                  key={cmd.prefix}
+                  onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
+                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
+                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                >
+                  <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
+                  <span className="text-[12px] text-t3">{cmd.desc}</span>
+                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex-1 flex items-center justify-center">
             <p className="text-t5 text-xs select-none">Type a task and press ↵</p>
           </div>
@@ -843,6 +910,46 @@ export default function App() {
           onCancel={() => setConfirmDelete(null)}
           confirmLabel={confirmDelete.confirmLabel}
           confirmClassName={confirmDelete.confirmClassName}
+        />
+      )}
+
+      {pendingModal?.type === "task" && (
+        <DateTimeModal
+          title="Set deadline"
+          subtitle={pendingModal.text}
+          showDate={true}
+          onConfirm={async (datetime) => {
+            const snapshot = pendingModal;
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+            try {
+              const date = datetime.split("T")[0];
+              const time = datetime.split("T")[1]?.slice(0, 5);
+              await useTodoStore.getState().add(snapshot.text);
+              const db = await import("./db").then((m) => m.getDb());
+              await db.execute(
+                "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
+                [date, time, snapshot.text]
+              );
+              await load();
+            } catch (e) {
+              console.error("confirm failed", e);
+            }
+          }}
+          onCancel={() => {
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+        />
+      )}
+      {pendingModal?.type === "reminder" && (
+        <AddReminderModal
+          initialText={pendingModal.text}
+          onClose={() => {
+            setPendingModal(null);
+            setTimeout(() => inputRef.current?.focus(), 50);
+            navigate("reminders");
+          }}
         />
       )}
 
