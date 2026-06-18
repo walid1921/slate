@@ -15,12 +15,16 @@ export default function ReminderAlert() {
 
     const win = new WebviewWindow("reminder-overlay", {
       url: `index.html?reminderOverlay=1&text=${encodeURIComponent(r.text)}`,
-      fullscreen: true,
+      width: window.screen.width,
+      height: window.screen.height,
+      x: 0,
+      y: 0,
       transparent: true,
       decorations: false,
       alwaysOnTop: true,
       skipTaskbar: true,
       focus: true,
+      resizable: false,
     });
 
     const unlistenDone = listen("reminder-done", async () => {
