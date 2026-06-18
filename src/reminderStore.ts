@@ -91,7 +91,16 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const r = get().reminders.find((r) => r.id === id);
     if (r) await notify("Slate Reminder", r.text);
     await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [id]);
-    set((s) => ({ reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r), hasUnread: true }));
+    set((s) => ({
+      reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r),
+      hasUnread: true,
+      pendingAlert: s.pendingAlert?.id === id ? null : s.pendingAlert,
+    }));
+    try {
+      const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+      const overlay = await WebviewWindow.getByLabel("reminder-overlay");
+      if (overlay) await overlay.close();
+    } catch {}
   },
 
   checkDue: async () => {
