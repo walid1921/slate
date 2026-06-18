@@ -12,7 +12,7 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const defaultDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-  const defaultTime = `${pad((today.getHours() + 1) % 24)}:00`;
+  const defaultTime = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
 
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState(defaultTime);
