@@ -405,7 +405,7 @@ function DataTab() {
       {/* Import confirm modal */}
       {importConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="dropdown rounded-lg p-5 max-w-xs w-full mx-4 flex flex-col gap-3">
+          <div className="dropdown rounded-lg p-5 mx-4 flex flex-col gap-3" style={{ width: "fit-content", minWidth: 320 }}>
             <p className="text-[14px] font-semibold text-t1">Export current data first?</p>
             <p className="text-[12px] text-t3 leading-relaxed">
               Your current tasks, reminders and notes will be lost after importing. Do you want to export them first?
