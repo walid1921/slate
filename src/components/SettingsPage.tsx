@@ -568,7 +568,7 @@ const PRIVACY_POINTS = [
   { icon: Lock,                      color: "rgba(59,130,246,0.9)",   bg: "rgba(59,130,246,0.12)",   label: "All data stored locally",            desc: "Your tasks, reminders, and notes never leave your device." },
   { icon: WifiOff,                   color: "rgba(168,85,247,0.9)",   bg: "rgba(168,85,247,0.12)",   label: "No internet connection required",     desc: "Slate works fully offline. No server, no cloud sync." },
   { icon: BarChartHorizontalBig,     color: "rgba(239,68,68,0.9)",    bg: "rgba(239,68,68,0.12)",    label: "No tracking or analytics",            desc: "Zero telemetry. We have no idea how you use the app." },
-  { icon: UserX,                     color: "rgba(249,115,22,0.9)",   bg: "rgba(249,115,22,0.12)",   label: "No account or login",                 desc: "Open the app and start using it — no sign-up required." },
+  { icon: UserX,                     color: "rgba(249,115,22,0.9)",   bg: "rgba(249,115,22,0.12)",   label: "No account or login",                 desc: "Open the app and start using it. No sign-up required." },
   { icon: Database,                  color: "rgba(20,184,166,0.9)",   bg: "rgba(20,184,166,0.12)",   label: "SQLite database on your machine",     desc: "Data lives in ~/Library/Application Support/slate-db/. Yours to keep or delete." },
   { icon: Bell,                      color: "rgba(234,179,8,0.9)",    bg: "rgba(234,179,8,0.12)",    label: "Notifications only when you ask",     desc: "Permission is requested only when you create a reminder." },
   { icon: ShieldOff,                 color: "rgba(16,185,129,0.9)",   bg: "rgba(16,185,129,0.12)",   label: "No camera, microphone, or location",  desc: "Slate requests no sensitive system permissions." },
