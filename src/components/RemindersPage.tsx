@@ -155,12 +155,22 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
 }
 
 export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDeleteRequest: (id: number) => void; onConfirm: (title: string, msg: string, fn: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
-  const { reminders, load, markSent } = useReminderStore();
+  const { reminders, load, markSent, dismissAlert } = useReminderStore();
   const [filter, setFilter] = useState<ReminderFilter>("all");
   const [sort, setSort] = useState<ReminderSort>("time");
   const [focusedIdx, setFocusedIdx] = useState(0);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleRefresh = async () => {
+    dismissAlert();
+    try {
+      const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+      const overlay = await WebviewWindow.getByLabel("reminder-overlay");
+      if (overlay) await overlay.close();
+    } catch {}
+    await load();
+  };
 
   const sorted = [...reminders].sort((a, b) => {
     if (sort === "az") return a.text.localeCompare(b.text);
@@ -198,7 +208,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
 
   return (
     <div className="view-animate flex flex-col flex-1 overflow-hidden">
-      <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} />
+      <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} onRefresh={handleRefresh} />
       <div className="overflow-y-auto flex-1 py-1.5">
         {reminders.length === 0 ? (
           <div className="px-5 py-10 text-center text-t5 text-sm select-none">

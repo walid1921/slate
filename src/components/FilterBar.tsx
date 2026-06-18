@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, RefreshCw } from "lucide-react";
 
 export type TodoFilter = "all" | "active" | "done";
 export type TodoSort = "manual" | "due" | "priority" | "az";
@@ -20,6 +20,7 @@ interface ReminderFilterBarProps {
   sort: ReminderSort;
   onFilter: (f: ReminderFilter) => void;
   onSort: (s: ReminderSort) => void;
+  onRefresh?: () => void;
 }
 
 type Props = FilterBarProps | ReminderFilterBarProps;
@@ -109,7 +110,7 @@ export default function FilterBar(props: Props) {
   }
 
   if (props.page === "reminders") {
-    const { filter, sort, onFilter, onSort } = props;
+    const { filter, sort, onFilter, onSort, onRefresh } = props;
     return (
       <div className="flex items-center gap-1.5 px-4 py-1.5 border-b border-s shrink-0">
         <div className="flex items-center gap-0.5 flex-1">
@@ -124,6 +125,11 @@ export default function FilterBar(props: Props) {
             </button>
           ))}
         </div>
+        {onRefresh && (
+          <button onClick={onRefresh} className="p-1 rounded text-t4 hover:text-t2 hover:bg-s1 transition-colors" title="Refresh">
+            <RefreshCw size={12} />
+          </button>
+        )}
         <SortMenu options={["time", "az"]} value={sort} onChange={(v) => onSort(v as ReminderSort)} />
       </div>
     );
