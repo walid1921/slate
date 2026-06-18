@@ -31,12 +31,10 @@ export default function ReminderOverlay() {
 
   const handleDone = async () => {
     await emitTo("main", "reminder-done", {});
-    await close();
   };
 
   const handleReschedule = async () => {
     await emitTo("main", "reminder-reschedule", { date, time });
-    await close();
   };
 
   return (
