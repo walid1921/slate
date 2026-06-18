@@ -613,7 +613,7 @@ export default function App() {
         className="flex items-center px-5 shrink-0 select-none cursor-default border-b border-s"
         style={{ height: 38, background: "var(--c-nav)" }}
       >
-        {(view === "trash" || view === "todos") && <BackButton />}
+        {view === "trash" && <BackButton />}
         {view === "main" ? (
           <div className="flex items-center gap-1.5">
             <img src={theme === "dark" ? logoMarkDark : logoMarkLight} alt="Slate" className="w-4 h-4 opacity-70" />
