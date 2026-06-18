@@ -304,6 +304,15 @@ function DataTab() {
     try {
       setImporting(true);
       setImportConfirm(false);
+      // Auto-backup current data before replacing
+      const db = await getDb();
+      const backupTodos = await db.select("SELECT * FROM todos");
+      const backupReminders = await db.select("SELECT * FROM reminders");
+      const backupNotes = await db.select("SELECT * FROM notes");
+      const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
+      const backupDate = new Date().toISOString().slice(0, 10);
+      const dir = await appDataDir();
+      await writeTextFile(`${dir}slate-backup-${backupDate}.json`, backupPayload);
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
       if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
@@ -329,7 +338,7 @@ function DataTab() {
           [n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at ?? null]
         );
       }
-      showStatus("Imported — restart Slate to reload data", true);
+      showStatus("Backup saved & data imported — restart Slate to reload", true);
     } catch {
       showStatus("Import failed — invalid file", false);
     } finally {
@@ -389,9 +398,9 @@ function DataTab() {
       {importConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="dropdown rounded-lg p-5 max-w-xs w-full mx-4 flex flex-col gap-3">
-            <p className="text-[14px] font-semibold text-t1">Replace all data?</p>
+            <p className="text-[14px] font-semibold text-t1">Import new data?</p>
             <p className="text-[12px] text-t3 leading-relaxed">
-              Importing will permanently delete your current tasks, reminders and notes. This cannot be undone.
+              Your current data will be backed up automatically before importing. You'll find the backup in your data folder.
             </p>
             <div className="flex gap-2 justify-end mt-1">
               <button
@@ -403,10 +412,10 @@ function DataTab() {
               </button>
               <button
                 onClick={handleImport}
-                className="px-3 py-1.5 rounded text-[12px] text-red-400 hover:text-red-300 transition-colors"
-                style={{ background: "rgba(239,68,68,0.15)" }}
+                className="px-3 py-1.5 rounded text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
+                style={{ background: "rgba(59,130,246,0.15)" }}
               >
-                Replace & Import
+                Backup & Import
               </button>
             </div>
           </div>
