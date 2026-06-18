@@ -347,6 +347,7 @@ export default function App() {
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
+  const [preTrashView, setPreTrashView] = useState<View>("main");
   type View = "main" | "todos" | "trash" | "reminders" | "notes" | "settings";
   type NavView = "main" | "todos" | "reminders" | "notes" | "settings";
   const [view, setView] = useState<View>("main");
@@ -406,12 +407,13 @@ export default function App() {
   }, [checkDue, checkDueTodos]);
 
   const openTrash = useCallback(() => {
+    setPreTrashView(view);
     loadTrash();
     loadReminderTrash();
     loadNoteTrash();
     setSelected(new Set());
     navigate("trash");
-  }, [loadTrash, loadReminderTrash, loadNoteTrash]);
+  }, [view, loadTrash, loadReminderTrash, loadNoteTrash]);
 
   const toggleSelect = useCallback((id: number) => {
     setSelected((s) => {
@@ -586,7 +588,7 @@ export default function App() {
   }, [filtered, focusedIdx, lastNavView, view]);
 
   const BackButton = () => (
-    <button onClick={() => navigate("main")} className="text-t3 hover:text-t2 transition-colors mr-3">
+    <button onClick={() => navigate(preTrashView)} className="text-t3 hover:text-t2 transition-colors mr-3">
       <ChevronLeft size={14} />
     </button>
   );
