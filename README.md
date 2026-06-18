@@ -28,6 +28,8 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 ## Privacy & Safety
 
 - **All data is stored locally** — tasks, reminders, and notes live in a SQLite database on your machine (`~/Library/Application Support/slate-db/`). Nothing is synced or uploaded.
+- **No internet connection needed** — everything runs locally, offline by default.
+- **No account or login** — open the app and start using it immediately.
 - **No accounts, no telemetry, no analytics, no network requests** — Slate has no backend and never phones home.
 - **Permissions requested:**
   - Notifications — used only when a reminder fires
