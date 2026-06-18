@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "overlay",
+  "description": "Capability for the reminder overlay window",
+  "windows": ["reminder-overlay"],
+  "permissions": [
+    "core:default",
+    "core:event:allow-emit-to"
+  ]
+}
