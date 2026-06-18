@@ -25,6 +25,18 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ---
 
+## Privacy & Safety
+
+- **All data is stored locally** — tasks, reminders, and notes live in a SQLite database on your machine (`~/Library/Application Support/slate-db/`). Nothing is synced or uploaded.
+- **No accounts, no telemetry, no analytics** — Slate has no backend.
+- **Weather only** — the only outbound network requests are to `freeipapi.com` (IP-based city lookup) and `api.open-meteo.com` (7-day forecast). No personal data beyond your IP is sent, and only when the app is open.
+- **Permissions requested:**
+  - Notifications — used only when a reminder fires
+  - Autostart — only if you enable it in Settings
+  - No camera, microphone, location, contacts, or any other sensitive permissions
+
+---
+
 ## Features
 
 ### Home
