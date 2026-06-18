@@ -10,7 +10,6 @@ export default function ReminderOverlay() {
   const [rescheduling, setRescheduling] = useState(false);
 
   const now = new Date();
-  now.setMinutes(now.getMinutes() + 15);
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`);
   const [time, setTime] = useState(`${pad(now.getHours())}:${pad(now.getMinutes())}`);
