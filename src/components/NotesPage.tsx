@@ -81,22 +81,33 @@ export default function NotesPage({ onDeleteRequest }: {
   }, [selectedId, notes, onDeleteRequest]);
 
   return (
-    <div className="view-animate flex flex-row flex-1 overflow-hidden">
+    <div className="view-animate flex flex-col flex-1 overflow-hidden">
+      {/* Full-width top bar */}
+      <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <div className="flex items-center gap-1 px-3 py-2 flex-1">
+          <button
+            onClick={() => setSidebarOpen((o) => !o)}
+            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            className="w-6 h-6 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
+          >
+            <PanelLeft size={13} />
+          </button>
+        </div>
+        <button
+          onClick={handleNew}
+          title="New note"
+          className="p-1 mr-2 rounded text-emerald-400 hover:text-emerald-300 hover:bg-s1 transition-colors shrink-0"
+        >
+          <Plus size={12} />
+        </button>
+      </div>
+      {/* Content row */}
+      <div className="flex flex-row flex-1 overflow-hidden">
       {/* Sidebar */}
       <div
         className="shrink-0 border-r border-s flex flex-col overflow-hidden transition-all duration-200"
         style={{ width: sidebarOpen ? 176 : 0, opacity: sidebarOpen ? 1 : 0 }}
       >
-        <div className="flex items-center justify-between px-3 py-2 shrink-0 border-b border-s">
-          <span className="text-[10px] text-t4 uppercase tracking-widest select-none">Notes</span>
-          <button
-            onClick={handleNew}
-            title="New note"
-            className="w-5 h-5 flex items-center justify-center rounded text-emerald-400 hover:text-emerald-300 hover:bg-s3 transition-colors"
-          >
-            <Plus size={11} />
-          </button>
-        </div>
         <div className="overflow-y-auto flex-1">
           {sortedNotes.length === 0 ? (
             <p className="px-3 py-6 text-center text-t5 text-xs select-none">No notes yet</p>
@@ -131,25 +142,6 @@ export default function NotesPage({ onDeleteRequest }: {
 
       {/* Editor */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        <div className="flex items-center gap-2 px-3 pt-2 pb-1 shrink-0">
-          <button
-            onClick={() => setSidebarOpen((o) => !o)}
-            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-            className="w-6 h-6 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
-          >
-            <PanelLeft size={13} />
-          </button>
-          {!sidebarOpen && (
-            <button
-              onClick={handleNew}
-              title="New note"
-              className="w-6 h-6 flex items-center justify-center rounded text-emerald-400 hover:text-emerald-300 hover:bg-s3 transition-colors"
-            >
-              <Plus size={11} />
-            </button>
-          )}
-        </div>
-
         {selected ? (
           <>
             <input
@@ -171,6 +163,7 @@ export default function NotesPage({ onDeleteRequest }: {
             <p className="text-t5 text-sm select-none">Select a note or create a new one</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
