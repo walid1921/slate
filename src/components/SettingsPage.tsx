@@ -284,7 +284,7 @@ function DataTab() {
       const reminders = await db.select("SELECT * FROM reminders");
       const notes = await db.select("SELECT * FROM notes");
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
-      const today = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "-");
+      const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
       await writeTextFile(await join(dir, `slate-${today}.json`), payload);
       showStatus("Exported successfully", true);
@@ -311,7 +311,7 @@ function DataTab() {
       const backupReminders = await db.select("SELECT * FROM reminders");
       const backupNotes = await db.select("SELECT * FROM notes");
       const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
-      const backupDate = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "-");
+      const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
       await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
       const raw = await readTextFile(importFile);
