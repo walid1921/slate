@@ -239,6 +239,7 @@ function TodoRow({
         opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 50 : "auto",
         background: focused ? "var(--c-surface-2)" : undefined,
+        borderLeft: focused ? "2px solid rgba(59,130,246,0.6)" : "2px solid transparent",
       }}
       onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
       className={`group relative flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}

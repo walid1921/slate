@@ -63,7 +63,7 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
       onClick={onFocus}
       onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
       className={`group/row relative flex items-center gap-3 px-5 py-3 border-b border-s transition-colors cursor-default ${!focused ? "hover:bg-s1" : ""}`}
-      style={{ minHeight: 56, background: focused ? "var(--c-surface-2)" : undefined }}
+      style={{ minHeight: 56, background: focused ? "var(--c-surface-2)" : undefined, borderLeft: focused ? "2px solid rgba(99,102,241,0.6)" : "2px solid transparent" }}
     >
       {menu && (
         <div
