@@ -24,6 +24,7 @@ import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
+import WeatherWidget from "./components/WeatherWidget";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
@@ -740,7 +741,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none relative">
             <p className="text-t5 text-xs">Type a task and press ↵</p>
             <div className="flex flex-col gap-1.5">
               {[
@@ -753,6 +754,9 @@ export default function App() {
                   <span className="text-[12px] text-t5">{desc}</span>
                 </div>
               ))}
+            </div>
+            <div className="absolute bottom-4 left-5">
+              <WeatherWidget />
             </div>
           </div>
         </div>
