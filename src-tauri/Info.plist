@@ -4,5 +4,25 @@
 <dict>
   <key>NSUserNotificationUsageDescription</key>
   <string>Slate uses notifications to remind you about your tasks.</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>ipapi.co</key>
+      <dict>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <false/>
+        <key>NSIncludesSubdomains</key>
+        <true/>
+      </dict>
+      <key>api.open-meteo.com</key>
+      <dict>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <false/>
+        <key>NSIncludesSubdomains</key>
+        <true/>
+      </dict>
+    </dict>
+  </dict>
 </dict>
 </plist>
