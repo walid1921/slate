@@ -17,6 +17,7 @@ export default function ReminderAlert() {
 
     const cleanup = () => {
       openRef.current = false;
+      dismissAlert();
       unlistenDone.then((fn) => fn());
       unlistenReschedule.then((fn) => fn());
     };

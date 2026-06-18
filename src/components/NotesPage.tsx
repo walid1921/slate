@@ -58,8 +58,8 @@ export default function NotesPage({ onDeleteRequest }: {
   }, [title, content, selectedId, update]);
 
   const handleNew = async () => {
-    await add("Untitled", "");
-    const fresh = useNotesStore.getState().notes[0];
+    const newId = await add("Untitled", "");
+    const fresh = useNotesStore.getState().notes.find(n => n.id === newId);
     if (fresh) {
       selectNote(fresh);
       setTimeout(() => titleRef.current?.select(), 50);

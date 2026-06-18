@@ -14,7 +14,7 @@ interface NotesState {
   trash: Note[];
   load: () => Promise<void>;
   loadTrash: () => Promise<void>;
-  add: (title: string, content: string) => Promise<void>;
+  add: (title: string, content: string) => Promise<number>;
   update: (id: number, title: string, content: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
@@ -43,11 +43,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   add: async (title, content) => {
     const db = await getDb();
-    await db.execute(
+    const result = await db.execute(
       "INSERT INTO notes (title, content) VALUES (?, ?)",
       [title.trim() || "Untitled", content]
     );
     await get().load();
+    return result.lastInsertId as number;
   },
 
   update: async (id, title, content) => {
