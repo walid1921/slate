@@ -380,8 +380,8 @@ function TodoRow({
 
 export default function App() {
   const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
-  const { reminders: allReminders, checkDue, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
-  const { notes, add: addNote, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
+  const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
+  const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently } = useNotesStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
@@ -437,7 +437,7 @@ export default function App() {
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
-  useEffect(() => { load(); initNotifications(); }, [load]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); initNotifications(); }, [load, loadReminders, loadNotes]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
@@ -741,22 +741,78 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none relative">
-            <p className="text-t5 text-xs">Type a task and press ↵</p>
-            <div className="flex flex-col gap-1.5">
-              {[
-                { cmd: "/tm", desc: "Add task with deadline" },
-                { cmd: "/rm", desc: "Add a reminder" },
-                { cmd: "/nt", desc: "Create a new note" },
-              ].map(({ cmd, desc }) => (
-                <div key={cmd} className="flex items-center gap-3">
-                  <span className="text-[12px] font-mono font-medium text-blue-400 w-10 text-right">{cmd}</span>
-                  <span className="text-[12px] text-t5">{desc}</span>
-                </div>
-              ))}
+          <div className="flex-1 flex flex-col justify-between px-5 py-5 gap-4 select-none">
+            {/* Center hint */}
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <p className="text-t5 text-xs">Type a task and press ↵</p>
+              <div className="flex flex-col gap-1.5">
+                {[
+                  { cmd: "/tm", desc: "Add task with deadline" },
+                  { cmd: "/rm", desc: "Add a reminder" },
+                  { cmd: "/nt", desc: "Create a new note" },
+                ].map(({ cmd, desc }) => (
+                  <div key={cmd} className="flex items-center gap-3">
+                    <span className="text-[12px] font-mono font-medium text-blue-400 w-10 text-right">{cmd}</span>
+                    <span className="text-[12px] text-t5">{desc}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="absolute bottom-4 left-5">
-              <WeatherWidget />
+
+            {/* Preview cards */}
+            <div className="grid grid-cols-4 gap-3">
+              {/* Tasks */}
+              <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
+                <div className="flex items-center gap-1.5">
+                  <CheckSquare size={11} className="text-blue-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Tasks</span>
+                </div>
+                <p className="text-[13px] font-medium text-t2">{todos.filter(t => !t.done).length} active</p>
+                <div className="flex flex-col gap-0.5">
+                  {todos.filter(t => !t.done).slice(0, 2).map(t => (
+                    <p key={t.id} className="text-[11px] text-t4 truncate">· {t.text}</p>
+                  ))}
+                  {todos.filter(t => !t.done).length === 0 && <p className="text-[11px] text-t5">No active tasks</p>}
+                </div>
+              </button>
+
+              {/* Reminders */}
+              <button onClick={() => navigate("reminders")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.25)" }}>
+                <div className="flex items-center gap-1.5">
+                  <Clock size={11} className="text-indigo-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Reminders</span>
+                </div>
+                <p className="text-[13px] font-medium text-t2">{allReminders.filter(r => !r.notified).length} upcoming</p>
+                <div className="flex flex-col gap-0.5">
+                  {allReminders.filter(r => !r.notified).slice(0, 2).map(r => (
+                    <p key={r.id} className="text-[11px] text-t4 truncate">· {r.text}</p>
+                  ))}
+                  {allReminders.filter(r => !r.notified).length === 0 && <p className="text-[11px] text-t5">No upcoming</p>}
+                </div>
+              </button>
+
+              {/* Notes */}
+              <button onClick={() => navigate("notes")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.25)" }}>
+                <div className="flex items-center gap-1.5">
+                  <FileText size={11} className="text-emerald-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Notes</span>
+                </div>
+                <p className="text-[13px] font-medium text-t2">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
+                <div className="flex flex-col gap-0.5">
+                  {notes.slice(0, 2).map(n => (
+                    <p key={n.id} className="text-[11px] text-t4 truncate">· {n.title}</p>
+                  ))}
+                  {notes.length === 0 && <p className="text-[11px] text-t5">No notes yet</p>}
+                </div>
+              </button>
+
+              {/* Weather */}
+              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(125,125,125,0.07)", border: "1px solid rgba(125,125,125,0.2)" }}>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Weather</span>
+                </div>
+                <WeatherWidget />
+              </div>
             </div>
           </div>
         </div>
