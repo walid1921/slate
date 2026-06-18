@@ -284,7 +284,7 @@ function DataTab() {
       const reminders = await db.select("SELECT * FROM reminders");
       const notes = await db.select("SELECT * FROM notes");
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
-      const today = new Date().toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "-");
       const dir = await appDataDir();
       await writeTextFile(await join(dir, `slate-${today}.json`), payload);
       showStatus("Exported successfully", true);
@@ -311,7 +311,7 @@ function DataTab() {
       const backupReminders = await db.select("SELECT * FROM reminders");
       const backupNotes = await db.select("SELECT * FROM notes");
       const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
-      const backupDate = new Date().toISOString().slice(0, 10);
+      const backupDate = new Date().toISOString().slice(0, 16).replace("T", "-").replace(":", "-");
       const dir = await appDataDir();
       await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
       const raw = await readTextFile(importFile);
