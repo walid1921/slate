@@ -9,6 +9,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { getDb } from "../db";
 import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore";
+import { useTodoStore } from "../store";
+import { useReminderStore } from "../reminderStore";
+import { useNotesStore } from "../notesStore";
 
 const guideSections = [
   {
@@ -255,6 +258,9 @@ function GeneralTab() {
 }
 
 function DataTab() {
+  const loadTodos = useTodoStore((s) => s.load);
+  const loadReminders = useReminderStore((s) => s.load);
+  const loadNotes = useNotesStore((s) => s.load);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importFile, setImportFile] = useState<string | null>(null);
@@ -338,7 +344,8 @@ function DataTab() {
           [n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at ?? null]
         );
       }
-      showStatus("Backup saved & data imported — restart Slate to reload", true);
+      await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
+      showStatus("Data imported successfully", true);
     } catch {
       showStatus("Import failed — invalid file", false);
     } finally {
