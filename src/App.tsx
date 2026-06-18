@@ -698,8 +698,20 @@ export default function App() {
             </div>
           )}
 
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-t5 text-xs select-none">Type a task and press ↵</p>
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 select-none">
+            <p className="text-t5 text-xs">Type a task and press ↵</p>
+            <div className="flex flex-col gap-1.5">
+              {[
+                { cmd: "/tm", desc: "Add task with deadline" },
+                { cmd: "/rm", desc: "Add a reminder" },
+                { cmd: "/nt", desc: "Create a new note" },
+              ].map(({ cmd, desc }) => (
+                <div key={cmd} className="flex items-center gap-3">
+                  <span className="text-[12px] font-mono font-medium text-blue-400 w-10 text-right">{cmd}</span>
+                  <span className="text-[12px] text-t5">{desc}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
