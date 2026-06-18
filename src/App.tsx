@@ -287,7 +287,7 @@ function TodoRow({
       <button
         onClick={() => toggle(todo.id)}
         className="mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors"
-        style={todo.done ? { background: "var(--c-surface-3)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
+        style={todo.done ? { background: "rgba(59,130,246,0.75)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
       >
         {todo.done && (
           <Check size={8} stroke="white" />

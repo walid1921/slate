@@ -92,7 +92,7 @@ export default function NotesPage({ onDeleteRequest }: {
           <button
             onClick={handleNew}
             title="New note"
-            className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
+            className="w-5 h-5 flex items-center justify-center rounded text-emerald-400 hover:text-emerald-300 hover:bg-s3 transition-colors"
           >
             <Plus size={11} />
           </button>
@@ -109,7 +109,7 @@ export default function NotesPage({ onDeleteRequest }: {
                 className={`px-3 py-2.5 cursor-default transition-colors border-b border-s ${
                   selectedId === note.id ? "" : "hover:bg-s1"
                 }`}
-                style={selectedId === note.id ? { background: "var(--c-surface-2)" } : {}}
+                style={selectedId === note.id ? { background: "var(--c-surface-2)", borderLeft: "2px solid rgba(16,185,129,0.6)" } : { borderLeft: "2px solid transparent" }}
               >
                 <p className="text-[13px] text-t1 truncate leading-snug">{note.title}</p>
                 <p className="text-[11px] text-t4 truncate mt-0.5 leading-snug">
@@ -143,7 +143,7 @@ export default function NotesPage({ onDeleteRequest }: {
             <button
               onClick={handleNew}
               title="New note"
-              className="w-6 h-6 flex items-center justify-center rounded text-t4 hover:text-t2 hover:bg-s3 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded text-emerald-400 hover:text-emerald-300 hover:bg-s3 transition-colors"
             >
               <Plus size={11} />
             </button>

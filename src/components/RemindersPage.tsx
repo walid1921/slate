@@ -72,7 +72,7 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
           style={{ left: menu.x, top: menu.y }}
         >
           {!r.notified && (
-            <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-blue-400 bg-blue-500/20 hover:bg-blue-500/30"); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <button onClick={() => { onConfirm("Send now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-indigo-400 bg-indigo-500/20 hover:bg-indigo-500/30"); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
               <Send size={12} className="text-t4" /><span>Send now</span>
             </button>
           )}
@@ -89,7 +89,7 @@ function ReminderRow({ r, onDeleteRequest, onConfirm, focused, onFocus }: { r: R
         </div>
       )}
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-        r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-blue-400"
+        r.notified ? "" : isOverdue(r.remind_at) ? "bg-red-400" : "bg-indigo-400"
       }`} style={r.notified ? { background: "var(--c-text-5)" } : {}} />
 
       <div className="flex-1 min-w-0">
@@ -200,7 +200,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
       }
       if (e.key === " ") {
         const r = visible[focusedIdx];
-        if (r && !r.notified) { e.preventDefault(); onConfirm("Send reminder now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-blue-400 bg-blue-500/20 hover:bg-blue-500/30"); }
+        if (r && !r.notified) { e.preventDefault(); onConfirm("Send reminder now?", `"${r.text}" will be marked as sent.`, () => markSent(r.id), "Send", "text-indigo-400 bg-indigo-500/20 hover:bg-indigo-500/30"); }
         return;
       }
     };
