@@ -1071,6 +1071,9 @@ export default function App() {
           onClose={() => {
             setPendingModal(null);
             setTimeout(() => inputRef.current?.focus(), 50);
+          }}
+          onSaved={() => {
+            setPendingModal(null);
             navigate("reminders");
           }}
         />

@@ -5,9 +5,10 @@ import { useReminderStore } from "../reminderStore";
 interface Props {
   initialText?: string;
   onClose: () => void;
+  onSaved: () => void;
 }
 
-export default function AddReminderModal({ initialText = "", onClose }: Props) {
+export default function AddReminderModal({ initialText = "", onClose, onSaved }: Props) {
   const { add } = useReminderStore();
   const [text, setText] = useState(initialText);
   const today = new Date();
@@ -27,7 +28,7 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
   const handleSave = async () => {
     if (!text.trim()) return;
     await add(text.trim(), `${date}T${time}:00`);
-    onClose();
+    onSaved();
   };
 
   return (
