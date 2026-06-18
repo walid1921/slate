@@ -4,6 +4,7 @@ import {
   Check,
   Pencil,
   X,
+  Plus,
   RotateCcw,
   ChevronLeft,
   Home,
@@ -163,6 +164,44 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           placeholder="Add notes…"
           className="flex-1 bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
         />
+      </div>
+    </div>
+  );
+}
+
+function AddTaskModal({ onClose }: { onClose: () => void }) {
+  const { add } = useTodoStore();
+  const { defaultPriority } = useSettingsStore();
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+  const handleSave = async () => {
+    if (!text.trim()) return;
+    await add(text.trim(), defaultPriority);
+    onClose();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+      <div className="dropdown rounded-lg flex flex-col overflow-hidden" style={{ width: 320, border: "1px solid var(--c-border)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <span className="text-[13px] font-semibold text-t1">New Task</span>
+          <button onClick={onClose} className="text-t4 hover:text-t2 transition-colors"><X size={14} /></button>
+        </div>
+        <div className="px-4 py-4">
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+            placeholder="Task name…"
+            className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          />
+        </div>
+        <div className="flex gap-2 justify-end px-4 pb-4">
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+          <button onClick={handleSave} disabled={!text.trim()} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 disabled:opacity-40 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Add Task</button>
+        </div>
       </div>
     </div>
   );
@@ -358,6 +397,7 @@ export default function App() {
     setView(v);
   }, []);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
@@ -721,13 +761,25 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
-          <FilterBar
-            page="todos"
-            filter={todoFilter}
-            sort={todoSort}
-            onFilter={setTodoFilter}
-            onSort={setTodoSort}
-          />
+          {addTaskOpen && <AddTaskModal onClose={() => { setAddTaskOpen(false); }} />}
+          <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+            <div className="flex-1 overflow-hidden">
+              <FilterBar
+                page="todos"
+                filter={todoFilter}
+                sort={todoSort}
+                onFilter={setTodoFilter}
+                onSort={setTodoSort}
+              />
+            </div>
+            <button
+              onClick={() => setAddTaskOpen(true)}
+              className="p-1 mr-2 rounded nav-todo text-t4 hover:bg-s1 transition-colors shrink-0"
+              title="Add task"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
           {/* Split panel */}
           <div className="flex flex-row flex-1 overflow-hidden">
             {/* Left: list */}
