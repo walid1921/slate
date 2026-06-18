@@ -13,7 +13,7 @@ export default function AddReminderModal({ initialText = "", onClose }: Props) {
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
-  const [time, setTime] = useState(`${pad((today.getHours()+1) % 24)}:00`);
+  const [time, setTime] = useState(`${pad(today.getHours())}:${pad(today.getMinutes())}`);
   const textRef = useRef<HTMLInputElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
 
