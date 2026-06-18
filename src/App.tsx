@@ -179,16 +179,82 @@ function TodoCard({ todo, onDelete }: { todo: Todo; onDelete: () => void }) {
   );
 }
 
+function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
+  const { updateText, setPriority, setDescription } = useTodoStore();
+  const [title, setTitle] = useState(todo.text);
+  const [desc, setDesc] = useState(todo.description);
+
+  useEffect(() => { setTitle(todo.text); setDesc(todo.description); }, [todo.id]);
+
+  const saveTitle = () => { if (title.trim() && title.trim() !== todo.text) updateText(todo.id, title.trim()); };
+  const saveDesc = () => { if (desc !== todo.description) setDescription(todo.id, desc); };
+
+  const PRIORITY_LABELS: Record<Priority, string> = { none: "None", low: "Low", medium: "Medium", high: "High" };
+  const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Title */}
+      <div className="px-4 pt-4 pb-2 border-b border-s shrink-0">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={saveTitle}
+          onKeyDown={(e) => { if (e.key === "Enter") { saveTitle(); e.currentTarget.blur(); } }}
+          className="w-full text-[15px] font-medium text-t1 bg-transparent outline-none"
+          placeholder="Task title"
+        />
+      </div>
+      {/* Priority row */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
+        <span className="text-[11px] text-t4 w-16 shrink-0">Priority</span>
+        <div className="flex gap-2">
+          {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+            <button key={p} onClick={() => setPriority(todo.id, p)}
+              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors ${todo.priority === p ? "text-t1" : "text-t4 hover:text-t2"}`}
+              style={todo.priority === p ? { background: "var(--c-surface-3)" } : {}}
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT_DETAIL[p]}`} />
+              {PRIORITY_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Description */}
+      <div className="flex flex-col flex-1 overflow-hidden px-4 py-3">
+        <span className="text-[11px] text-t4 mb-2 shrink-0">Notes</span>
+        <textarea
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          onBlur={saveDesc}
+          placeholder="Add notes…"
+          className="flex-1 bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
+        />
+      </div>
+    </div>
+  );
+}
+
+function EmptyTaskDetail() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-t5 text-[12px] select-none gap-1">
+      <span>Select a task to view details</span>
+    </div>
+  );
+}
+
 function TodoRow({
   todo,
   focused,
   onFocus,
   onDeleteRequest,
+  onSelect,
 }: {
   todo: Todo;
   focused: boolean;
   onFocus: () => void;
   onDeleteRequest: () => void;
+  onSelect?: () => void;
 }) {
   const { toggle, setPriority, updateText } = useTodoStore();
   const [showMeta, setShowMeta] = useState(false);
@@ -296,7 +362,7 @@ function TodoRow({
       </button>
 
       {/* Text + meta */}
-      <div className="flex-1 min-w-0 py-3">
+      <div className="flex-1 min-w-0 py-3" onClick={() => { if (!editingText) onSelect?.(); }}>
         {editingText ? (
           <input
             ref={textRef}
@@ -363,6 +429,7 @@ export default function App() {
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
+  const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
     setConfirmDelete({ title, message, onConfirm, confirmLabel, confirmClassName });
@@ -474,6 +541,12 @@ export default function App() {
       }
       return 0;
     });
+
+  const selectedTodo = todos.find(t => t.id === selectedTodoId) ?? null;
+
+  useEffect(() => {
+    if (selectedTodoId && !todos.find(t => t.id === selectedTodoId)) setSelectedTodoId(null);
+  }, [todos, selectedTodoId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -666,88 +739,95 @@ export default function App() {
 
       {/* Main view: search input + command palette + todo list */}
       {view === "main" && (
-        <div key="main" className="view-animate flex flex-col flex-1 overflow-hidden">
-          <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
-            <Search size={15} className="text-t4 shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputVal}
-              onChange={(e) => {
-                setInputVal(e.target.value);
-                setQuery(e.target.value);
-                setFocusedIdx(-1);
-                setCmdIdx(0);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Add task · /tm deadline · /rm reminder…"
-              className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
-            />
-            {inputVal && (
-              <button
-                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-                className="text-t4 hover:text-t2 transition-colors shrink-0"
-              >
-                <X size={11} />
-              </button>
-            )}
-          </div>
-
-          {showCmdPalette && filteredCmds.length > 0 && (
-            <div className="shrink-0 border-b border-s py-1">
-              {filteredCmds.map((cmd, i) => (
+        <div key="main" className="view-animate flex flex-row flex-1 overflow-hidden">
+          {/* Left panel: input + list */}
+          <div className="flex flex-col overflow-hidden border-r border-s" style={{ width: 260 }}>
+            <div className="flex items-center gap-3 px-5 shrink-0 border-b border-s" style={{ height: 48 }}>
+              <Search size={15} className="text-t4 shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputVal}
+                onChange={(e) => {
+                  setInputVal(e.target.value);
+                  setQuery(e.target.value);
+                  setFocusedIdx(-1);
+                  setCmdIdx(0);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Add task · /tm deadline · /rm reminder…"
+                className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
+              />
+              {inputVal && (
                 <button
-                  key={cmd.prefix}
-                  onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
-                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${
-                    i === cmdIdx ? "" : "hover:bg-s1"
-                  }`}
-                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                  onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
+                  className="text-t4 hover:text-t2 transition-colors shrink-0"
                 >
-                  <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
-                  <span className="text-[12px] text-t3">{cmd.desc}</span>
-                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
+                  <X size={11} />
                 </button>
-              ))}
+              )}
             </div>
-          )}
 
-          <FilterBar
-            page="todos"
-            filter={todoFilter}
-            sort={todoSort}
-            viewMode={tasksViewMode}
-            onFilter={setTodoFilter}
-            onSort={setTodoSort}
-            onViewMode={(v) => setSetting("tasksViewMode", v)}
-          />
-
-          <div className="overflow-y-auto flex-1 py-1.5">
-            {loading ? (
-              <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
-            ) : filtered.length === 0 ? (
-              <div className="px-5 py-10 text-center text-t5 text-sm select-none">
-                {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
-              </div>
-            ) : tasksViewMode === "cards" ? (
-              <div className="grid grid-cols-2 gap-2 px-3 py-2">
-                {filtered.map((todo) => (
-                  <TodoCard
-                    key={todo.id}
-                    todo={todo}
-                    onDelete={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
-                  />
+            {showCmdPalette && filteredCmds.length > 0 && (
+              <div className="shrink-0 border-b border-s py-1">
+                {filteredCmds.map((cmd, i) => (
+                  <button
+                    key={cmd.prefix}
+                    onMouseDown={(e) => { e.preventDefault(); setInputVal(cmd.prefix); setQuery(cmd.prefix); setCmdIdx(i); inputRef.current?.focus(); }}
+                    className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${
+                      i === cmdIdx ? "" : "hover:bg-s1"
+                    }`}
+                    style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                  >
+                    <span className="text-[13px] font-mono font-medium text-blue-400">{cmd.label}</span>
+                    <span className="text-[12px] text-t3">{cmd.desc}</span>
+                    {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">↵ or Tab</span>}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  {filtered.map((todo, i) => (
-                    <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} />
-                  ))}
-                </SortableContext>
-              </DndContext>
             )}
+
+            <FilterBar
+              page="todos"
+              filter={todoFilter}
+              sort={todoSort}
+              viewMode={tasksViewMode}
+              onFilter={setTodoFilter}
+              onSort={setTodoSort}
+              onViewMode={(v) => setSetting("tasksViewMode", v)}
+            />
+
+            <div className="overflow-y-auto flex-1 py-1.5">
+              {loading ? (
+                <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
+              ) : filtered.length === 0 ? (
+                <div className="px-5 py-10 text-center text-t5 text-sm select-none">
+                  {query ? `No results for "${query}"` : "No tasks yet — type above and press ↵"}
+                </div>
+              ) : tasksViewMode === "cards" ? (
+                <div className="grid grid-cols-2 gap-2 px-3 py-2">
+                  {filtered.map((todo) => (
+                    <TodoCard
+                      key={todo.id}
+                      todo={todo}
+                      onDelete={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                    {filtered.map((todo, i) => (
+                      <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} onSelect={() => setSelectedTodoId(todo.id)} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
+            </div>
+          </div>
+          {/* Right panel: task detail */}
+          <div className="flex flex-col flex-1 overflow-hidden">
+            {selectedTodo ? <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} /> : <EmptyTaskDetail />}
           </div>
         </div>
       )}

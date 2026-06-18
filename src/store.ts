@@ -15,6 +15,7 @@ export interface Todo {
   position: number;
   created_at: string;
   deleted_at?: string | null;
+  description: string;
 }
 
 interface State {
@@ -38,6 +39,7 @@ interface State {
   setDueDate: (id: number, due_date: string | null) => Promise<void>;
   updateText: (id: number, text: string) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
+  setDescription: (id: number, description: string) => Promise<void>;
 }
 
 export const useTodoStore = create<State>((set, get) => ({
@@ -53,7 +55,7 @@ export const useTodoStore = create<State>((set, get) => ({
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
     set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified) })), loading: false });
   },
@@ -155,6 +157,12 @@ export const useTodoStore = create<State>((set, get) => ({
     const db = await getDb();
     await db.execute("UPDATE todos SET text = ? WHERE id = ?", [trimmed, id]);
     set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, text: trimmed } : t) }));
+  },
+
+  setDescription: async (id, description) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET description = ? WHERE id = ?", [description, id]);
+    set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, description } : t) }));
   },
 
   reorder: async (ids) => {
