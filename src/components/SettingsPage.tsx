@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
-import { save, open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { appDataDir } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -285,8 +285,9 @@ function DataTab() {
       const notes = await db.select("SELECT * FROM notes");
       const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
       const today = new Date().toISOString().slice(0, 10);
-      const path = await withDialogFocus(() => save({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] }));
-      if (path) { await writeTextFile(path, payload); showStatus("Exported successfully", true); }
+      const dir = await appDataDir();
+      await writeTextFile(`${dir}slate-${today}.json`, payload);
+      showStatus("Exported successfully", true);
     } catch (e) {
       showStatus("Export failed", false);
     } finally {
