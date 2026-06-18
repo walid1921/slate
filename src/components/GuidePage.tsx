@@ -1,21 +1,23 @@
 const sections = [
   {
-    title: "Adding Tasks",
+    title: "Home",
     items: [
       { keys: ["Type anything", "↵"], desc: "Add a new task" },
       { keys: ["/tm", "task name", "↵"], desc: "Add a task with a deadline — picks date & time" },
       { keys: ["/rm", "reminder text", "↵"], desc: "Add a reminder — navigates to Reminders after" },
       { keys: ["/nt", "title", "↵"], desc: "Create a new note — opens it immediately" },
+      { keys: ["Preview cards"], desc: "Click Tasks, Reminders, Notes or Weather cards to navigate" },
     ],
   },
   {
-    title: "Keyboard Navigation",
+    title: "Keyboard Shortcuts",
     items: [
+      { keys: ["⌥S"], desc: "Toggle Slate from anywhere on your Mac" },
+      { keys: ["⌥N"], desc: "Open quick-note window from anywhere" },
       { keys: ["↑ ↓"], desc: "Navigate through tasks" },
       { keys: ["Space"], desc: "Toggle task done / undone" },
       { keys: ["⌫ Delete"], desc: "Move focused task to trash" },
       { keys: ["Esc"], desc: "Close Slate" },
-      { keys: ["⌥S"], desc: "Toggle Slate from anywhere" },
     ],
   },
   {
@@ -26,15 +28,7 @@ const sections = [
       { keys: ["Hover → 📅"], desc: "Set or change due date" },
       { keys: ["Hover → ✕"], desc: "Move task to trash" },
       { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks manually" },
-    ],
-  },
-  {
-    title: "Search & Filter",
-    items: [
-      { keys: ["Type to search"], desc: "Input doubles as a live search filter" },
-      { keys: ["✕ button"], desc: "Clear search and return to full list" },
-      { keys: ["Filter bar"], desc: "Filter by All / Active / Done" },
-      { keys: ["Sort menu"], desc: "Sort by manual order, due date, priority, or A–Z" },
+      { keys: ["Filter bar"], desc: "Filter by All / Active / Done — sort by order, due, priority, A–Z" },
     ],
   },
   {
@@ -52,28 +46,31 @@ const sections = [
       { keys: ["Double-click text"], desc: "Edit reminder text inline" },
       { keys: ["Double-click time"], desc: "Edit the reminder date and time inline" },
       { keys: ["Filter bar"], desc: "Filter by All / Upcoming / Sent — sort by time or A–Z" },
-      { keys: ["Blue dot"], desc: "Upcoming reminder" },
-      { keys: ["Red dot"], desc: "Overdue — notification hasn't fired yet" },
+      { keys: ["Indigo dot"], desc: "Upcoming reminder" },
+      { keys: ["Red dot"], desc: "Overdue — notification missed while app was closed" },
       { keys: ["Grey dot · sent"], desc: "Notification already fired" },
+      { keys: ["Notification overlay"], desc: "Full-screen alert when a reminder fires — Done or Reschedule" },
     ],
   },
   {
     title: "Notes",
     items: [
-      { keys: ["Footer → 📄"], desc: "Open notes — split view with list and editor" },
+      { keys: ["Footer → 📄"], desc: "Open notes — split view with sidebar and editor" },
       { keys: ["+ button"], desc: "Create a new note" },
       { keys: ["Click note"], desc: "Select and edit title or content" },
+      { keys: ["Sidebar toggle"], desc: "Hide or show the notes sidebar" },
       { keys: ["Auto-save"], desc: "Notes save automatically after 500ms" },
-      { keys: ["Sort menu"], desc: "Sort by last edited, created, or A–Z" },
+      { keys: ["Right-click note"], desc: "Context menu to delete the note" },
     ],
   },
   {
-    title: "Deleted",
+    title: "Trash",
     items: [
-      { keys: ["Footer → 🗑"], desc: "View all deleted tasks" },
-      { keys: ["↺"], desc: "Restore a task back to the list" },
-      { keys: ["✕"], desc: "Permanently delete a task" },
+      { keys: ["Footer → 🗑"], desc: "View deleted tasks, reminders, and notes" },
+      { keys: ["↺"], desc: "Restore an item back" },
+      { keys: ["✕"], desc: "Permanently delete an item" },
       { keys: ["Select all → Delete"], desc: "Wipe the entire deleted list at once" },
+      { keys: ["Back button"], desc: "Returns to the page you came from" },
     ],
   },
 ];
