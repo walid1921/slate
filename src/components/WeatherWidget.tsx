@@ -92,7 +92,7 @@ export default function WeatherWidget() {
 
   return (
     <div className="flex flex-col gap-2 w-full select-none">
-      <p className="text-[10px] text-t2 font-medium">{weather.city}</p>
+      <p className="text-[11px] font-semibold text-t2 uppercase tracking-wider">{weather.city}</p>
       <div className="flex justify-between gap-1">
         {weather.days.map((day, i) => {
           const d = new Date(day.date + "T12:00:00");
@@ -103,7 +103,7 @@ export default function WeatherWidget() {
               <p className={`text-[10px] font-medium ${i === 0 ? "text-t2" : "text-t4"}`}>{label}</p>
               <span className="text-[13px] leading-none" style={{ opacity: 0.5 }}>{w.emoji}</span>
               <p className="text-[10px] font-medium" style={{ color: tempColor(day.max) ?? "var(--c-text-2)" }}>{day.max}°</p>
-              <p className="text-[9px]" style={{ color: "var(--c-text-5)" }}>{day.min}°</p>
+              <p className="text-[8px]" style={{ color: "var(--c-text-5)" }}>{day.min}°</p>
             </div>
           );
         })}
