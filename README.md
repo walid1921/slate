@@ -12,6 +12,19 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ---
 
+## Installation
+
+1. Download the latest `.dmg` from the [Releases](https://github.com/walid1921/slate/releases) page
+2. Open the `.dmg` file — a window should appear with the Slate icon and an Applications folder shortcut
+3. Drag **Slate** into the **Applications** folder
+4. Open Slate from your Applications folder or Spotlight
+
+> **If the installer window doesn't appear:** press `⌘ Shift G` in Finder, type `/Applications`, and drag Slate.app into that folder manually. Then open it from there.
+
+> **First launch:** macOS may say the app is from an unidentified developer. Go to **System Settings → Privacy & Security** and click **Open Anyway**.
+
+---
+
 ## Features
 
 ### Home
