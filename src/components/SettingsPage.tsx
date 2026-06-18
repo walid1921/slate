@@ -257,6 +257,119 @@ function GeneralTab() {
   );
 }
 
+type PreviewTab = "tasks" | "reminders" | "notes";
+
+function DataPreview() {
+  const [tab, setTab] = useState<PreviewTab>("tasks");
+  const todos = useTodoStore((s) => s.todos);
+  const reminders = useReminderStore((s) => s.reminders);
+  const notes = useNotesStore((s) => s.notes);
+
+  const tabs: { key: PreviewTab; label: string; count: number }[] = [
+    { key: "tasks", label: "Tasks", count: todos.length },
+    { key: "reminders", label: "Reminders", count: reminders.length },
+    { key: "notes", label: "Notes", count: notes.length },
+  ];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-t4 uppercase tracking-widest select-none">Preview</span>
+        <div className="flex gap-1">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className="px-2.5 py-1 rounded text-[11px] transition-colors"
+              style={{
+                background: tab === t.key ? "var(--c-surface-2)" : "transparent",
+                color: tab === t.key ? "var(--c-text-1)" : "var(--c-text-4)",
+              }}
+            >
+              {t.label} <span className="opacity-50">{t.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--c-border-subtle)" }}>
+        <div className="overflow-auto" style={{ maxHeight: 220 }}>
+          {tab === "tasks" && (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr style={{ background: "var(--c-surface-2)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Task</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Priority</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Status</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todos.length === 0 ? (
+                  <tr><td colSpan={4} className="px-3 py-4 text-center text-t5">No tasks</td></tr>
+                ) : todos.map((t) => (
+                  <tr key={t.id} style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+                    <td className="px-3 py-2 text-t2 max-w-[180px] truncate">{t.text}</td>
+                    <td className="px-3 py-2 text-t4 capitalize">{t.priority}</td>
+                    <td className="px-3 py-2 text-t4">{t.done ? "Done" : "Open"}</td>
+                    <td className="px-3 py-2 text-t4">{t.due_date ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {tab === "reminders" && (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr style={{ background: "var(--c-surface-2)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Reminder</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Time</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reminders.length === 0 ? (
+                  <tr><td colSpan={3} className="px-3 py-4 text-center text-t5">No reminders</td></tr>
+                ) : reminders.map((r) => (
+                  <tr key={r.id} style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+                    <td className="px-3 py-2 text-t2 max-w-[200px] truncate">{r.text}</td>
+                    <td className="px-3 py-2 text-t4">{new Date(r.remind_at).toLocaleString()}</td>
+                    <td className="px-3 py-2 text-t4">{r.notified ? "Sent" : "Pending"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {tab === "notes" && (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr style={{ background: "var(--c-surface-2)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Title</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Preview</th>
+                  <th className="text-left px-3 py-2 text-t4 font-medium">Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {notes.length === 0 ? (
+                  <tr><td colSpan={3} className="px-3 py-4 text-center text-t5">No notes</td></tr>
+                ) : notes.map((n) => (
+                  <tr key={n.id} style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+                    <td className="px-3 py-2 text-t2 max-w-[140px] truncate">{n.title || "Untitled"}</td>
+                    <td className="px-3 py-2 text-t4 max-w-[180px] truncate">{n.content.slice(0, 60) || "—"}</td>
+                    <td className="px-3 py-2 text-t4">{new Date(n.updated_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DataTab() {
   const loadTodos = useTodoStore((s) => s.load);
   const loadReminders = useReminderStore((s) => s.load);
@@ -363,7 +476,8 @@ function DataTab() {
   };
 
   return (
-    <div className="overflow-y-auto flex-1 py-4 px-4">
+    <div className="overflow-y-auto flex-1 py-4 px-4 flex flex-col gap-4">
+      <DataPreview />
       <Section title="Backup">
         <SettingRow label="Export data" hint="Save all tasks, reminders and notes as JSON">
           <button
