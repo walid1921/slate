@@ -760,60 +760,59 @@ export default function App() {
             </div>
 
             {/* Preview cards */}
-            <div className="grid grid-cols-4 gap-3">
-              {/* Weather */}
-              <div className="rounded-xl p-3 flex flex-col gap-2" style={{ background: "rgba(125,125,125,0.07)", border: "1px solid rgba(125,125,125,0.2)" }}>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-t4 uppercase tracking-wider">Weather</span>
-                </div>
+            <div className="flex flex-col gap-3">
+              {/* Weather — full width */}
+              <div className="rounded-xl p-4" style={{ background: "rgba(100,120,160,0.08)", border: "1px solid rgba(100,120,160,0.2)" }}>
                 <WeatherWidget />
               </div>
 
-              {/* Tasks */}
-              <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
-                <div className="flex items-center gap-1.5">
-                  <CheckSquare size={11} className="text-blue-400 shrink-0" />
-                  <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Tasks</span>
-                </div>
-                <p className="text-[13px] font-medium text-t2">{todos.filter(t => !t.done).length} active</p>
-                <div className="flex flex-col gap-0.5">
-                  {todos.filter(t => !t.done).slice(0, 2).map(t => (
-                    <p key={t.id} className="text-[11px] text-t4 truncate">· {t.text}</p>
-                  ))}
-                  {todos.filter(t => !t.done).length === 0 && <p className="text-[11px] text-t5">No active tasks</p>}
-                </div>
-              </button>
+              {/* Section cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Tasks */}
+                <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
+                  <div className="flex items-center gap-1.5">
+                    <CheckSquare size={11} className="text-blue-400 shrink-0" />
+                    <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Tasks</span>
+                  </div>
+                  <p className="text-[13px] font-medium text-t2">{todos.filter(t => !t.done).length} active</p>
+                  <div className="flex flex-col gap-0.5">
+                    {todos.filter(t => !t.done).slice(0, 2).map(t => (
+                      <p key={t.id} className="text-[11px] text-t4 truncate">· {t.text}</p>
+                    ))}
+                    {todos.filter(t => !t.done).length === 0 && <p className="text-[11px] text-t5">No active tasks</p>}
+                  </div>
+                </button>
 
-              {/* Reminders */}
-              <button onClick={() => navigate("reminders")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.25)" }}>
-                <div className="flex items-center gap-1.5">
-                  <Clock size={11} className="text-indigo-400 shrink-0" />
-                  <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Reminders</span>
-                </div>
-                <p className="text-[13px] font-medium text-t2">{allReminders.filter(r => !r.notified).length} upcoming</p>
-                <div className="flex flex-col gap-0.5">
-                  {allReminders.filter(r => !r.notified).slice(0, 2).map(r => (
-                    <p key={r.id} className="text-[11px] text-t4 truncate">· {r.text}</p>
-                  ))}
-                  {allReminders.filter(r => !r.notified).length === 0 && <p className="text-[11px] text-t5">No upcoming</p>}
-                </div>
-              </button>
+                {/* Reminders */}
+                <button onClick={() => navigate("reminders")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.25)" }}>
+                  <div className="flex items-center gap-1.5">
+                    <Clock size={11} className="text-indigo-400 shrink-0" />
+                    <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Reminders</span>
+                  </div>
+                  <p className="text-[13px] font-medium text-t2">{allReminders.filter(r => !r.notified).length} upcoming</p>
+                  <div className="flex flex-col gap-0.5">
+                    {allReminders.filter(r => !r.notified).slice(0, 2).map(r => (
+                      <p key={r.id} className="text-[11px] text-t4 truncate">· {r.text}</p>
+                    ))}
+                    {allReminders.filter(r => !r.notified).length === 0 && <p className="text-[11px] text-t5">No upcoming</p>}
+                  </div>
+                </button>
 
-              {/* Notes */}
-              <button onClick={() => navigate("notes")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                <div className="flex items-center gap-1.5">
-                  <FileText size={11} className="text-emerald-400 shrink-0" />
-                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Notes</span>
-                </div>
-                <p className="text-[13px] font-medium text-t2">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
-                <div className="flex flex-col gap-0.5">
-                  {notes.slice(0, 2).map(n => (
-                    <p key={n.id} className="text-[11px] text-t4 truncate">· {n.title}</p>
-                  ))}
-                  {notes.length === 0 && <p className="text-[11px] text-t5">No notes yet</p>}
-                </div>
-              </button>
-
+                {/* Notes */}
+                <button onClick={() => navigate("notes")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.25)" }}>
+                  <div className="flex items-center gap-1.5">
+                    <FileText size={11} className="text-emerald-400 shrink-0" />
+                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Notes</span>
+                  </div>
+                  <p className="text-[13px] font-medium text-t2">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
+                  <div className="flex flex-col gap-0.5">
+                    {notes.slice(0, 2).map(n => (
+                      <p key={n.id} className="text-[11px] text-t4 truncate">· {n.title}</p>
+                    ))}
+                    {notes.length === 0 && <p className="text-[11px] text-t5">No notes yet</p>}
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>

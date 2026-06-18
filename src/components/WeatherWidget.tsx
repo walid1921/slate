@@ -1,102 +1,122 @@
 import { useEffect, useState } from "react";
 
 const WMO: Record<number, { label: string; emoji: string }> = {
-  113: { label: "Clear",          emoji: "☀️" },
-  116: { label: "Partly cloudy",  emoji: "⛅" },
-  119: { label: "Cloudy",         emoji: "☁️" },
-  122: { label: "Overcast",       emoji: "☁️" },
-  143: { label: "Fog",            emoji: "🌫️" },
-  176: { label: "Light rain",     emoji: "🌦️" },
-  179: { label: "Light snow",     emoji: "🌨️" },
-  182: { label: "Sleet",          emoji: "🌧️" },
-  185: { label: "Freezing drizzle", emoji: "🌧️" },
-  200: { label: "Thundery",       emoji: "⛈️" },
-  227: { label: "Blowing snow",   emoji: "❄️" },
-  230: { label: "Blizzard",       emoji: "❄️" },
-  248: { label: "Fog",            emoji: "🌫️" },
-  260: { label: "Freezing fog",   emoji: "🌫️" },
-  263: { label: "Drizzle",        emoji: "🌦️" },
-  266: { label: "Drizzle",        emoji: "🌦️" },
-  281: { label: "Freezing drizzle", emoji: "🌧️" },
-  284: { label: "Freezing drizzle", emoji: "🌧️" },
-  293: { label: "Light rain",     emoji: "🌦️" },
-  296: { label: "Light rain",     emoji: "🌦️" },
-  299: { label: "Moderate rain",  emoji: "🌧️" },
-  302: { label: "Moderate rain",  emoji: "🌧️" },
-  305: { label: "Heavy rain",     emoji: "🌧️" },
-  308: { label: "Heavy rain",     emoji: "🌧️" },
-  311: { label: "Sleet",          emoji: "🌧️" },
-  314: { label: "Sleet",          emoji: "🌧️" },
-  317: { label: "Sleet",          emoji: "🌧️" },
-  320: { label: "Light snow",     emoji: "🌨️" },
-  323: { label: "Light snow",     emoji: "🌨️" },
-  326: { label: "Light snow",     emoji: "🌨️" },
-  329: { label: "Moderate snow",  emoji: "❄️" },
-  332: { label: "Moderate snow",  emoji: "❄️" },
-  335: { label: "Heavy snow",     emoji: "❄️" },
-  338: { label: "Heavy snow",     emoji: "❄️" },
-  350: { label: "Ice pellets",    emoji: "🌧️" },
-  353: { label: "Light showers",  emoji: "🌦️" },
-  356: { label: "Showers",        emoji: "🌧️" },
-  359: { label: "Heavy showers",  emoji: "🌧️" },
-  362: { label: "Sleet showers",  emoji: "🌧️" },
-  365: { label: "Sleet showers",  emoji: "🌧️" },
-  368: { label: "Snow showers",   emoji: "🌨️" },
-  371: { label: "Snow showers",   emoji: "🌨️" },
-  374: { label: "Ice showers",    emoji: "🌧️" },
-  377: { label: "Ice showers",    emoji: "🌧️" },
-  386: { label: "Thunderstorm",   emoji: "⛈️" },
-  389: { label: "Thunderstorm",   emoji: "⛈️" },
-  392: { label: "Snowy thunder",  emoji: "⛈️" },
-  395: { label: "Snowy thunder",  emoji: "⛈️" },
+  0:  { label: "Clear sky",      emoji: "☀️" },
+  1:  { label: "Mainly clear",   emoji: "🌤️" },
+  2:  { label: "Partly cloudy",  emoji: "⛅" },
+  3:  { label: "Overcast",       emoji: "☁️" },
+  45: { label: "Fog",            emoji: "🌫️" },
+  48: { label: "Icy fog",        emoji: "🌫️" },
+  51: { label: "Drizzle",        emoji: "🌦️" },
+  53: { label: "Drizzle",        emoji: "🌦️" },
+  55: { label: "Drizzle",        emoji: "🌧️" },
+  61: { label: "Light rain",     emoji: "🌧️" },
+  63: { label: "Rain",           emoji: "🌧️" },
+  65: { label: "Heavy rain",     emoji: "🌧️" },
+  71: { label: "Light snow",     emoji: "🌨️" },
+  73: { label: "Snow",           emoji: "❄️" },
+  75: { label: "Heavy snow",     emoji: "❄️" },
+  80: { label: "Showers",        emoji: "🌦️" },
+  81: { label: "Showers",        emoji: "🌧️" },
+  82: { label: "Heavy showers",  emoji: "⛈️" },
+  95: { label: "Thunderstorm",   emoji: "⛈️" },
+  96: { label: "Thunderstorm",   emoji: "⛈️" },
+  99: { label: "Thunderstorm",   emoji: "⛈️" },
 };
 
-interface WeatherState {
-  temp: number;
-  label: string;
-  emoji: string;
-  city: string;
+function wmo(code: number) {
+  return WMO[code] ?? { label: "Unknown", emoji: "🌡️" };
 }
+
+interface DayForecast {
+  date: string;
+  code: number;
+  max: number;
+  min: number;
+}
+
+interface WeatherState {
+  city: string;
+  currentTemp: number;
+  currentCode: number;
+  days: DayForecast[];
+}
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("https://wttr.in/?format=j1")
-      .then((r) => r.json())
-      .then((data) => {
-        const current = data.current_condition?.[0];
-        const area = data.nearest_area?.[0];
-        const code = parseInt(current?.weatherCode ?? "113", 10);
-        const temp = parseInt(current?.temp_C ?? "0", 10);
-        const city = area?.areaName?.[0]?.value ?? area?.region?.[0]?.value ?? "";
-        const { label, emoji } = WMO[code] ?? { label: "", emoji: "🌡️" };
-        setWeather({ temp, label, emoji, city });
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    (async () => {
+      try {
+        const geo = await fetch("http://ip-api.com/json/").then(r => r.json());
+        const { lat, lon, city } = geo;
+
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
+        const data = await fetch(url).then(r => r.json());
+
+        const days: DayForecast[] = data.daily.time.map((date: string, i: number) => ({
+          date,
+          code: data.daily.weather_code[i],
+          max: Math.round(data.daily.temperature_2m_max[i]),
+          min: Math.round(data.daily.temperature_2m_min[i]),
+        }));
+
+        setWeather({
+          city,
+          currentTemp: Math.round(data.current.temperature_2m),
+          currentCode: data.current.weather_code,
+          days,
+        });
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center gap-1.5 select-none">
-        <span className="text-[11px] text-t5">Fetching weather…</span>
-      </div>
-    );
+    return <p className="text-[11px] text-t5 select-none">Fetching weather…</p>;
   }
 
   if (!weather) return null;
 
+  const today = weather.days[0];
+  const { label, emoji } = wmo(weather.currentCode);
+
   return (
-    <div className="flex items-center gap-2 select-none">
-      <span className="text-[20px] leading-none">{weather.emoji}</span>
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-[13px] font-medium text-t2">{weather.temp}°C</span>
-          <span className="text-[11px] text-t4">{weather.label}</span>
+    <div className="flex flex-col gap-3 w-full select-none">
+      {/* Current */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] text-t4 font-medium">{weather.city}</p>
+          <p className="text-[28px] font-semibold text-t1 leading-none mt-1">{weather.currentTemp}°</p>
+          <p className="text-[11px] text-t4 mt-1">{label}</p>
         </div>
-        {weather.city && <span className="text-[11px] text-t5">{weather.city}</span>}
+        <div className="text-right">
+          <p className="text-[22px] leading-none">{emoji}</p>
+          <p className="text-[11px] text-t4 mt-1">H:{today.max}° L:{today.min}°</p>
+        </div>
+      </div>
+
+      {/* 7-day row */}
+      <div className="flex justify-between gap-1">
+        {weather.days.map((day, i) => {
+          const d = new Date(day.date + "T12:00:00");
+          const label = i === 0 ? "Today" : DAY_LABELS[d.getDay()];
+          const w = wmo(day.code);
+          return (
+            <div key={day.date} className="flex flex-col items-center gap-0.5 flex-1">
+              <p className={`text-[10px] font-medium ${i === 0 ? "text-t2" : "text-t4"}`}>{label}</p>
+              <span className="text-[14px] leading-none">{w.emoji}</span>
+              <p className="text-[10px] text-t2">{day.max}°</p>
+              <p className="text-[10px] text-t5">{day.min}°</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
