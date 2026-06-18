@@ -900,7 +900,7 @@ export default function App() {
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear sent</span>
                 </div>
               )}
-              {view === "todos" && (
+              {(view === "todos" || view === "reminders" || view === "notes") && (
                 <div className="group/trash relative">
                   <button
                     onClick={openTrash}
