@@ -61,7 +61,7 @@ export default function ReminderOverlay() {
         }}
       >
         <div
-          className="dropdown rounded-2xl flex flex-col overflow-hidden"
+          className="dropdown rounded-lg flex flex-col overflow-hidden"
           style={{ border: "1px solid var(--c-border)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)" }}
         >
           {/* Header */}

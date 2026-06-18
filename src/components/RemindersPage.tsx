@@ -22,7 +22,7 @@ function AddReminderModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-2xl flex flex-col overflow-hidden" style={{ width: 320, border: "1px solid var(--c-border)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
+      <div className="dropdown rounded-lg flex flex-col overflow-hidden" style={{ width: 320, border: "1px solid var(--c-border)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
           <span className="text-[13px] font-semibold text-t1">New Reminder</span>
           <button onClick={onClose} className="text-t4 hover:text-t2 transition-colors"><X size={14} /></button>
