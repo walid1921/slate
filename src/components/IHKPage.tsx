@@ -201,6 +201,7 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
 
 function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: () => void; onUpdate: (text: string) => Promise<void> }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [val, setVal] = useState(entry.text);
   const ref = useRef<HTMLInputElement>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
@@ -235,8 +236,18 @@ function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDe
         <span onDoubleClick={() => setEditing(true)} className="flex-1 text-[12px] text-t2 leading-relaxed">{entry.text}</span>
       )}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        <button onClick={() => setEditing(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors"><Pencil size={10} /></button>
-        <button onClick={onDelete} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 transition-colors"><X size={10} /></button>
+        {confirmDelete ? (
+          <>
+            <span className="text-[10px] text-red-400 mr-0.5">Delete?</span>
+            <button onClick={onDelete} className="w-5 h-5 flex items-center justify-center rounded text-red-400 hover:text-red-300 transition-colors" title="Confirm"><Check size={10} /></button>
+            <button onClick={() => setConfirmDelete(false)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors" title="Cancel"><X size={10} /></button>
+          </>
+        ) : (
+          <>
+            <button onClick={() => setEditing(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors"><Pencil size={10} /></button>
+            <button onClick={() => setConfirmDelete(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 transition-colors"><X size={10} /></button>
+          </>
+        )}
       </div>
     </div>
   );
