@@ -179,13 +179,14 @@ function AddTaskModal({ onClose, withDeadline = false }: { onClose: () => void; 
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
+  const [time, setTime] = useState(`${pad(today.getHours())}:${pad(today.getMinutes())}`);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
   const handleSave = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
     try {
-      await add(text.trim(), defaultPriority, withDeadline ? date : null);
+      await add(text.trim(), defaultPriority, withDeadline ? date : null, withDeadline ? time : null);
       onClose();
     } catch {
       setSaving(false);
@@ -209,14 +210,24 @@ function AddTaskModal({ onClose, withDeadline = false }: { onClose: () => void; 
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           />
           {withDeadline && (
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
-              className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
-              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+                className="flex-1 px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+                style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+              />
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+                className="px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+                style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 100 }}
+              />
+            </div>
           )}
         </div>
         <div className="flex gap-2 justify-end px-4 pb-4">
