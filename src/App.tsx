@@ -445,6 +445,15 @@ export default function App() {
     return () => clearInterval(interval);
   }, [checkDue, checkDueTodos]);
 
+  // Check immediately when window is shown (JS timers pause while window is hidden)
+  useEffect(() => {
+    const unlisten = listen("window-shown", () => {
+      checkDue();
+      checkDueTodos();
+    });
+    return () => { unlisten.then(fn => fn()); };
+  }, [checkDue, checkDueTodos]);
+
   const openTrash = useCallback(() => {
     setPreTrashView(view);
     loadTrash();

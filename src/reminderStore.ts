@@ -146,6 +146,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       const r = fresh[0];
       // Mark as notified immediately so it never re-fires even if the overlay crashes
       await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [r.id]);
+      // Send system notification so user is alerted even when app is hidden
+      await notify("Reminder", r.text);
       set({ pendingAlert: r });
     }
   },
