@@ -220,7 +220,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
   const defaultDate = isCurrentWeek ? today() : start.toISOString().slice(0, 10);
 
   return (
-    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
+    <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: expanded ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
       {/* Week header */}
       <button
         onClick={onToggle}
