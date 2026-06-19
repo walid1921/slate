@@ -223,13 +223,10 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
     <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
       {/* Week header */}
       <button
-        onClick={() => { if (!isCurrentWeek) onToggle(); }}
-        className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors ${!isCurrentWeek ? "hover:bg-s1 cursor-pointer" : "cursor-default"}`}
+        onClick={onToggle}
+        className="w-full flex items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-s1 cursor-pointer"
       >
-        {isCurrentWeek
-          ? <span className="w-3 shrink-0" />
-          : expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />
-        }
+        {expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />}
         <span className="text-[12px] font-semibold text-t1">KW {kw}</span>
         {isCurrentWeek && (
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>
@@ -288,7 +285,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
 
 export default function IHKPage() {
   const { entries, load, add, update, remove } = useIHKStore();
-  const [openWeek, setOpenWeek] = useState<string | null>(null);
+  const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
 
   useEffect(() => { load(); }, []);
 
@@ -317,7 +314,7 @@ export default function IHKPage() {
             kw={kw}
             entries={wEntries}
             isCurrentWeek={key === currentKey}
-            expanded={key === currentKey || openWeek === key}
+            expanded={openWeek === key}
             onToggle={() => setOpenWeek(k => k === key ? null : key)}
             onAdd={add}
             onDelete={remove}
