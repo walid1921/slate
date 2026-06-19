@@ -32,11 +32,12 @@ function buildGrid(year: number, data: Record<string, number>) {
   );
 }
 
-function getMonthLabels(grid: { date: string }[][], step: number) {
+function getMonthLabels(grid: { date: string }[][], step: number, year: number) {
   const labels: { label: string; x: number }[] = [];
   let last = "";
   grid.forEach((col, i) => {
     const d = new Date(col[0].date + "T00:00:00");
+    if (d.getFullYear() !== year) return;
     const m = d.toLocaleString("en-US", { month: "short" });
     if (m !== last) { labels.push({ label: m, x: i * step }); last = m; }
   });
@@ -68,7 +69,7 @@ export default function ActivityHeatmap() {
 
   const grid = buildGrid(selectedYear, data);
   const CELL = 9, GAP = 2, STEP = CELL + GAP;
-  const monthLabels = getMonthLabels(grid, STEP);
+  const monthLabels = getMonthLabels(grid, STEP, selectedYear);
   const totalActions = Object.values(data).reduce((a, b) => a + b, 0);
   const activeDays = Object.values(data).filter(v => v > 0).length;
 
