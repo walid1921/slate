@@ -285,15 +285,13 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
 
 export default function IHKPage() {
   const { entries, load, add, update, remove } = useIHKStore();
+  const { kw: currentKW, year: currentYear } = getISOWeek(today());
+  const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
 
   useEffect(() => { load(); }, []);
 
   const weeks = groupByWeek(entries);
-  const { kw: currentKW, year: currentYear } = getISOWeek(today());
-
-  // Ensure current week always appears even if empty
-  const currentKey = buildWeekKey(currentYear, currentKW);
   const hasCurrentWeek = weeks.some(([k]) => k === currentKey);
   const allWeeks: [string, { year: number; kw: number; entries: IHKEntry[] }][] = hasCurrentWeek
     ? weeks
