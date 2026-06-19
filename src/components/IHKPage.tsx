@@ -197,16 +197,17 @@ function EntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: ()
   );
 }
 
-function WeekBlock({ year, kw, entries, isCurrentWeek, onAdd, onDelete, onUpdate }: {
+function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd, onDelete, onUpdate }: {
   year: number;
   kw: number;
   entries: IHKEntry[];
   isCurrentWeek: boolean;
+  expanded: boolean;
+  onToggle: () => void;
   onAdd: (text: string, cat: IHKCategory, date: string) => Promise<void>;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => Promise<void>;
 }) {
-  const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -222,7 +223,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, onAdd, onDelete, onUpdate
     <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
       {/* Week header */}
       <button
-        onClick={() => { if (!isCurrentWeek) setExpanded(e => !e); }}
+        onClick={() => { if (!isCurrentWeek) onToggle(); }}
         className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors ${!isCurrentWeek ? "hover:bg-s1 cursor-pointer" : "cursor-default"}`}
       >
         {isCurrentWeek
@@ -287,6 +288,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, onAdd, onDelete, onUpdate
 
 export default function IHKPage() {
   const { entries, load, add, update, remove } = useIHKStore();
+  const [openWeek, setOpenWeek] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -315,6 +317,8 @@ export default function IHKPage() {
             kw={kw}
             entries={wEntries}
             isCurrentWeek={key === currentKey}
+            expanded={key === currentKey || openWeek === key}
+            onToggle={() => setOpenWeek(k => k === key ? null : key)}
             onAdd={add}
             onDelete={remove}
             onUpdate={update}
