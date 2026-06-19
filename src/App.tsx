@@ -818,9 +818,9 @@ export default function App() {
             </div>
 
             {/* Activity heatmap + IHK card */}
-            <div className="flex gap-3">
-              <div className="flex-[2] min-w-0"><ActivityHeatmap /></div>
-              <IHKCard onNavigate={() => navigate("ihk")} />
+            <div className="flex gap-3 items-stretch">
+              <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
+              <div className="shrink-0 w-44"><IHKCard onNavigate={() => navigate("ihk")} /></div>
             </div>
 
             {/* Preview cards */}

@@ -74,7 +74,7 @@ export default function ActivityHeatmap() {
   const activeDays = Object.values(data).filter(v => v > 0).length;
 
   return (
-    <div className="rounded-xl p-3 flex flex-col gap-2 select-none" style={{ background: `rgba(${ACCENT},0.06)`, border: `1px solid rgba(${ACCENT},0.2)` }}>
+    <div className="rounded-xl p-3 flex flex-col gap-2 select-none" style={{ background: `rgba(${ACCENT},0.06)`, border: `1px solid rgba(${ACCENT},0.2)`, minWidth: "max-content" }}>
 
       {/* Header */}
       <div className="flex items-center justify-between">
