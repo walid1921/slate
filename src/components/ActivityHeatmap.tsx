@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { loadActivity } from "../activity";
 
-const WEEKS = 16;
+const WEEKS = 32;
 const DAYS = 7;
 
 function getColor(count: number): string {
@@ -70,7 +70,7 @@ export default function ActivityHeatmap() {
   const STEP = CELL + GAP;
 
   return (
-    <div className="flex flex-col gap-1.5 select-none">
+    <div className="rounded-xl p-3 flex flex-col gap-1.5 select-none" style={{ background: "rgba(168,85,247,0.06)", border: "1px solid rgba(168,85,247,0.2)" }}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-t5 uppercase tracking-wider">Activity</span>
