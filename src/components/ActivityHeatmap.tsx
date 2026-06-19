@@ -60,7 +60,7 @@ export default function ActivityHeatmap() {
       // w = WEEKS * cell + (WEEKS - 1) * gap  →  cell = (w + gap) / WEEKS - gap
       const gap = 2;
       const cell = Math.floor((w + gap) / WEEKS) - gap;
-      setCellSize(Math.max(6, cell));
+      setCellSize(Math.min(12, Math.max(6, cell)));
     };
     update();
     const ro = new ResizeObserver(update);
