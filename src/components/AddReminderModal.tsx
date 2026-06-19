@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { useReminderStore } from "../reminderStore";
 
 interface Props {
@@ -17,13 +16,9 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
   const [time, setTime] = useState(`${pad(today.getHours())}:${pad(today.getMinutes())}`);
   const textRef = useRef<HTMLInputElement>(null);
-  const timeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setTimeout(() => {
-      if (initialText) timeRef.current?.focus();
-      else textRef.current?.focus();
-    }, 10);
+    setTimeout(() => textRef.current?.focus(), 10);
   }, []);
 
   const handleSave = async () => {
@@ -37,46 +32,80 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
     }
   };
 
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !saving) handleSave();
+    if (e.key === "Escape") onClose();
+    e.stopPropagation();
+  };
+
+  const inputClass = "w-full rounded-lg px-3 py-2 text-sm text-t1 outline-none";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-lg flex flex-col overflow-hidden" style={{ width: 320, border: "1px solid var(--c-border)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-          <span className="text-[13px] font-semibold text-t1">New Reminder</span>
-          <button onClick={onClose} className="text-t4 hover:text-t2 transition-colors"><X size={14} /></button>
+      <div className="dropdown w-72 rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ border: "1px solid var(--c-border)" }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.15)" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(99,102,241,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <p className="text-[11px] text-t4 select-none">New reminder</p>
+            <input
+              ref={textRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Reminder text…"
+              className="text-[14px] font-semibold text-t1 leading-snug bg-transparent outline-none placeholder:text-t5 w-full"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-3 px-4 py-4">
-          <input
-            ref={textRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
-            placeholder="Reminder text…"
-            className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          />
-          <div className="flex gap-2">
+
+        {/* Fields */}
+        <div className="flex flex-col gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-t4 uppercase tracking-wider">Date</label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
-              className="flex-1 px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+              onKeyDown={handleKey}
+              className={inputClass}
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-t4 uppercase tracking-wider">Time</label>
             <input
-              ref={timeRef}
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
-              className="px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
-              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 100 }}
+              onKeyDown={handleKey}
+              className={inputClass}
+              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
           </div>
         </div>
-        <div className="flex gap-2 justify-end px-4 pb-4">
-          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-          <button onClick={handleSave} disabled={!text.trim() || saving} className="px-3 py-1.5 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40 disabled:pointer-events-none transition-colors" style={{ background: "rgba(99,102,241,0.15)" }}>{saving ? "Adding…" : "Add Reminder"}</button>
+
+        {/* Actions */}
+        <div className="flex">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 text-sm text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
+            style={{ borderRight: "1px solid var(--c-border-subtle)" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!text.trim() || saving}
+            className="flex-1 py-3 text-sm font-medium hover:bg-white/5 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            style={{ color: "rgba(99,102,241,0.9)" }}
+          >
+            {saving ? "Adding…" : "Add Reminder"}
+          </button>
         </div>
       </div>
     </div>
