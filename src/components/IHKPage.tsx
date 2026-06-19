@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy } from "lucide-react";
 import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry } from "../ihkStore";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-const ACCENT = "251,191,36"; // amber
+const ACCENT = "251,191,36";
 const CAT_COLORS: [string, string][] = [
-  ["59,130,246", "rgba(59,130,246,0.15)"],   // blue — Betriebliche
-  ["99,102,241", "rgba(99,102,241,0.15)"],   // indigo — Unterweisungen
-  ["16,185,129", "rgba(16,185,129,0.15)"],   // emerald — Berufsschule
+  ["59,130,246", "rgba(59,130,246,0.15)"],
+  ["99,102,241", "rgba(99,102,241,0.15)"],
+  ["16,185,129", "rgba(16,185,129,0.15)"],
 ];
 const CAT_SHORT = ["Betrieb", "Schulung", "Berufsschule"];
 
@@ -58,108 +61,155 @@ function groupByWeek(entries: IHKEntry[]) {
     if (!map.has(key)) map.set(key, { year, kw, entries: [] });
     map.get(key)!.entries.push(e);
   }
-  return Array.from(map.entries())
-    .sort((a, b) => b[0].localeCompare(a[0]));
+  return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
 }
 
 function buildCopyText(year: number, kw: number, entries: IHKEntry[]): string {
   const cats = IHK_CATEGORIES.map((name, i) => {
     const items = entries.filter(e => e.category === i);
-    const bullets = items.length > 0
-      ? items.map(e => `- ${fmtDayStamp(e.date)}: ${e.text}`).join("<br>")
-      : "-";
+    const bullets = items.length > 0 ? items.map(e => `- ${fmtDayStamp(e.date)}: ${e.text}`).join("<br>") : "-";
     return `| **${name}** | ${bullets} |`;
   });
   return `KW ${kw} / ${year} (${fmtWeekRange(year, kw)})\n\n| **Kategorie** | **Inhalte** |\n| --- | --- |\n${cats.join("\n")}`;
 }
 
-function AddEntryRow({ onSave, defaultDate }: { onSave: (text: string, cat: IHKCategory, date: string) => Promise<void>; defaultDate: string }) {
+// Status: green if Betrieb≥1 AND Berufsschule≥1 (Schulung optional)
+function weekStatus(entries: IHKEntry[]): "complete" | "partial" | "empty" {
+  const hasBetrieb = entries.some(e => e.category === 0);
+  const hasBerufsschule = entries.some(e => e.category === 2);
+  if (hasBetrieb && hasBerufsschule) return "complete";
+  if (hasBetrieb || hasBerufsschule) return "partial";
+  return "empty";
+}
+
+function StatusDots({ entries }: { entries: IHKEntry[] }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[0, 1, 2].map(cat => {
+        const has = entries.some(e => e.category === cat);
+        const isOptional = cat === 1;
+        const [rgb] = CAT_COLORS[cat];
+        return (
+          <span
+            key={cat}
+            className="w-1.5 h-1.5 rounded-full transition-opacity"
+            style={{ background: `rgba(${rgb},${has || isOptional ? "0.85" : "0.2"})` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
+  onSave: (text: string, cat: IHKCategory, date: string) => Promise<void>;
+  defaultDate: string;
+  pastWeeks?: { key: string; year: number; kw: number }[];
+  onFillFrom?: (key: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [cat, setCat] = useState<IHKCategory>(0);
   const [text, setText] = useState("");
   const [date, setDate] = useState(defaultDate);
   const [saving, setSaving] = useState(false);
+  const [fillOpen, setFillOpen] = useState(false);
+  const fillRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 10); }, [open]);
 
+  useEffect(() => {
+    if (!fillOpen) return;
+    const close = (e: MouseEvent) => { if (fillRef.current && !fillRef.current.contains(e.target as Node)) setFillOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [fillOpen]);
+
   const save = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
-    try {
-      await onSave(text.trim(), cat, date);
-      setText("");
-      setSaving(false);
-    } catch { setSaving(false); }
+    try { await onSave(text.trim(), cat, date); setText(""); setSaving(false); }
+    catch { setSaving(false); }
   };
 
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-t4 hover:text-t2 transition-colors w-full text-left">
-        <Plus size={11} />
-        <span>Add entry</span>
-      </button>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-2 px-3 py-2 border-t border-s">
-      {/* Category pills */}
-      <div className="flex gap-1.5 flex-wrap">
-        {CAT_SHORT.map((label, i) => (
-          <button
-            key={i}
-            onClick={() => setCat(i as IHKCategory)}
-            className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
-            style={cat === i
-              ? { background: CAT_COLORS[i][1], color: `rgba(${CAT_COLORS[i][0]},0.9)`, border: `1px solid rgba(${CAT_COLORS[i][0]},0.4)` }
-              : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
-            }
-          >
-            {label}
+    <div className="border-t border-s">
+      {!open ? (
+        <div className="flex items-center justify-between px-3 py-2">
+          <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-[11px] text-t4 hover:text-t2 transition-colors">
+            <Plus size={11} /><span>Add entry</span>
           </button>
-        ))}
-      </div>
-      {/* Text + date */}
-      <div className="flex gap-2 items-center">
-        <input
-          ref={inputRef}
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === "Enter") { e.preventDefault(); save(); }
-            if (e.key === "Escape") { setOpen(false); setText(""); }
-            e.stopPropagation();
-          }}
-          placeholder="What did you do…"
-          className="flex-1 px-2.5 py-1.5 rounded-lg text-[12px] text-t1 outline-none placeholder:text-t5"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-        />
-        <input
-          type="date"
-          value={date}
-          onChange={e => setDate(e.target.value)}
-          className="px-2 py-1.5 rounded-lg text-[11px] text-t3 outline-none"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 120 }}
-        />
-      </div>
-      {/* Actions */}
-      <div className="flex gap-2 justify-end">
-        <button onClick={() => { setOpen(false); setText(""); }} className="px-2.5 py-1 rounded-lg text-[11px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-        <button onClick={save} disabled={!text.trim() || saving} className="px-2.5 py-1 rounded-lg text-[11px] disabled:opacity-40 disabled:pointer-events-none transition-colors" style={{ background: CAT_COLORS[cat][1], color: `rgba(${CAT_COLORS[cat][0]},0.9)` }}>
-          {saving ? "Saving…" : "Save"}
-        </button>
-      </div>
+          {pastWeeks && pastWeeks.length > 0 && onFillFrom && (
+            <div ref={fillRef} className="relative">
+              <button
+                onClick={() => setFillOpen(o => !o)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-t4 hover:text-t2 transition-colors"
+                style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+              >
+                <ClipboardCopy size={9} />
+                <span>Fill from</span>
+                <ChevronDown size={8} />
+              </button>
+              {fillOpen && (
+                <div className="absolute right-0 bottom-full mb-1 dropdown rounded-lg py-1 z-50 overflow-hidden" style={{ minWidth: 130, border: "1px solid var(--c-border)", boxShadow: "0 8px 20px rgba(0,0,0,0.3)" }}>
+                  {pastWeeks.map(w => (
+                    <button
+                      key={w.key}
+                      onClick={() => { onFillFrom(w.key); setFillOpen(false); }}
+                      className="w-full text-left px-3 py-1.5 text-[11px] text-t3 hover:bg-s2 hover:text-t1 transition-colors"
+                    >
+                      KW {w.kw} <span className="text-t5">({fmtWeekRange(w.year, w.kw).split("–")[0].trim()})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 px-3 py-2">
+          <div className="flex gap-1.5 flex-wrap">
+            {CAT_SHORT.map((label, i) => (
+              <button key={i} onClick={() => setCat(i as IHKCategory)}
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
+                style={cat === i
+                  ? { background: CAT_COLORS[i][1], color: `rgba(${CAT_COLORS[i][0]},0.9)`, border: `1px solid rgba(${CAT_COLORS[i][0]},0.4)` }
+                  : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
+                }
+              >{label}</button>
+            ))}
+          </div>
+          <div className="flex gap-2 items-center">
+            <input ref={inputRef} value={text} onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") { setOpen(false); setText(""); } e.stopPropagation(); }}
+              placeholder="What did you do…"
+              className="flex-1 px-2.5 py-1.5 rounded-lg text-[12px] text-t1 outline-none placeholder:text-t5"
+              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+            />
+            <input type="date" value={date} onChange={e => setDate(e.target.value)}
+              className="px-2 py-1.5 rounded-lg text-[11px] text-t3 outline-none"
+              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 120 }}
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => { setOpen(false); setText(""); }} className="px-2.5 py-1 rounded-lg text-[11px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+            <button onClick={save} disabled={!text.trim() || saving} className="px-2.5 py-1 rounded-lg text-[11px] disabled:opacity-40 disabled:pointer-events-none transition-colors" style={{ background: CAT_COLORS[cat][1], color: `rgba(${CAT_COLORS[cat][0]},0.9)` }}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function EntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: () => void; onUpdate: (text: string) => Promise<void> }) {
+function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: () => void; onUpdate: (text: string) => Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(entry.text);
   const ref = useRef<HTMLInputElement>(null);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
 
-  useEffect(() => { if (editing) setTimeout(() => { ref.current?.select(); }, 10); }, [editing]);
+  useEffect(() => { if (editing) setTimeout(() => ref.current?.select(), 10); }, [editing]);
 
   const commit = async () => {
     if (val.trim() && val.trim() !== entry.text) await onUpdate(val.trim());
@@ -169,22 +219,21 @@ function EntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: ()
   const [rgb] = CAT_COLORS[entry.category];
 
   return (
-    <div className="group flex items-start gap-2 px-3 py-1.5 hover:bg-s1 rounded-lg transition-colors">
-      <span className="text-[10px] font-medium mt-0.5 shrink-0 w-16 text-t5">{fmtDayStamp(entry.date)}</span>
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className="group flex items-start gap-2 px-3 py-1.5 hover:bg-s1 rounded-lg transition-colors"
+    >
+      <div {...attributes} {...listeners} className="mt-1 cursor-grab active:cursor-grabbing text-t6 hover:text-t4 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <GripVertical size={10} />
+      </div>
+      <span className="text-[10px] font-medium mt-0.5 shrink-0 w-14 text-t5">{fmtDayStamp(entry.date)}</span>
       <span className="w-1 h-1 rounded-full mt-1.5 shrink-0" style={{ background: `rgba(${rgb},0.7)` }} />
       {editing ? (
-        <input
-          ref={ref}
-          value={val}
-          onChange={e => setVal(e.target.value)}
+        <input ref={ref} value={val} onChange={e => setVal(e.target.value)}
           onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === "Enter") { e.preventDefault(); commit(); }
-            if (e.key === "Escape") { setVal(entry.text); setEditing(false); }
-            e.stopPropagation();
-          }}
-          className="flex-1 text-[12px] text-t1 bg-transparent outline-none border-b"
-          style={{ borderColor: "var(--c-border)" }}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(entry.text); setEditing(false); } e.stopPropagation(); }}
+          className="flex-1 text-[12px] text-t1 bg-transparent outline-none border-b" style={{ borderColor: "var(--c-border)" }}
         />
       ) : (
         <span onDoubleClick={() => setEditing(true)} className="flex-1 text-[12px] text-t2 leading-relaxed">{entry.text}</span>
@@ -197,18 +246,21 @@ function EntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: ()
   );
 }
 
-function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd, onDelete, onUpdate }: {
-  year: number;
-  kw: number;
-  entries: IHKEntry[];
-  isCurrentWeek: boolean;
-  expanded: boolean;
-  onToggle: () => void;
+function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom }: {
+  year: number; kw: number; entries: IHKEntry[]; isCurrentWeek: boolean;
+  expanded: boolean; onToggle: () => void;
   onAdd: (text: string, cat: IHKCategory, date: string) => Promise<void>;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => Promise<void>;
+  onReorder: (orderedIds: number[]) => Promise<void>;
+  pastWeeks?: { key: string; year: number; kw: number }[];
+  onFillFrom?: (key: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const { start } = getWeekRange(year, kw);
+  const defaultDate = isCurrentWeek ? today() : start.toISOString().slice(0, 10);
+  const status = weekStatus(entries);
 
   const copy = async () => {
     await navigator.clipboard.writeText(buildCopyText(year, kw, entries));
@@ -216,28 +268,38 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const { start } = getWeekRange(year, kw);
-  const defaultDate = isCurrentWeek ? today() : start.toISOString().slice(0, 10);
+  const handleDragEnd = (catIdx: number) => (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const catEntries = entries.filter(e => e.category === catIdx);
+    const oldIndex = catEntries.findIndex(e => e.id === active.id);
+    const newIndex = catEntries.findIndex(e => e.id === over.id);
+    const reordered = arrayMove(catEntries, oldIndex, newIndex);
+    // Build full order: entries NOT in this cat keep their position, catEntries replace their slots
+    const otherEntries = entries.filter(e => e.category !== catIdx);
+    const allReordered = [...reordered, ...otherEntries].sort((a, b) => {
+      if (a.category !== b.category) return a.category - b.category;
+      return reordered.findIndex(e => e.id === a.id) - reordered.findIndex(e => e.id === b.id);
+    });
+    onReorder(allReordered.map(e => e.id));
+  };
 
   return (
     <div className="rounded-xl overflow-hidden shrink-0" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
-      {/* Week header */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-s1 cursor-pointer"
-      >
+      <button onClick={onToggle} className="w-full flex items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-s1 cursor-pointer">
         {expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />}
         <span className="text-[12px] font-semibold text-t1">KW {kw}</span>
         {isCurrentWeek && (
-          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>
-            current
-          </span>
+          <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>current</span>
         )}
         <span className="text-[11px] text-t5 ml-1">{fmtWeekRange(year, kw)}</span>
+        <StatusDots entries={entries} />
+        {!isCurrentWeek && status !== "empty" && (
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: status === "complete" ? "rgba(16,185,129,0.8)" : "rgba(251,191,36,0.8)" }} />
+        )}
         <span className="ml-auto text-[10px] text-t5">{entries.length} {entries.length === 1 ? "entry" : "entries"}</span>
         {expanded && (
-          <button
-            onClick={e => { e.stopPropagation(); copy(); }}
+          <button onClick={e => { e.stopPropagation(); copy(); }}
             className="ml-2 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors"
             style={{ background: `rgba(${ACCENT},0.12)`, color: `rgba(${ACCENT},0.8)`, border: `1px solid rgba(${ACCENT},0.25)` }}
           >
@@ -247,7 +309,6 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
         )}
       </button>
 
-      {/* Expanded body */}
       {expanded && (
         <div className="border-t border-s">
           {IHK_CATEGORIES.map((catName, catIdx) => {
@@ -258,25 +319,26 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
                 <div className="flex items-center gap-2 px-3 py-2" style={{ background: `rgba(${rgb},0.04)` }}>
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${rgb},0.7)` }} />
                   <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${rgb},0.8)` }}>{catName}</span>
+                  {catIdx === 1 && <span className="text-[9px] text-t6 italic ml-1">optional</span>}
                   <span className="ml-auto text-[10px] text-t5">{catEntries.length}</span>
                 </div>
                 <div className="px-1 py-1">
-                  {catEntries.length === 0 && (
-                    <p className="px-3 py-1.5 text-[11px] text-t6 italic">Nothing added yet</p>
-                  )}
-                  {catEntries.map(entry => (
-                    <EntryRow
-                      key={entry.id}
-                      entry={entry}
-                      onDelete={() => onDelete(entry.id)}
-                      onUpdate={(text) => onUpdate(entry.id, text)}
-                    />
-                  ))}
+                  {catEntries.length === 0 && <p className="px-3 py-1.5 text-[11px] text-t6 italic">Nothing added yet</p>}
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd(catIdx)}>
+                    <SortableContext items={catEntries.map(e => e.id)} strategy={verticalListSortingStrategy}>
+                      {catEntries.map(entry => (
+                        <SortableEntryRow key={entry.id} entry={entry}
+                          onDelete={() => onDelete(entry.id)}
+                          onUpdate={(text) => onUpdate(entry.id, text)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 </div>
               </div>
             );
           })}
-          <AddEntryRow onSave={onAdd} defaultDate={defaultDate} />
+          <AddEntryRow onSave={onAdd} defaultDate={defaultDate} pastWeeks={isCurrentWeek ? pastWeeks : undefined} onFillFrom={isCurrentWeek ? onFillFrom : undefined} />
         </div>
       )}
     </div>
@@ -284,7 +346,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
 }
 
 export default function IHKPage() {
-  const { entries, load, add, update, remove } = useIHKStore();
+  const { entries, load, add, update, remove, reorder } = useIHKStore();
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
@@ -297,7 +359,17 @@ export default function IHKPage() {
     ? weeks
     : [[currentKey, { year: currentYear, kw: currentKW, entries: [] }], ...weeks];
 
-  // Group weeks by the month of their Monday
+  const pastWeeks = allWeeks.filter(([k]) => k !== currentKey).map(([key, { year, kw }]) => ({ key, year, kw }));
+
+  const handleFillFrom = async (sourceKey: string) => {
+    const sourceWeek = allWeeks.find(([k]) => k === sourceKey);
+    if (!sourceWeek) return;
+    const todayStr = today();
+    for (const entry of sourceWeek[1].entries) {
+      await add(entry.text, entry.category, todayStr);
+    }
+  };
+
   const byMonth: { monthLabel: string; weeks: typeof allWeeks }[] = [];
   for (const item of allWeeks) {
     const { year, kw } = item[1];
@@ -322,15 +394,13 @@ export default function IHKPage() {
             {mWeeks.map(([key, { year, kw, entries: wEntries }]) => (
               <WeekBlock
                 key={key}
-                year={year}
-                kw={kw}
-                entries={wEntries}
+                year={year} kw={kw} entries={wEntries}
                 isCurrentWeek={key === currentKey}
                 expanded={openWeek === key}
                 onToggle={() => setOpenWeek(k => k === key ? null : key)}
-                onAdd={add}
-                onDelete={remove}
-                onUpdate={update}
+                onAdd={add} onDelete={remove} onUpdate={update} onReorder={reorder}
+                pastWeeks={pastWeeks}
+                onFillFrom={handleFillFrom}
               />
             ))}
           </div>

@@ -430,6 +430,41 @@ function TodoRow({
   );
 }
 
+function IHKCard({ onNavigate }: { onNavigate: () => void }) {
+  const { entries } = useIHKStore();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const todayStr = (() => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; })();
+  const getWeek = (s: string) => { const d = new Date(s+"T00:00:00"); const t = new Date(d); t.setHours(0,0,0,0); t.setDate(t.getDate()+3-((t.getDay()+6)%7)); const j = new Date(t.getFullYear(),0,4); return { kw: 1+Math.round(((t.getTime()-j.getTime())/86400000-3+((j.getDay()+6)%7))/7), year: t.getFullYear() }; };
+  const { kw, year } = getWeek(todayStr);
+  const weekKey = `${year}-${String(kw).padStart(2,"0")}`;
+  const weekEntries = entries.filter(e => { const w = getWeek(e.date); return `${w.year}-${String(w.kw).padStart(2,"0")}` === weekKey; });
+  const catCounts = [0,1,2].map(cat => weekEntries.filter(e => e.category === cat).length);
+  const CAT_RGB = ["59,130,246","99,102,241","16,185,129"];
+  const AMBER = "251,191,36";
+  const status = weekEntries.some(e=>e.category===0) && weekEntries.some(e=>e.category===2) ? "complete" : weekEntries.length > 0 ? "partial" : "empty";
+
+  return (
+    <button onClick={onNavigate} className="flex-1 min-w-0 text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: `rgba(${AMBER},0.07)`, border: `1px solid rgba(${AMBER},0.25)` }}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <BookOpen size={11} className="text-amber-400 shrink-0" />
+          <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">IHK</span>
+        </div>
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: status==="complete" ? "rgba(16,185,129,0.8)" : status==="partial" ? `rgba(${AMBER},0.8)` : "var(--c-border)" }} />
+      </div>
+      <p className="text-[13px] font-medium text-t2">KW {kw}</p>
+      <div className="flex flex-col gap-1">
+        {[0,1,2].map(cat => (
+          <div key={cat} className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full shrink-0" style={{ background: `rgba(${CAT_RGB[cat]},${catCounts[cat]>0?"0.8":"0.25"})` }} />
+            <span className="text-[10px] text-t5 truncate">{catCounts[cat]} {cat===0?"Betrieb":cat===1?"Schulung":"Berufsschule"}</span>
+          </div>
+        ))}
+      </div>
+    </button>
+  );
+}
+
 export default function App() {
   const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
@@ -780,8 +815,11 @@ export default function App() {
               </div>
             </div>
 
-            {/* Activity heatmap */}
-            <ActivityHeatmap />
+            {/* Activity heatmap + IHK card */}
+            <div className="flex gap-3">
+              <div className="flex-[2] min-w-0"><ActivityHeatmap /></div>
+              <IHKCard onNavigate={() => navigate("ihk")} />
+            </div>
 
             {/* Preview cards */}
             <div className="grid grid-cols-3 gap-3">

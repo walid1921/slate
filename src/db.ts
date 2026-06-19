@@ -67,9 +67,13 @@ export async function getDb(): Promise<Database> {
       text       TEXT    NOT NULL,
       category   INTEGER NOT NULL DEFAULT 0,
       date       TEXT    NOT NULL,
+      position   INTEGER NOT NULL DEFAULT 0,
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  await _db.execute(`ALTER TABLE ihk_entries ADD COLUMN position INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  // Seed position from id for existing rows so order is preserved
+  await _db.execute(`UPDATE ihk_entries SET position = id WHERE position = 0`).catch(() => {});
 
   return _db;
 }

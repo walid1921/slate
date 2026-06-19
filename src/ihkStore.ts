@@ -15,6 +15,7 @@ export interface IHKEntry {
   text: string;
   category: IHKCategory;
   date: string;
+  position: number;
   created_at: string;
 }
 
@@ -24,6 +25,7 @@ interface IHKState {
   add: (text: string, category: IHKCategory, date: string) => Promise<void>;
   update: (id: number, text: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
+  reorder: (orderedIds: number[]) => Promise<void>;
 }
 
 export const useIHKStore = create<IHKState>((set, get) => ({
@@ -32,16 +34,18 @@ export const useIHKStore = create<IHKState>((set, get) => ({
   load: async () => {
     const db = await getDb();
     const rows = await db.select<IHKEntry[]>(
-      "SELECT id, text, category, date, created_at FROM ihk_entries ORDER BY date ASC, id ASC"
+      "SELECT id, text, category, date, position, created_at FROM ihk_entries ORDER BY position ASC, id ASC"
     );
     set({ entries: rows });
   },
 
   add: async (text, category, date) => {
     const db = await getDb();
+    const res = await db.select<{ maxpos: number }[]>("SELECT COALESCE(MAX(position), 0) as maxpos FROM ihk_entries");
+    const pos = (res[0]?.maxpos ?? 0) + 1;
     await db.execute(
-      "INSERT INTO ihk_entries (text, category, date) VALUES (?, ?, ?)",
-      [text.trim(), category, date]
+      "INSERT INTO ihk_entries (text, category, date, position) VALUES (?, ?, ?, ?)",
+      [text.trim(), category, date, pos]
     );
     logActivity();
     await get().load();
@@ -59,5 +63,18 @@ export const useIHKStore = create<IHKState>((set, get) => ({
     await db.execute("DELETE FROM ihk_entries WHERE id = ?", [id]);
     logActivity();
     set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
+  },
+
+  reorder: async (orderedIds) => {
+    const db = await getDb();
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.execute("UPDATE ihk_entries SET position = ? WHERE id = ?", [i + 1, orderedIds[i]]);
+    }
+    set((s) => {
+      const byId = new Map(s.entries.map(e => [e.id, e]));
+      const reordered = orderedIds.map((id, i) => ({ ...byId.get(id)!, position: i + 1 }));
+      const rest = s.entries.filter(e => !orderedIds.includes(e.id));
+      return { entries: [...reordered, ...rest].sort((a, b) => a.position - b.position) };
+    });
   },
 }));
