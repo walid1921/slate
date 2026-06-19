@@ -16,6 +16,7 @@ import {
   CheckCheck,
   Zap,
   CalendarDays,
+  BookOpen,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -27,6 +28,8 @@ import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
+import IHKPage from "./components/IHKPage";
+import { useIHKStore } from "./ihkStore";
 import ConfirmDialog from "./components/ConfirmDialog";
 import ActivityHeatmap from "./components/ActivityHeatmap";
 import { logActivity } from "./activity";
@@ -431,19 +434,20 @@ export default function App() {
   const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
+  const { entries: ihkEntries, load: loadIHK } = useIHKStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
   const [preTrashView, setPreTrashView] = useState<View>("main");
-  type View = "main" | "todos" | "trash" | "reminders" | "notes" | "settings";
-  type NavView = "main" | "todos" | "reminders" | "notes" | "settings";
+  type View = "main" | "todos" | "trash" | "reminders" | "notes" | "ihk" | "settings";
+  type NavView = "main" | "todos" | "reminders" | "notes" | "ihk" | "settings";
   const [view, setView] = useState<View>("main");
   const [lastNavView, setLastNavView] = useState<NavView>("main");
 
   const navigate = useCallback((v: View) => {
-    if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
+    if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "ihk" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
   const [addTaskOpen, setAddTaskOpen] = useState<false | "quick" | "deadline">(false);
@@ -487,7 +491,7 @@ export default function App() {
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
-  useEffect(() => { load(); loadReminders(); loadNotes(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
@@ -634,7 +638,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { getCurrentWindow().hide(); return; }
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "settings"];
+        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "ihk", "settings"];
         const cur = tabs.indexOf(lastNavView);
         const next = e.key === "ArrowRight"
           ? tabs[(cur + 1) % tabs.length]
@@ -673,7 +677,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", todos: "Tasks", trash: "Deleted", reminders: "Reminders", notes: "Notes", settings: "Settings" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", todos: "Tasks", trash: "Deleted", reminders: "Reminders", notes: "Notes", ihk: "IHK Records", settings: "Settings" };
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
@@ -986,6 +990,7 @@ export default function App() {
 
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => { const n = useNotesStore.getState().notes.find(n => n.id === id); askConfirm("Delete note?", `"${n?.title ?? "This note"}" will be permanently deleted.`, () => useNotesStore.getState().remove(id)); }} />}
+      {view === "ihk" && <IHKPage />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}
@@ -997,6 +1002,8 @@ export default function App() {
                 ? `${allReminders.filter((r) => !r.notified).length} upcoming`
                 : view === "notes"
                 ? `${notes.length} note${notes.length !== 1 ? "s" : ""}`
+                : view === "ihk"
+                ? `${ihkEntries.length} IHK ${ihkEntries.length === 1 ? "entry" : "entries"}`
                 : view === "trash"
                 ? `${trash.length} deleted`
                 : view === "settings"
@@ -1015,9 +1022,9 @@ export default function App() {
                   className="absolute top-0.5 h-5 w-7 transition-transform duration-200 ease-out"
                   style={{
                     borderRadius: 5,
-                    background: lastNavView === "todos" ? "rgba(59,130,246,0.15)" : lastNavView === "reminders" ? "rgba(99,102,241,0.15)" : lastNavView === "notes" ? "rgba(16,185,129,0.15)" : "var(--c-surface-3)",
+                    background: lastNavView === "todos" ? "rgba(59,130,246,0.15)" : lastNavView === "reminders" ? "rgba(99,102,241,0.15)" : lastNavView === "notes" ? "rgba(16,185,129,0.15)" : lastNavView === "ihk" ? "rgba(251,191,36,0.15)" : "var(--c-surface-3)",
                     left: "2px",
-                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : "128px"})`,
+                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : lastNavView === "ihk" ? "128px" : "160px"})`,
                     transition: "transform 0.2s ease-out, background 0.2s ease-out",
                   }}
                 />
@@ -1050,6 +1057,13 @@ export default function App() {
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Notes</span>
                   <FileText size={14} />
+                </button>
+                <button
+                  onClick={() => navigate("ihk")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "ihk" ? "text-amber-400" : "text-t4 hover:text-t2"}`}
+                >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>IHK</span>
+                  <BookOpen size={14} />
                 </button>
                 <button
                   onClick={() => navigate("settings")}

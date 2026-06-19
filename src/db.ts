@@ -61,6 +61,15 @@ export async function getDb(): Promise<Database> {
     )
   `);
 
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS ihk_entries (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      text       TEXT    NOT NULL,
+      category   INTEGER NOT NULL DEFAULT 0,
+      date       TEXT    NOT NULL,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
 
   return _db;
 }
