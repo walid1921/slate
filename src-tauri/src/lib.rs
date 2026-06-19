@@ -50,21 +50,31 @@ fn close_reminder_overlay(app: AppHandle) {
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
+fn hide_window(window: &WebviewWindow) {
+    // Use [NSApp hide:nil] instead of window.hide() so macOS remembers which
+    // Space the window was on — activating the app later will switch back to it.
+    #[cfg(target_os = "macos")]
+    unsafe {
+        use objc::{msg_send, sel, sel_impl, class};
+        let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![app, hide: std::ptr::null::<objc::runtime::Object>()];
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = window.hide();
+    let _ = window; // suppress unused warning on non-mac
+}
+
 fn show_window(window: &WebviewWindow) {
     let _ = window.show();
     #[cfg(target_os = "macos")]
     unsafe {
         use objc::{msg_send, sel, sel_impl, class};
-        // Remove NSWindowCollectionBehaviorMoveToActiveSpace (bit 1) so the window
-        // stays on its own Space and macOS switches Spaces to reach it.
         if let Ok(ptr) = window.ns_window() {
             let ns_win = ptr as *mut objc::runtime::Object;
-            const MOVE_TO_ACTIVE: u64 = 1 << 1;
-            let behavior: u64 = msg_send![ns_win, collectionBehavior];
-            let _: () = msg_send![ns_win, setCollectionBehavior: behavior & !MOVE_TO_ACTIVE];
             let _: () = msg_send![ns_win, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
         }
         let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
+        // Activating a hidden app restores it to its original Space
         let _: () = msg_send![app, activateIgnoringOtherApps: objc::runtime::YES];
     }
     #[cfg(not(target_os = "macos"))]
@@ -91,7 +101,7 @@ pub fn run() {
                         if shortcut == &toggle {
                             if let Some(window) = app.get_webview_window("main") {
                                 if window.is_visible().unwrap_or(false) {
-                                    let _ = window.hide();
+                                    hide_window(&window);
                                 } else {
                                     let _ = window.center();
                                     show_window(&window);
@@ -142,7 +152,7 @@ pub fn run() {
                 let auto_hide_flag = app.state::<AutoHide>().0.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(false) = event {
-                        if auto_hide_flag.load(Ordering::Relaxed) { let _ = win.hide(); }
+                        if auto_hide_flag.load(Ordering::Relaxed) { hide_window(&win); }
                     }
                 });
             }
