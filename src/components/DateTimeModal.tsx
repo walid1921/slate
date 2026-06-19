@@ -18,25 +18,21 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
   const [time, setTime] = useState(defaultTime);
   const timeRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    timeRef.current?.focus();
-  }, []);
+  useEffect(() => { timeRef.current?.focus(); }, []);
 
   const handleConfirm = () => {
     const dateStr = showDate ? date : defaultDate;
     const t = time || defaultTime;
     const localIso = `${dateStr}T${t}:00`;
-    const d = new Date(localIso);
-    if (isNaN(d.getTime())) return;
+    if (isNaN(new Date(localIso).getTime())) return;
     onConfirm(localIso);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleConfirm();
     if (e.key === "Escape") onCancel();
+    e.stopPropagation();
   };
-
-  const inputClass = "w-full rounded-lg px-3 py-2 text-sm text-t1 outline-none transition-colors placeholder-themed";
 
   return (
     <div
@@ -44,7 +40,7 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
       style={{ background: "rgba(0,0,0,0.35)", zIndex: 20, borderRadius: 12 }}
       onKeyDown={(e) => { e.stopPropagation(); handleKey(e); }}
     >
-      <div className="dropdown w-72 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="dropdown rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ width: 320, border: "1px solid var(--c-border)" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(59,130,246,0.15)" }}>
@@ -58,49 +54,43 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
           </div>
         </div>
 
-        {/* Fields */}
-        <div className="flex flex-col gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        {/* Body */}
+        <div className="flex flex-col gap-3 px-4 py-4">
           {showDate && (
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-t4 uppercase tracking-wider">Date</label>
-              <input
-                type="date"
-                value={date}
-                min={defaultDate}
-                onChange={(e) => setDate(e.target.value)}
-                onKeyDown={(e) => { if (e.key !== "Enter" && e.key !== "Escape") e.stopPropagation(); }}
-                className={inputClass}
-                style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-              />
-            </div>
-          )}
-          <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-t4 uppercase tracking-wider">Time</label>
             <input
-              ref={timeRef}
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
+              type="date"
+              value={date}
+              min={defaultDate}
+              onChange={(e) => setDate(e.target.value)}
               onKeyDown={(e) => { if (e.key !== "Enter" && e.key !== "Escape") e.stopPropagation(); }}
-              className={inputClass}
+              className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
-          </div>
+          )}
+          <input
+            ref={timeRef}
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            onKeyDown={(e) => { if (e.key !== "Enter" && e.key !== "Escape") e.stopPropagation(); }}
+            className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          />
         </div>
 
-        {/* Actions */}
-        <div className="flex">
+        {/* Footer */}
+        <div className="flex gap-2 justify-end px-4 pb-4">
           <button
             onMouseDown={(e) => { e.preventDefault(); onCancel(); }}
-            className="flex-1 py-3 text-sm text-t3 hover:text-t2 hover:bg-white/5 transition-colors"
-            style={{ borderRight: "1px solid var(--c-border-subtle)" }}
+            className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors"
+            style={{ background: "var(--c-surface-2)" }}
           >
             Cancel
           </button>
           <button
             onMouseDown={(e) => { e.preventDefault(); handleConfirm(); }}
-            className="flex-1 py-3 text-sm font-medium transition-colors hover:bg-white/5"
-            style={{ color: "rgba(59,130,246,0.9)" }}
+            className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
+            style={{ background: "rgba(59,130,246,0.15)" }}
           >
             Confirm
           </button>
