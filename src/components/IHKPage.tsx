@@ -206,7 +206,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, onAdd, onDelete, onUpdate
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => Promise<void>;
 }) {
-  const [expanded, setExpanded] = useState(isCurrentWeek);
+  const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -222,10 +222,13 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, onAdd, onDelete, onUpdate
     <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
       {/* Week header */}
       <button
-        onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-s1 transition-colors"
+        onClick={() => { if (!isCurrentWeek) setExpanded(e => !e); }}
+        className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors ${!isCurrentWeek ? "hover:bg-s1 cursor-pointer" : "cursor-default"}`}
       >
-        {expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />}
+        {isCurrentWeek
+          ? <span className="w-3 shrink-0" />
+          : expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />
+        }
         <span className="text-[12px] font-semibold text-t1">KW {kw}</span>
         {isCurrentWeek && (
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>
