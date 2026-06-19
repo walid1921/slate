@@ -49,7 +49,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
             ref={textRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
             placeholder="Reminder text…"
             className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
@@ -59,7 +59,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
               className="flex-1 px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
             />
@@ -68,7 +68,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
               className="px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
               style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 100 }}
             />
@@ -76,7 +76,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
         </div>
         <div className="flex gap-2 justify-end px-4 pb-4">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-          <button onClick={handleSave} disabled={!text.trim() || saving} className="px-3 py-1.5 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40 transition-colors" style={{ background: "rgba(99,102,241,0.15)" }}>{saving ? "Adding…" : "Add Reminder"}</button>
+          <button onClick={handleSave} disabled={!text.trim() || saving} className="px-3 py-1.5 rounded-lg text-[12px] text-indigo-400 hover:text-indigo-300 disabled:opacity-40 disabled:pointer-events-none transition-colors" style={{ background: "rgba(99,102,241,0.15)" }}>{saving ? "Adding…" : "Add Reminder"}</button>
         </div>
       </div>
     </div>
