@@ -53,6 +53,12 @@ use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 fn show_window(window: &WebviewWindow) {
     let _ = window.show();
     let _ = window.set_focus();
+    #[cfg(target_os = "macos")]
+    unsafe {
+        use objc::{msg_send, sel, sel_impl, class};
+        let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
+        let _: () = msg_send![app, activateIgnoringOtherApps: objc::runtime::YES];
+    }
     let _ = window.emit("window-shown", ());
 }
 
