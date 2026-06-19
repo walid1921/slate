@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { loadActivity } from "../activity";
 
-const WEEKS = 32;
 const DAYS = 7;
 
 function getColor(count: number): string {
@@ -13,21 +12,29 @@ function getColor(count: number): string {
 }
 
 function buildGrid(data: Record<string, number>): { date: string; count: number }[][] {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  // Align to Sunday of the current week
-  const startDay = new Date(today);
-  startDay.setDate(today.getDate() - today.getDay() - (WEEKS - 1) * 7);
-
+  const year = new Date().getFullYear();
   const pad = (n: number) => String(n).padStart(2, "0");
   const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
+  // Start from the Sunday on or before Jan 1
+  const jan1 = new Date(year, 0, 1);
+  const start = new Date(jan1);
+  start.setDate(jan1.getDate() - jan1.getDay());
+
+  // End at the Saturday on or after Dec 31
+  const dec31 = new Date(year, 11, 31);
+  const end = new Date(dec31);
+  end.setDate(dec31.getDate() + (6 - dec31.getDay()));
+
+  const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+  const weeks = Math.ceil(totalDays / 7);
+
   const columns: { date: string; count: number }[][] = [];
-  for (let w = 0; w < WEEKS; w++) {
+  for (let w = 0; w < weeks; w++) {
     const col: { date: string; count: number }[] = [];
     for (let d = 0; d < DAYS; d++) {
-      const dt = new Date(startDay);
-      dt.setDate(startDay.getDate() + w * 7 + d);
+      const dt = new Date(start);
+      dt.setDate(start.getDate() + w * 7 + d);
       const key = fmt(dt);
       col.push({ date: key, count: data[key] ?? 0 });
     }
@@ -57,7 +64,7 @@ export default function ActivityHeatmap() {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; date: string; count: number } | null>(null);
 
   useEffect(() => {
-    loadActivity(WEEKS).then(setData);
+    loadActivity(54).then(setData); // full year (52-53 weeks)
   }, []);
 
   const grid = buildGrid(data);
@@ -80,7 +87,7 @@ export default function ActivityHeatmap() {
       {/* Grid */}
       <div className="relative">
         {/* Month labels */}
-        <div className="relative h-4" style={{ width: WEEKS * STEP - GAP }}>
+        <div className="relative h-4" style={{ width: grid.length * STEP - GAP }}>
           {monthLabels.map(({ label, col }) => (
             <span
               key={label + col}
