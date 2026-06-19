@@ -52,13 +52,23 @@ use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
 fn show_window(window: &WebviewWindow) {
     let _ = window.show();
-    let _ = window.set_focus();
     #[cfg(target_os = "macos")]
     unsafe {
         use objc::{msg_send, sel, sel_impl, class};
+        // Remove NSWindowCollectionBehaviorMoveToActiveSpace (bit 1) so the window
+        // stays on its own Space and macOS switches Spaces to reach it.
+        if let Ok(ptr) = window.ns_window() {
+            let ns_win = ptr as *mut objc::runtime::Object;
+            const MOVE_TO_ACTIVE: u64 = 1 << 1;
+            let behavior: u64 = msg_send![ns_win, collectionBehavior];
+            let _: () = msg_send![ns_win, setCollectionBehavior: behavior & !MOVE_TO_ACTIVE];
+            let _: () = msg_send![ns_win, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
+        }
         let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
         let _: () = msg_send![app, activateIgnoringOtherApps: objc::runtime::YES];
     }
+    #[cfg(not(target_os = "macos"))]
+    let _ = window.set_focus();
     let _ = window.emit("window-shown", ());
 }
 
