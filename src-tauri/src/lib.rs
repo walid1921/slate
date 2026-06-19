@@ -50,36 +50,9 @@ fn close_reminder_overlay(app: AppHandle) {
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
-fn hide_window(window: &WebviewWindow) {
-    // Use [NSApp hide:nil] instead of window.hide() so macOS remembers which
-    // Space the window was on — activating the app later will switch back to it.
-    #[cfg(target_os = "macos")]
-    unsafe {
-        use objc::{msg_send, sel, sel_impl, class};
-        let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
-        let _: () = msg_send![app, hide: std::ptr::null::<objc::runtime::Object>()];
-    }
-    #[cfg(not(target_os = "macos"))]
-    let _ = window.hide();
-    let _ = window; // suppress unused warning on non-mac
-}
-
 fn show_window(window: &WebviewWindow) {
-    #[cfg(target_os = "macos")]
-    unsafe {
-        use objc::{msg_send, sel, sel_impl, class};
-        // Do NOT call window.show() or window.center() first — those call
-        // [NSWindow orderFront:] which moves the window to the active Space.
-        // activateIgnoringOtherApps on a hidden app is what Dock clicks and
-        // Cmd+Tab use: macOS unhides the app and switches to its original Space.
-        let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
-        let _: () = msg_send![app, activateIgnoringOtherApps: objc::runtime::YES];
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
+    let _ = window.show();
+    let _ = window.set_focus();
     let _ = window.emit("window-shown", ());
 }
 
@@ -102,9 +75,8 @@ pub fn run() {
                         if shortcut == &toggle {
                             if let Some(window) = app.get_webview_window("main") {
                                 if window.is_visible().unwrap_or(false) {
-                                    hide_window(&window);
+                                    let _ = window.hide();
                                 } else {
-                                    #[cfg(not(target_os = "macos"))]
                                     let _ = window.center();
                                     show_window(&window);
                                 }
@@ -154,7 +126,7 @@ pub fn run() {
                 let auto_hide_flag = app.state::<AutoHide>().0.clone();
                 window.on_window_event(move |event| {
                     if let tauri::WindowEvent::Focused(false) = event {
-                        if auto_hide_flag.load(Ordering::Relaxed) { hide_window(&win); }
+                        if auto_hide_flag.load(Ordering::Relaxed) { let _ = win.hide(); }
                     }
                 });
             }
