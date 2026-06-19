@@ -258,10 +258,11 @@ function TodoRow({
   onDeleteRequest: () => void;
   onSelect?: () => void;
 }) {
-  const { toggle, setPriority, updateText } = useTodoStore();
+  const { toggle, setPriority, updateText, setDeadline } = useTodoStore();
   const [showMeta, setShowMeta] = useState(false);
   const [editingText, setEditingText] = useState(false);
   const [editVal, setEditVal] = useState(todo.text);
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const textRef = useRef<HTMLInputElement>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -337,10 +338,27 @@ function TodoRow({
             ))}
           </div>
           <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
+          <button onClick={() => { setShowDeadlinePicker(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
+            <CalendarDays size={12} className="text-t4" /><span>{todo.due_date ? "Edit deadline" : "Set deadline"}</span>
+          </button>
+          <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
           <button onClick={() => { onDeleteRequest(); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
             <X size={12} /><span>Delete</span>
           </button>
         </div>
+      )}
+      {showDeadlinePicker && (
+        <DateTimeModal
+          title="Set deadline"
+          subtitle={todo.text}
+          showDate={true}
+          onCancel={() => setShowDeadlinePicker(false)}
+          onConfirm={(iso) => {
+            const [datePart, timePart] = iso.split("T");
+            setDeadline(todo.id, datePart, timePart?.slice(0, 5) ?? null);
+            setShowDeadlinePicker(false);
+          }}
+        />
       )}
       {/* Drag handle */}
       <div

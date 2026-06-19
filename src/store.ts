@@ -37,6 +37,7 @@ interface State {
   deleteAllPermanently: () => Promise<void>;
   setPriority: (id: number, priority: Priority) => Promise<void>;
   updateText: (id: number, text: string) => Promise<void>;
+  setDeadline: (id: number, due_date: string | null, due_time: string | null) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
   setDescription: (id: number, description: string) => Promise<void>;
 }
@@ -150,6 +151,12 @@ export const useTodoStore = create<State>((set, get) => ({
     const db = await getDb();
     await db.execute("UPDATE todos SET text = ? WHERE id = ?", [trimmed, id]);
     set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, text: trimmed } : t) }));
+  },
+
+  setDeadline: async (id, due_date, due_time) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET due_date = ?, due_time = ?, deadline_notified = 0 WHERE id = ?", [due_date, due_time, id]);
+    set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, due_date, due_time } : t) }));
   },
 
   setDescription: async (id, description) => {
