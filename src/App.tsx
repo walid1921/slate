@@ -782,19 +782,31 @@ export default function App() {
             {/* Preview cards */}
             <div className="grid grid-cols-3 gap-3">
                 {/* Tasks */}
-                <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
-                  <div className="flex items-center gap-1.5">
-                    <CheckSquare size={11} className="text-blue-400 shrink-0" />
-                    <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Tasks</span>
-                  </div>
-                  <p className="text-[13px] font-medium text-t2">{todos.filter(t => !t.done).length} active</p>
-                  <div className="flex flex-col gap-0.5">
-                    {todos.filter(t => !t.done).slice(0, 2).map(t => (
-                      <p key={t.id} className="text-[11px] text-t4 truncate">· {t.text}</p>
-                    ))}
-                    {todos.filter(t => !t.done).length === 0 && <p className="text-[11px] text-t5">No active tasks</p>}
-                  </div>
-                </button>
+                {(() => {
+                  const total = todos.length;
+                  const done = todos.filter(t => t.done).length;
+                  const active = total - done;
+                  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                  return (
+                    <button onClick={() => navigate("todos")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(59,130,246,0.07)", border: "1px solid rgba(59,130,246,0.25)" }}>
+                      <div className="flex items-center gap-1.5">
+                        <CheckSquare size={11} className="text-blue-400 shrink-0" />
+                        <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider">Tasks</span>
+                      </div>
+                      <p className="text-[13px] font-medium text-t2">{active} remaining</p>
+                      {total > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="w-full rounded-full overflow-hidden" style={{ height: 4, background: "rgba(59,130,246,0.15)" }}>
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: "rgba(59,130,246,0.8)" }} />
+                          </div>
+                          <span className="text-[10px] text-t5">{done} of {total} done</span>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-t5">No tasks yet</p>
+                      )}
+                    </button>
+                  );
+                })()}
 
                 {/* Reminders */}
                 <button onClick={() => navigate("reminders")} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.25)" }}>
