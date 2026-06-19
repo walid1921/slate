@@ -14,6 +14,8 @@ import {
   Settings as SettingsIcon,
   Trash2,
   CheckCheck,
+  Zap,
+  CalendarDays,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -169,18 +171,21 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   );
 }
 
-function AddTaskModal({ onClose }: { onClose: () => void }) {
+function AddTaskModal({ onClose, withDeadline = false }: { onClose: () => void; withDeadline?: boolean }) {
   const { add } = useTodoStore();
   const { defaultPriority } = useSettingsStore();
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const today = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
   const handleSave = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
     try {
-      await add(text.trim(), defaultPriority);
+      await add(text.trim(), defaultPriority, withDeadline ? date : null);
       onClose();
     } catch {
       setSaving(false);
@@ -190,10 +195,10 @@ function AddTaskModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
       <div className="dropdown rounded-lg flex flex-col overflow-hidden" style={{ width: 320, border: "1px solid var(--c-border)", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
         <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-          <span className="text-[13px] font-semibold text-t1">New Task</span>
+          <span className="text-[13px] font-semibold text-t1">{withDeadline ? "New Task with Deadline" : "New Task"}</span>
           <button onClick={onClose} className="text-t4 hover:text-t2 transition-colors"><X size={14} /></button>
         </div>
-        <div className="px-4 py-4">
+        <div className="flex flex-col gap-3 px-4 py-4">
           <input
             ref={inputRef}
             value={text}
@@ -203,6 +208,16 @@ function AddTaskModal({ onClose }: { onClose: () => void }) {
             className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           />
+          {withDeadline && (
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+              className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+            />
+          )}
         </div>
         <div className="flex gap-2 justify-end px-4 pb-4">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
@@ -402,7 +417,9 @@ export default function App() {
     if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
-  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [addTaskOpen, setAddTaskOpen] = useState<false | "quick" | "deadline">(false);
+  const [addTaskMenuOpen, setAddTaskMenuOpen] = useState(false);
+  const addTaskBtnRef = useRef<HTMLButtonElement>(null);
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
@@ -784,7 +801,7 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
-          {addTaskOpen && <AddTaskModal onClose={() => { setAddTaskOpen(false); }} />}
+          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} onClose={() => setAddTaskOpen(false)} />}
           <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
             <div className="flex-1 overflow-hidden">
               <FilterBar
@@ -796,13 +813,38 @@ export default function App() {
                 onRefresh={async () => { await load(); }}
               />
             </div>
-            <button
-              onClick={() => setAddTaskOpen(true)}
-              className="p-1 mr-2 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors shrink-0"
-              title="Add task"
-            >
-              <Plus size={12} />
-            </button>
+            <div className="relative shrink-0 mr-2">
+              <button
+                ref={addTaskBtnRef}
+                onClick={() => setAddTaskMenuOpen((o) => !o)}
+                className="p-1 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors"
+                title="Add task"
+              >
+                <Plus size={12} />
+              </button>
+              {addTaskMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 dropdown rounded-lg overflow-hidden z-50"
+                  style={{ width: 180, border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}
+                  onMouseLeave={() => setAddTaskMenuOpen(false)}
+                >
+                  <button
+                    className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                    onClick={() => { setAddTaskMenuOpen(false); setAddTaskOpen("quick"); }}
+                  >
+                    <Zap size={12} className="text-blue-400" />
+                    Quick task
+                  </button>
+                  <button
+                    className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                    onClick={() => { setAddTaskMenuOpen(false); setAddTaskOpen("deadline"); }}
+                  >
+                    <CalendarDays size={12} className="text-blue-400" />
+                    With deadline
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           {/* Split panel */}
           <div className="flex flex-row flex-1 overflow-hidden">
