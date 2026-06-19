@@ -29,8 +29,12 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
   const handleSave = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
-    await add(text.trim(), `${date}T${time}:00`);
-    onSaved();
+    try {
+      await add(text.trim(), `${date}T${time}:00`);
+      onSaved();
+    } catch {
+      setSaving(false);
+    }
   };
 
   return (
