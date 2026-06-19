@@ -64,13 +64,31 @@ function groupByWeek(entries: IHKEntry[]) {
   return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
 }
 
-function buildCopyText(year: number, kw: number, entries: IHKEntry[]): string {
-  const cats = IHK_CATEGORIES.map((name, i) => {
-    const items = entries.filter(e => e.category === i);
-    const bullets = items.length > 0 ? items.map(e => `- ${fmtDayStamp(e.date)}: ${e.text}`).join("<br>") : "-";
-    return `| **${name}** | ${bullets} |`;
-  });
-  return `KW ${kw} / ${year} (${fmtWeekRange(year, kw)})\n\n| **Kategorie** | **Inhalte** |\n| --- | --- |\n${cats.join("\n")}`;
+function buildCatCopyText(entries: IHKEntry[]): string {
+  return entries.map(e => `- ${e.text}`).join("\n");
+}
+
+function CatHeader({ catName, catIdx, rgb, entries }: { catName: string; catIdx: number; rgb: string; entries: IHKEntry[] }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    if (entries.length === 0) return;
+    await navigator.clipboard.writeText(buildCatCopyText(entries));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className="flex items-center gap-2 px-3 py-2" style={{ background: `rgba(${rgb},0.04)` }}>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${rgb},0.7)` }} />
+      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${rgb},0.8)` }}>{catName}</span>
+      {catIdx === 1 && <span className="text-[9px] text-t6 italic ml-1">optional</span>}
+      <span className="ml-auto text-[10px] text-t5">{entries.length}</span>
+      {entries.length > 0 && (
+        <button onClick={copy} className="w-5 h-5 flex items-center justify-center rounded text-t5 hover:text-t2 transition-colors">
+          {copied ? <Check size={9} style={{ color: `rgba(${rgb},0.9)` }} /> : <Copy size={9} />}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function weekDotColor(entries: IHKEntry[], sent: boolean): string {
@@ -235,16 +253,9 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   pastWeeks?: { key: string; year: number; kw: number }[];
   onFillFrom?: (key: string) => void;
 }) {
-  const [copied, setCopied] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const { start } = getWeekRange(year, kw);
   const defaultDate = isCurrentWeek ? today() : start.toISOString().slice(0, 10);
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(buildCopyText(year, kw, entries));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleDragEnd = (catIdx: number) => (event: DragEndEvent) => {
     const { active, over } = event;
@@ -275,13 +286,6 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
         <span className="ml-auto text-[10px] text-t5">{entries.length} {entries.length === 1 ? "entry" : "entries"}</span>
         {expanded && (
           <>
-            <button onClick={e => { e.stopPropagation(); copy(); }}
-              className="ml-2 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors"
-              style={{ background: `rgba(${ACCENT},0.12)`, color: `rgba(${ACCENT},0.8)`, border: `1px solid rgba(${ACCENT},0.25)` }}
-            >
-              {copied ? <Check size={9} /> : <Copy size={9} />}
-              {copied ? "Copied!" : "Copy IHK"}
-            </button>
             <button onClick={e => { e.stopPropagation(); onToggleSent(); }}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors"
               style={sent
@@ -303,12 +307,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
             const [rgb] = CAT_COLORS[catIdx];
             return (
               <div key={catIdx} className="border-b border-s last:border-b-0">
-                <div className="flex items-center gap-2 px-3 py-2" style={{ background: `rgba(${rgb},0.04)` }}>
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${rgb},0.7)` }} />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${rgb},0.8)` }}>{catName}</span>
-                  {catIdx === 1 && <span className="text-[9px] text-t6 italic ml-1">optional</span>}
-                  <span className="ml-auto text-[10px] text-t5">{catEntries.length}</span>
-                </div>
+                <CatHeader catName={catName} catIdx={catIdx} rgb={rgb} entries={catEntries} />
                 <div className="px-1 py-1">
                   {catEntries.length === 0 && <p className="px-3 py-1.5 text-[11px] text-t6 italic">Nothing added yet</p>}
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd(catIdx)}>
