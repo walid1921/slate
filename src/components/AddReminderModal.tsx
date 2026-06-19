@@ -16,9 +16,13 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
   const [time, setTime] = useState(`${pad(today.getHours())}:${pad(today.getMinutes())}`);
   const textRef = useRef<HTMLInputElement>(null);
+  const timeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setTimeout(() => textRef.current?.focus(), 10);
+    setTimeout(() => {
+      if (initialText) timeRef.current?.focus();
+      else textRef.current?.focus();
+    }, 10);
   }, []);
 
   const handleSave = async () => {
@@ -79,6 +83,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-t4 uppercase tracking-wider">Time</label>
             <input
+              ref={timeRef}
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
