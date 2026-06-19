@@ -36,7 +36,6 @@ interface State {
   deletePermanently: (id: number) => Promise<void>;
   deleteAllPermanently: () => Promise<void>;
   setPriority: (id: number, priority: Priority) => Promise<void>;
-  setDueDate: (id: number, due_date: string | null) => Promise<void>;
   updateText: (id: number, text: string) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
   setDescription: (id: number, description: string) => Promise<void>;
@@ -142,12 +141,6 @@ export const useTodoStore = create<State>((set, get) => ({
   setPriority: async (id, priority) => {
     const db = await getDb();
     await db.execute("UPDATE todos SET priority = ? WHERE id = ?", [priority, id]);
-    await get().load();
-  },
-
-  setDueDate: async (id, due_date) => {
-    const db = await getDb();
-    await db.execute("UPDATE todos SET due_date = ?, deadline_notified = 0 WHERE id = ?", [due_date, id]);
     await get().load();
   },
 
