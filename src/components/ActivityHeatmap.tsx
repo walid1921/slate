@@ -156,7 +156,7 @@ export default function ActivityHeatmap() {
       {tooltip && (
         <div
           className="fixed z-50 px-2 py-1 rounded text-[10px] text-t2 pointer-events-none whitespace-nowrap"
-          style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)", boxShadow: "0 4px 12px rgba(0,0,0,0.3)", left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -100%)" }}
+          style={{ background: "rgba(15,15,18,0.97)", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 16px rgba(0,0,0,0.6)", left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -100%)" }}
         >
           <span className="font-medium">{tooltip.count} action{tooltip.count !== 1 ? "s" : ""}</span>
           <span className="text-t5"> · {formatDate(tooltip.date)}</span>

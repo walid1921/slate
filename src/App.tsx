@@ -447,7 +447,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
   const dotColor = isSent ? "rgba(16,185,129,0.9)" : (weekEntries.some(e=>e.category===0)||weekEntries.some(e=>e.category===2)) ? "rgba(251,191,36,0.9)" : "rgba(239,68,68,0.7)";
 
   return (
-    <button onClick={onNavigate} className="flex-1 min-w-0 text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: `rgba(${AMBER},0.07)`, border: `1px solid rgba(${AMBER},0.25)` }}>
+    <button onClick={onNavigate} className="text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: `rgba(${AMBER},0.07)`, border: `1px solid rgba(${AMBER},0.25)` }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <BookOpen size={11} className="text-amber-400 shrink-0" />
@@ -864,32 +864,29 @@ export default function App() {
           )}
 
           <div className="flex-1 flex flex-col justify-between px-5 py-5 gap-4 select-none">
-            {/* Center hint */}
-            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+            {/* Hint */}
+            <div className="flex-1 flex flex-col justify-center gap-3">
               <p className="text-t5 text-xs">Type a task and press ↵</p>
-              <div className="flex flex-col gap-1.5">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                 {[
                   { cmd: "/tm", desc: "Add task with deadline" },
                   { cmd: "/rm", desc: "Add a reminder" },
                   { cmd: "/nt", desc: "Create a new note" },
                   { cmd: "/i",  desc: "Quick IHK entry" },
                 ].map(({ cmd, desc }) => (
-                  <div key={cmd} className="flex items-center gap-3">
-                    <span className="text-[12px] font-mono font-medium text-blue-400 w-10 text-right">{cmd}</span>
+                  <div key={cmd} className="flex items-center gap-2">
+                    <span className="text-[12px] font-mono font-medium text-blue-400 shrink-0">{cmd}</span>
                     <span className="text-[12px] text-t5">{desc}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Activity heatmap + IHK card */}
-            <div className="flex gap-3 items-stretch">
-              <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
-              <div className="shrink-0 w-44"><IHKCard onNavigate={() => navigate("ihk")} /></div>
-            </div>
+            {/* Activity heatmap */}
+            <div className="overflow-x-auto"><ActivityHeatmap /></div>
 
             {/* Preview cards */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-4 gap-3">
                 {/* Tasks */}
                 {(() => {
                   const total = todos.length;
@@ -946,6 +943,9 @@ export default function App() {
                     {notes.length === 0 && <p className="text-[11px] text-t5">No notes yet</p>}
                   </div>
                 </button>
+
+                {/* IHK */}
+                <IHKCard onNavigate={() => navigate("ihk")} />
             </div>
           </div>
         </div>
