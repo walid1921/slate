@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy } from "lucide-react";
-import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry } from "../ihkStore";
+import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy, Settings } from "lucide-react";
+import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry, IHKModule, IHKModuleType } from "../ihkStore";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -331,8 +331,81 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   );
 }
 
+const TYPE_COLORS: Record<number, [string, string]> = {
+  0: ["59,130,246", "School"],
+  1: ["251,191,36", "Company"],
+  2: ["99,102,241", "Meeting"],
+};
+
+function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAdd: (name: string, type: IHKModuleType) => Promise<void>; onRemove: (id: number) => void }) {
+  const [name, setName] = useState("");
+  const [type, setType] = useState<IHKModuleType>(0);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+
+  const save = async () => {
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    try { await onAdd(name.trim(), type); setName(""); setSaving(false); }
+    catch { setSaving(false); }
+  };
+
+  return (
+    <div className="mx-4 mt-3 mb-1 rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-1)" }}>
+      <div className="flex flex-col gap-2 px-3 py-3">
+        <div className="flex gap-1.5">
+          {([0,1,2] as IHKModuleType[]).map(t => {
+            const [rgb, label] = TYPE_COLORS[t];
+            return (
+              <button key={t} onClick={() => setType(t)}
+                className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
+                style={type === t
+                  ? { background: `rgba(${rgb},0.2)`, color: `rgba(${rgb},0.9)`, border: `1px solid rgba(${rgb},0.4)` }
+                  : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
+                }
+              >{label}</button>
+            );
+          })}
+        </div>
+        <div className="flex gap-2">
+          <input ref={inputRef} value={name} onChange={e => setName(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); save(); } e.stopPropagation(); }}
+            placeholder="Module name (e.g. LF05, Sport)"
+            className="flex-1 px-2.5 py-1.5 rounded-lg text-[12px] text-t1 outline-none placeholder:text-t5"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          />
+          <button onClick={save} disabled={!name.trim() || saving}
+            className="px-2.5 py-1.5 rounded-lg text-[11px] disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            style={{ background: `rgba(${TYPE_COLORS[type][0]},0.2)`, color: `rgba(${TYPE_COLORS[type][0]},0.9)` }}
+          >Add</button>
+        </div>
+        {modules.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {modules.map(m => {
+              const [rgb, label] = TYPE_COLORS[m.type];
+              return (
+                <div key={m.id} className="group flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]"
+                  style={{ background: `rgba(${rgb},0.12)`, color: `rgba(${rgb},0.85)`, border: `1px solid rgba(${rgb},0.3)` }}>
+                  <span className="font-medium">{m.name}</span>
+                  <span className="text-[9px] opacity-60">{label}</span>
+                  <button onClick={() => onRemove(m.id)} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-current hover:opacity-70">
+                    <X size={9} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function IHKPage() {
-  const { entries, load, add, update, remove, reorder, sentWeeks, toggleSent } = useIHKStore();
+  const { entries, load, add, update, remove, reorder, sentWeeks, toggleSent, modules, addModule, removeModule } = useIHKStore();
+  const [showModules, setShowModules] = useState(false);
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
@@ -368,7 +441,18 @@ export default function IHKPage() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="overflow-y-auto flex-1 px-4 py-4 flex flex-col gap-5">
+      <div className="flex items-center justify-end px-4 pt-3 shrink-0">
+        <button onClick={() => setShowModules(o => !o)}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] transition-colors ${showModules ? "text-t2" : "text-t4 hover:text-t2"}`}
+          style={showModules ? { background: "var(--c-surface-2)", border: "1px solid var(--c-border)" } : {}}
+        >
+          <Settings size={11} />
+          <span>Modules</span>
+          {modules.length > 0 && <span className="text-t5">({modules.length})</span>}
+        </button>
+      </div>
+      {showModules && <ModulesPanel modules={modules} onAdd={addModule} onRemove={removeModule} />}
+      <div className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-5">
         {allWeeks.length === 0 && (
           <div className="flex flex-col items-center justify-center flex-1 text-t5 text-[12px] gap-1">
             <span>No records yet</span>

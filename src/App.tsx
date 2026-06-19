@@ -23,6 +23,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
+import { MODULE_TYPE_TO_CATEGORY } from "./ihkStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
@@ -471,7 +472,7 @@ export default function App() {
   const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
-  const { entries: ihkEntries, load: loadIHK } = useIHKStore();
+  const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
@@ -506,9 +507,15 @@ export default function App() {
     { prefix: "/tm ", label: "/tm", desc: "Add task with deadline" },
     { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
     { prefix: "/nt ", label: "/nt", desc: "Create a new note" },
+    { prefix: "/i",   label: "/i",  desc: "Quick IHK entry" },
   ];
 
-  const showCmdPalette = inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal)));
+  // Module picker: /i followed by optional filter letters, no space yet
+  const showModulePicker = inputVal.length >= 2 && inputVal.startsWith("/i") && !inputVal.slice(2).includes(" ");
+  const moduleQuery = inputVal.slice(2).toLowerCase();
+  const filteredModules = showModulePicker ? ihkModules.filter(m => !moduleQuery || m.name.toLowerCase().startsWith(moduleQuery)) : [];
+
+  const showCmdPalette = !showModulePicker && (inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal))));
   const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
 
   // Apply theme and text size to document root
@@ -621,6 +628,17 @@ export default function App() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (showModulePicker && filteredModules.length > 0) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredModules.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredModules.length) % filteredModules.length); return; }
+        if (e.key === "Tab" || e.key === "Enter") {
+          e.preventDefault();
+          const m = filteredModules[cmdIdx] ?? filteredModules[0];
+          if (m) { const v = `/i ${m.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); }
+          return;
+        }
+        if (e.key === "Escape") { setInputVal(""); setQuery(""); return; }
+      }
       if (showCmdPalette && filteredCmds.length > 0) {
         if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCmds.length); return; }
         if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredCmds.length) % filteredCmds.length); return; }
@@ -634,6 +652,23 @@ export default function App() {
           if (inputVal.trim()) { setInputVal(""); setQuery(""); }
           else { getCurrentWindow().hide(); }
           return;
+        }
+      }
+      // IHK quick entry: /i ModuleName text → save to current week
+      if (e.key === "Enter" && inputVal.startsWith("/i ")) {
+        const rest = inputVal.slice(3).trim();
+        const spaceIdx = rest.indexOf(" ");
+        if (spaceIdx > 0) {
+          const moduleName = rest.slice(0, spaceIdx);
+          const text = rest.slice(spaceIdx + 1).trim();
+          const mod = ihkModules.find(m => m.name.toLowerCase() === moduleName.toLowerCase());
+          if (mod && text) {
+            const d = new Date(); const p = (n: number) => String(n).padStart(2, "0");
+            const todayStr = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+            useIHKStore.getState().add(text, MODULE_TYPE_TO_CATEGORY[mod.type], todayStr);
+            setInputVal(""); setQuery("");
+            return;
+          }
         }
       }
       if (e.key === "Enter" && inputVal.trim()) {
@@ -782,6 +817,28 @@ export default function App() {
             )}
           </div>
 
+          {showModulePicker && (
+            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+              {filteredModules.length === 0 ? (
+                <div className="px-5 py-2 text-[12px] text-t5">No modules — add some in the IHK page</div>
+              ) : filteredModules.map((m, i) => {
+                const TYPE_RGB: Record<number, string> = { 0: "59,130,246", 1: "251,191,36", 2: "99,102,241" };
+                const TYPE_LABEL: Record<number, string> = { 0: "School", 1: "Company", 2: "Meeting" };
+                const rgb = TYPE_RGB[m.type];
+                return (
+                  <button key={m.id}
+                    onMouseDown={e => { e.preventDefault(); const v = `/i ${m.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); inputRef.current?.focus(); }}
+                    className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
+                    style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                  >
+                    <span className="text-[13px] font-mono font-medium" style={{ color: `rgba(${rgb},0.9)` }}>{m.name}</span>
+                    <span className="text-[11px] text-t4">{TYPE_LABEL[m.type]}</span>
+                    {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">Tab or ↵</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {showCmdPalette && filteredCmds.length > 0 && (
             <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
               {filteredCmds.map((cmd, i) => (
@@ -808,6 +865,7 @@ export default function App() {
                   { cmd: "/tm", desc: "Add task with deadline" },
                   { cmd: "/rm", desc: "Add a reminder" },
                   { cmd: "/nt", desc: "Create a new note" },
+                  { cmd: "/i",  desc: "Quick IHK entry" },
                 ].map(({ cmd, desc }) => (
                   <div key={cmd} className="flex items-center gap-3">
                     <span className="text-[12px] font-mono font-medium text-blue-400 w-10 text-right">{cmd}</span>

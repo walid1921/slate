@@ -73,6 +73,15 @@ export async function getDb(): Promise<Database> {
   `);
   await _db.execute(`ALTER TABLE ihk_entries ADD COLUMN position INTEGER NOT NULL DEFAULT 0`).catch(() => {});
   await _db.execute(`
+    CREATE TABLE IF NOT EXISTS ihk_modules (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL UNIQUE,
+      type       INTEGER NOT NULL DEFAULT 2,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  await _db.execute(`
     CREATE TABLE IF NOT EXISTS ihk_weeks (
       week_key TEXT PRIMARY KEY,
       sent     INTEGER NOT NULL DEFAULT 0

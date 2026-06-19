@@ -2,6 +2,18 @@ import { create } from "zustand";
 import { getDb } from "./db";
 import { logActivity } from "./activity";
 
+export const IHK_MODULE_TYPES = ["School", "Company", "Meeting"] as const;
+export type IHKModuleType = 0 | 1 | 2; // 0=School→Berufsschule, 1=Company→Betrieb, 2=Meeting→Schulung
+
+export interface IHKModule {
+  id: number;
+  name: string;
+  type: IHKModuleType;
+}
+
+// Maps module type → IHK category
+export const MODULE_TYPE_TO_CATEGORY: Record<IHKModuleType, IHKCategory> = { 0: 2, 1: 0, 2: 1 };
+
 export const IHK_CATEGORIES = [
   "Betriebliche Tätigkeiten",
   "Unterweisungen / Schulungen",
@@ -22,7 +34,11 @@ export interface IHKEntry {
 interface IHKState {
   entries: IHKEntry[];
   sentWeeks: Set<string>;
+  modules: IHKModule[];
   load: () => Promise<void>;
+  loadModules: () => Promise<void>;
+  addModule: (name: string, type: IHKModuleType) => Promise<void>;
+  removeModule: (id: number) => Promise<void>;
   add: (text: string, category: IHKCategory, date: string) => Promise<void>;
   update: (id: number, text: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
@@ -33,6 +49,25 @@ interface IHKState {
 export const useIHKStore = create<IHKState>((set, get) => ({
   entries: [],
   sentWeeks: new Set(),
+  modules: [],
+
+  loadModules: async () => {
+    const db = await getDb();
+    const rows = await db.select<IHKModule[]>("SELECT id, name, type FROM ihk_modules ORDER BY type ASC, name ASC");
+    set({ modules: rows });
+  },
+
+  addModule: async (name, type) => {
+    const db = await getDb();
+    await db.execute("INSERT OR IGNORE INTO ihk_modules (name, type) VALUES (?, ?)", [name.trim(), type]);
+    await get().loadModules();
+  },
+
+  removeModule: async (id) => {
+    const db = await getDb();
+    await db.execute("DELETE FROM ihk_modules WHERE id = ?", [id]);
+    set(s => ({ modules: s.modules.filter(m => m.id !== id) }));
+  },
 
   load: async () => {
     const db = await getDb();
@@ -40,7 +75,8 @@ export const useIHKStore = create<IHKState>((set, get) => ({
       "SELECT id, text, category, date, position, created_at FROM ihk_entries ORDER BY position ASC, id ASC"
     );
     const sentRows = await db.select<{ week_key: string }[]>("SELECT week_key FROM ihk_weeks WHERE sent = 1");
-    set({ entries: rows, sentWeeks: new Set(sentRows.map(r => r.week_key)) });
+    const modRows = await db.select<IHKModule[]>("SELECT id, name, type FROM ihk_modules ORDER BY type ASC, name ASC");
+    set({ entries: rows, sentWeeks: new Set(sentRows.map(r => r.week_key)), modules: modRows });
   },
 
   add: async (text, category, date) => {
