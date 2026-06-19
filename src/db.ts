@@ -53,6 +53,14 @@ export async function getDb(): Promise<Database> {
     )
   `);
 
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS activity (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      date       TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
 
   return _db;
 }

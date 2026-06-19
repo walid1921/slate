@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { getDb } from "./db";
 import { notify } from "./notifications";
+import { logActivity } from "./activity";
 
 export interface Reminder {
   id: number;
@@ -59,18 +60,21 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       "INSERT INTO reminders (text, remind_at) VALUES (?, ?)",
       [text, remind_at]
     );
+    logActivity();
     await get().load();
   },
 
   update: async (id, text, remind_at) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET text = ?, remind_at = ?, notified = 0 WHERE id = ?", [text.trim(), remind_at, id]);
+    logActivity();
     set((s) => ({ reminders: s.reminders.map((r) => r.id === id ? { ...r, text: text.trim(), remind_at, notified: false } : r) }));
   },
 
   remove: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET deleted_at = datetime('now') WHERE id = ?", [id]);
+    logActivity();
     set((s) => ({
       reminders: s.reminders.filter((r) => r.id !== id),
       pendingAlert: s.pendingAlert?.id === id ? null : s.pendingAlert,
@@ -87,6 +91,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   restore: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET deleted_at = NULL WHERE id = ?", [id]);
+    logActivity();
     set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
     await get().load();
   },
@@ -94,12 +99,14 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   deletePermanently: async (id) => {
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
+    logActivity();
     set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
   },
 
   deleteAllPermanently: async () => {
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE deleted_at IS NOT NULL");
+    logActivity();
     set({ trash: [] });
   },
 

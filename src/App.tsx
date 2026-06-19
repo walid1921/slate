@@ -28,6 +28,8 @@ import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import ConfirmDialog from "./components/ConfirmDialog";
+import ActivityHeatmap from "./components/ActivityHeatmap";
+import { logActivity } from "./activity";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
@@ -485,7 +487,7 @@ export default function App() {
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
-  useEffect(() => { load(); loadReminders(); loadNotes(); initNotifications(); }, [load, loadReminders, loadNotes]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
@@ -773,6 +775,9 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* Activity heatmap */}
+            <ActivityHeatmap />
 
             {/* Preview cards */}
             <div className="grid grid-cols-3 gap-3">
