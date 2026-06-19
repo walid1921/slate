@@ -65,20 +65,21 @@ fn hide_window(window: &WebviewWindow) {
 }
 
 fn show_window(window: &WebviewWindow) {
-    let _ = window.show();
     #[cfg(target_os = "macos")]
     unsafe {
         use objc::{msg_send, sel, sel_impl, class};
-        if let Ok(ptr) = window.ns_window() {
-            let ns_win = ptr as *mut objc::runtime::Object;
-            let _: () = msg_send![ns_win, makeKeyAndOrderFront: std::ptr::null::<objc::runtime::Object>()];
-        }
+        // Do NOT call window.show() or window.center() first — those call
+        // [NSWindow orderFront:] which moves the window to the active Space.
+        // activateIgnoringOtherApps on a hidden app is what Dock clicks and
+        // Cmd+Tab use: macOS unhides the app and switches to its original Space.
         let app: *mut objc::runtime::Object = msg_send![class!(NSApplication), sharedApplication];
-        // Activating a hidden app restores it to its original Space
         let _: () = msg_send![app, activateIgnoringOtherApps: objc::runtime::YES];
     }
     #[cfg(not(target_os = "macos"))]
-    let _ = window.set_focus();
+    {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
     let _ = window.emit("window-shown", ());
 }
 
@@ -103,6 +104,7 @@ pub fn run() {
                                 if window.is_visible().unwrap_or(false) {
                                     hide_window(&window);
                                 } else {
+                                    #[cfg(not(target_os = "macos"))]
                                     let _ = window.center();
                                     show_window(&window);
                                 }
