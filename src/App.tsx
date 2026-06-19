@@ -29,6 +29,7 @@ import AddReminderModal from "./components/AddReminderModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import IHKPage from "./components/IHKPage";
+import SearchModal from "./components/SearchModal";
 import { useIHKStore } from "./ihkStore";
 import ConfirmDialog from "./components/ConfirmDialog";
 import ActivityHeatmap from "./components/ActivityHeatmap";
@@ -493,6 +494,7 @@ export default function App() {
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
@@ -714,7 +716,8 @@ export default function App() {
   // Global keydown
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { getCurrentWindow().hide(); return; }
+      if (e.key === "Escape") { if (searchOpen) { setSearchOpen(false); return; } getCurrentWindow().hide(); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") { e.preventDefault(); setSearchOpen(o => !o); return; }
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         const tabs: NavView[] = ["main", "todos", "reminders", "notes", "ihk", "settings"];
         const cur = tabs.indexOf(lastNavView);
@@ -747,7 +750,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, focusedIdx, lastNavView, view]);
+  }, [filtered, focusedIdx, lastNavView, view, searchOpen]);
 
   const BackButton = () => (
     <button onClick={() => navigate(preTrashView)} className="text-t3 hover:text-t2 transition-colors mr-3">
@@ -1213,6 +1216,13 @@ export default function App() {
             </div>
           </div>
         </>
+      )}
+
+      {searchOpen && (
+        <SearchModal
+          onClose={() => setSearchOpen(false)}
+          onNavigate={(v) => { navigate(v); setSearchOpen(false); }}
+        />
       )}
 
       {confirmDelete && (
