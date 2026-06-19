@@ -23,7 +23,6 @@ import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
-import { MODULE_TYPE_TO_CATEGORY } from "./ihkStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
@@ -513,7 +512,14 @@ export default function App() {
   // Module picker: /i followed by optional filter letters, no space yet
   const showModulePicker = inputVal.length >= 2 && inputVal.startsWith("/i") && !inputVal.slice(2).includes(" ");
   const moduleQuery = inputVal.slice(2).toLowerCase();
-  const filteredModules = showModulePicker ? ihkModules.filter(m => !moduleQuery || m.name.toLowerCase().startsWith(moduleQuery)) : [];
+  const FIXED_PICKER = [
+    { name: "Company", rgb: "59,130,246",  category: 0 as const },
+    { name: "Meeting", rgb: "99,102,241",  category: 1 as const },
+  ];
+  const allPickerItems = showModulePicker ? [
+    ...FIXED_PICKER.filter(f => !moduleQuery || f.name.toLowerCase().startsWith(moduleQuery)),
+    ...ihkModules.filter(m => !moduleQuery || m.name.toLowerCase().startsWith(moduleQuery)).map(m => ({ name: m.name, rgb: "16,185,129", category: 2 as const })),
+  ] : [];
 
   const showCmdPalette = !showModulePicker && (inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal))));
   const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
@@ -628,12 +634,12 @@ export default function App() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (showModulePicker && filteredModules.length > 0) {
-        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredModules.length); return; }
-        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredModules.length) % filteredModules.length); return; }
+      if (showModulePicker && allPickerItems.length > 0) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % allPickerItems.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + allPickerItems.length) % allPickerItems.length); return; }
         if (e.key === "Tab" || e.key === "Enter") {
           e.preventDefault();
-          const m = filteredModules[cmdIdx] ?? filteredModules[0];
+          const m = allPickerItems[cmdIdx] ?? allPickerItems[0];
           if (m) { const v = `/i ${m.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); }
           return;
         }
@@ -661,11 +667,13 @@ export default function App() {
         if (spaceIdx > 0) {
           const moduleName = rest.slice(0, spaceIdx);
           const text = rest.slice(spaceIdx + 1).trim();
-          const mod = ihkModules.find(m => m.name.toLowerCase() === moduleName.toLowerCase());
-          if (mod && text) {
+          const fixedMatch = FIXED_PICKER.find(f => f.name.toLowerCase() === moduleName.toLowerCase());
+          const modMatch = ihkModules.find(m => m.name.toLowerCase() === moduleName.toLowerCase());
+          const category = fixedMatch ? fixedMatch.category : modMatch ? 2 : null;
+          if (category !== null && text) {
             const d = new Date(); const p = (n: number) => String(n).padStart(2, "0");
             const todayStr = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
-            useIHKStore.getState().add(text, MODULE_TYPE_TO_CATEGORY[mod.type], todayStr);
+            useIHKStore.getState().add(text, category, todayStr);
             setInputVal(""); setQuery("");
             return;
           }
@@ -819,20 +827,18 @@ export default function App() {
 
           {showModulePicker && (
             <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
-              {filteredModules.length === 0 ? (
-                <div className="px-5 py-2 text-[12px] text-t5">No modules — add some in the IHK page</div>
-              ) : filteredModules.map((m, i) => {
-                const TYPE_RGB: Record<number, string> = { 0: "59,130,246", 1: "251,191,36", 2: "99,102,241" };
-                const TYPE_LABEL: Record<number, string> = { 0: "School", 1: "Company", 2: "Meeting" };
-                const rgb = TYPE_RGB[m.type];
+              {allPickerItems.length === 0 ? (
+                <div className="px-5 py-2 text-[12px] text-t5">No match — add modules in the IHK page</div>
+              ) : allPickerItems.map((item, i) => {
+                const CAT_LABEL: Record<number, string> = { 0: "Betrieb", 1: "Schulung", 2: "Berufsschule" };
                 return (
-                  <button key={m.id}
-                    onMouseDown={e => { e.preventDefault(); const v = `/i ${m.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); inputRef.current?.focus(); }}
+                  <button key={item.name}
+                    onMouseDown={e => { e.preventDefault(); const v = `/i ${item.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); inputRef.current?.focus(); }}
                     className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
                     style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
                   >
-                    <span className="text-[13px] font-mono font-medium" style={{ color: `rgba(${rgb},0.9)` }}>{m.name}</span>
-                    <span className="text-[11px] text-t4">{TYPE_LABEL[m.type]}</span>
+                    <span className="text-[13px] font-mono font-medium" style={{ color: `rgba(${item.rgb},0.9)` }}>{item.name}</span>
+                    <span className="text-[11px] text-t4">{CAT_LABEL[item.category]}</span>
                     {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">Tab or ↵</span>}
                   </button>
                 );

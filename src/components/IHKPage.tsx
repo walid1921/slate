@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy, Settings } from "lucide-react";
-import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry, IHKModule, IHKModuleType } from "../ihkStore";
+import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry, IHKModule } from "../ihkStore";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -331,15 +331,10 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   );
 }
 
-const TYPE_COLORS: Record<number, [string, string]> = {
-  0: ["59,130,246", "School"],
-  1: ["251,191,36", "Company"],
-  2: ["99,102,241", "Meeting"],
-};
+const SCHOOL_RGB = "16,185,129";
 
-function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAdd: (name: string, type: IHKModuleType) => Promise<void>; onRemove: (id: number) => void }) {
+function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAdd: (name: string) => Promise<void>; onRemove: (id: number) => void }) {
   const [name, setName] = useState("");
-  const [type, setType] = useState<IHKModuleType>(0);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -348,54 +343,37 @@ function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAd
   const save = async () => {
     if (!name.trim() || saving) return;
     setSaving(true);
-    try { await onAdd(name.trim(), type); setName(""); setSaving(false); }
+    try { await onAdd(name.trim()); setName(""); setSaving(false); }
     catch { setSaving(false); }
   };
 
   return (
     <div className="mx-4 mt-3 mb-1 rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-1)" }}>
       <div className="flex flex-col gap-2 px-3 py-3">
-        <div className="flex gap-1.5">
-          {([0,1,2] as IHKModuleType[]).map(t => {
-            const [rgb, label] = TYPE_COLORS[t];
-            return (
-              <button key={t} onClick={() => setType(t)}
-                className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
-                style={type === t
-                  ? { background: `rgba(${rgb},0.2)`, color: `rgba(${rgb},0.9)`, border: `1px solid rgba(${rgb},0.4)` }
-                  : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
-                }
-              >{label}</button>
-            );
-          })}
-        </div>
+        <p className="text-[10px] text-t5">School subjects — appear in <span className="font-mono text-blue-400">/i</span> picker → saved as Berufsschule</p>
         <div className="flex gap-2">
           <input ref={inputRef} value={name} onChange={e => setName(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); save(); } e.stopPropagation(); }}
-            placeholder="Module name (e.g. LF05, Sport)"
+            placeholder="LF05, Sport, Englisch…"
             className="flex-1 px-2.5 py-1.5 rounded-lg text-[12px] text-t1 outline-none placeholder:text-t5"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           />
           <button onClick={save} disabled={!name.trim() || saving}
             className="px-2.5 py-1.5 rounded-lg text-[11px] disabled:opacity-40 disabled:pointer-events-none transition-colors"
-            style={{ background: `rgba(${TYPE_COLORS[type][0]},0.2)`, color: `rgba(${TYPE_COLORS[type][0]},0.9)` }}
+            style={{ background: `rgba(${SCHOOL_RGB},0.15)`, color: `rgba(${SCHOOL_RGB},0.9)` }}
           >Add</button>
         </div>
         {modules.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {modules.map(m => {
-              const [rgb, label] = TYPE_COLORS[m.type];
-              return (
-                <div key={m.id} className="group flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]"
-                  style={{ background: `rgba(${rgb},0.12)`, color: `rgba(${rgb},0.85)`, border: `1px solid rgba(${rgb},0.3)` }}>
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-[9px] opacity-60">{label}</span>
-                  <button onClick={() => onRemove(m.id)} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-current hover:opacity-70">
-                    <X size={9} />
-                  </button>
-                </div>
-              );
-            })}
+            {modules.map(m => (
+              <div key={m.id} className="group flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]"
+                style={{ background: `rgba(${SCHOOL_RGB},0.12)`, color: `rgba(${SCHOOL_RGB},0.85)`, border: `1px solid rgba(${SCHOOL_RGB},0.3)` }}>
+                <span className="font-medium">{m.name}</span>
+                <button onClick={() => onRemove(m.id)} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-current hover:opacity-70">
+                  <X size={9} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -451,7 +429,7 @@ export default function IHKPage() {
           {modules.length > 0 && <span className="text-t5">({modules.length})</span>}
         </button>
       </div>
-      {showModules && <ModulesPanel modules={modules} onAdd={addModule} onRemove={removeModule} />}
+      {showModules && <ModulesPanel modules={modules} onAdd={(name) => addModule(name, 2)} onRemove={removeModule} />}
       <div className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-5">
         {allWeeks.length === 0 && (
           <div className="flex flex-col items-center justify-center flex-1 text-t5 text-[12px] gap-1">

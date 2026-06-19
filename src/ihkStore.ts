@@ -57,9 +57,9 @@ export const useIHKStore = create<IHKState>((set, get) => ({
     set({ modules: rows });
   },
 
-  addModule: async (name, type) => {
+  addModule: async (name, _type?) => {
     const db = await getDb();
-    await db.execute("INSERT OR IGNORE INTO ihk_modules (name, type) VALUES (?, ?)", [name.trim(), type]);
+    await db.execute("INSERT OR IGNORE INTO ihk_modules (name, type) VALUES (?, 2)", [name.trim()]);
     await get().loadModules();
   },
 
