@@ -826,7 +826,7 @@ export default function App() {
           </div>
 
           {showModulePicker && (
-            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--c-border-subtle)" }}>
               {allPickerItems.length === 0 ? (
                 <div className="px-5 py-2 text-[12px] text-t5">No match — add modules in the IHK page</div>
               ) : allPickerItems.map((item, i) => {
@@ -846,7 +846,7 @@ export default function App() {
             </div>
           )}
           {showCmdPalette && filteredCmds.length > 0 && (
-            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--c-border-subtle)" }}>
               {filteredCmds.map((cmd, i) => (
                 <button
                   key={cmd.prefix}
