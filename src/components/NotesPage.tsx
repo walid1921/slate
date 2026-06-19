@@ -30,6 +30,7 @@ export default function NotesPage({ onDeleteRequest }: {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [creating, setCreating] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -58,11 +59,17 @@ export default function NotesPage({ onDeleteRequest }: {
   }, [title, content, selectedId, update]);
 
   const handleNew = async () => {
-    const newId = await add("Untitled", "");
-    const fresh = useNotesStore.getState().notes.find(n => n.id === newId);
-    if (fresh) {
-      selectNote(fresh);
-      setTimeout(() => titleRef.current?.select(), 50);
+    if (creating) return;
+    setCreating(true);
+    try {
+      const newId = await add("Untitled", "");
+      const fresh = useNotesStore.getState().notes.find(n => n.id === newId);
+      if (fresh) {
+        selectNote(fresh);
+        setTimeout(() => titleRef.current?.select(), 50);
+      }
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -95,8 +102,9 @@ export default function NotesPage({ onDeleteRequest }: {
         </div>
         <button
           onClick={handleNew}
+          disabled={creating}
           title="New note"
-          className="p-1 mr-2 rounded text-emerald-400 hover:text-emerald-300 hover:bg-s1 transition-colors shrink-0"
+          className="p-1 mr-2 rounded text-emerald-400 hover:text-emerald-300 hover:bg-s1 disabled:opacity-40 disabled:pointer-events-none transition-colors shrink-0"
         >
           <Plus size={12} />
         </button>

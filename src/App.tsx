@@ -173,12 +173,18 @@ function AddTaskModal({ onClose }: { onClose: () => void }) {
   const { add } = useTodoStore();
   const { defaultPriority } = useSettingsStore();
   const [text, setText] = useState("");
+  const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
   const handleSave = async () => {
-    if (!text.trim()) return;
-    await add(text.trim(), defaultPriority);
-    onClose();
+    if (!text.trim() || saving) return;
+    setSaving(true);
+    try {
+      await add(text.trim(), defaultPriority);
+      onClose();
+    } catch {
+      setSaving(false);
+    }
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
@@ -192,7 +198,7 @@ function AddTaskModal({ onClose }: { onClose: () => void }) {
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !saving) handleSave(); if (e.key === "Escape") onClose(); e.stopPropagation(); }}
             placeholder="Task name…"
             className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
@@ -200,7 +206,7 @@ function AddTaskModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="flex gap-2 justify-end px-4 pb-4">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-          <button onClick={handleSave} disabled={!text.trim()} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 disabled:opacity-40 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Add Task</button>
+          <button onClick={handleSave} disabled={!text.trim() || saving} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 disabled:opacity-40 disabled:pointer-events-none transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>{saving ? "Adding…" : "Add Task"}</button>
         </div>
       </div>
     </div>
