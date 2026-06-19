@@ -297,27 +297,43 @@ export default function IHKPage() {
     ? weeks
     : [[currentKey, { year: currentYear, kw: currentKW, entries: [] }], ...weeks];
 
+  // Group weeks by the month of their Monday
+  const byMonth: { monthLabel: string; weeks: typeof allWeeks }[] = [];
+  for (const item of allWeeks) {
+    const { year, kw } = item[1];
+    const { start } = getWeekRange(year, kw);
+    const label = start.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+    const last = byMonth[byMonth.length - 1];
+    if (!last || last.monthLabel !== label) byMonth.push({ monthLabel: label, weeks: [item] });
+    else last.weeks.push(item);
+  }
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="overflow-y-auto flex-1 px-4 py-4 flex flex-col gap-3">
+      <div className="overflow-y-auto flex-1 px-4 py-4 flex flex-col gap-5">
         {allWeeks.length === 0 && (
           <div className="flex flex-col items-center justify-center flex-1 text-t5 text-[12px] gap-1">
             <span>No records yet</span>
           </div>
         )}
-        {allWeeks.map(([key, { year, kw, entries: wEntries }]) => (
-          <WeekBlock
-            key={key}
-            year={year}
-            kw={kw}
-            entries={wEntries}
-            isCurrentWeek={key === currentKey}
-            expanded={openWeek === key}
-            onToggle={() => setOpenWeek(k => k === key ? null : key)}
-            onAdd={add}
-            onDelete={remove}
-            onUpdate={update}
-          />
+        {byMonth.map(({ monthLabel, weeks: mWeeks }) => (
+          <div key={monthLabel} className="flex flex-col gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-t5 px-1">{monthLabel}</span>
+            {mWeeks.map(([key, { year, kw, entries: wEntries }]) => (
+              <WeekBlock
+                key={key}
+                year={year}
+                kw={kw}
+                entries={wEntries}
+                isCurrentWeek={key === currentKey}
+                expanded={openWeek === key}
+                onToggle={() => setOpenWeek(k => k === key ? null : key)}
+                onAdd={add}
+                onDelete={remove}
+                onUpdate={update}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </div>
