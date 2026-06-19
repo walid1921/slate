@@ -72,6 +72,12 @@ export async function getDb(): Promise<Database> {
     )
   `);
   await _db.execute(`ALTER TABLE ihk_entries ADD COLUMN position INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS ihk_weeks (
+      week_key TEXT PRIMARY KEY,
+      sent     INTEGER NOT NULL DEFAULT 0
+    )
+  `);
   // Seed position from id for existing rows so order is preserved
   await _db.execute(`UPDATE ihk_entries SET position = id WHERE position = 0`).catch(() => {});
 

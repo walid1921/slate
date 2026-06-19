@@ -21,22 +21,26 @@ export interface IHKEntry {
 
 interface IHKState {
   entries: IHKEntry[];
+  sentWeeks: Set<string>;
   load: () => Promise<void>;
   add: (text: string, category: IHKCategory, date: string) => Promise<void>;
   update: (id: number, text: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
   reorder: (orderedIds: number[]) => Promise<void>;
+  toggleSent: (weekKey: string) => Promise<void>;
 }
 
 export const useIHKStore = create<IHKState>((set, get) => ({
   entries: [],
+  sentWeeks: new Set(),
 
   load: async () => {
     const db = await getDb();
     const rows = await db.select<IHKEntry[]>(
       "SELECT id, text, category, date, position, created_at FROM ihk_entries ORDER BY position ASC, id ASC"
     );
-    set({ entries: rows });
+    const sentRows = await db.select<{ week_key: string }[]>("SELECT week_key FROM ihk_weeks WHERE sent = 1");
+    set({ entries: rows, sentWeeks: new Set(sentRows.map(r => r.week_key)) });
   },
 
   add: async (text, category, date) => {
@@ -63,6 +67,20 @@ export const useIHKStore = create<IHKState>((set, get) => ({
     await db.execute("DELETE FROM ihk_entries WHERE id = ?", [id]);
     logActivity();
     set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
+  },
+
+  toggleSent: async (weekKey) => {
+    const db = await getDb();
+    const isSent = get().sentWeeks.has(weekKey);
+    await db.execute(
+      "INSERT INTO ihk_weeks (week_key, sent) VALUES (?, ?) ON CONFLICT(week_key) DO UPDATE SET sent = excluded.sent",
+      [weekKey, isSent ? 0 : 1]
+    );
+    set(s => {
+      const next = new Set(s.sentWeeks);
+      isSent ? next.delete(weekKey) : next.add(weekKey);
+      return { sentWeeks: next };
+    });
   },
 
   reorder: async (orderedIds) => {

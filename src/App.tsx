@@ -441,7 +441,9 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
   const catCounts = [0,1,2].map(cat => weekEntries.filter(e => e.category === cat).length);
   const CAT_RGB = ["59,130,246","99,102,241","16,185,129"];
   const AMBER = "251,191,36";
-  const status = weekEntries.some(e=>e.category===0) && weekEntries.some(e=>e.category===2) ? "complete" : weekEntries.length > 0 ? "partial" : "empty";
+  const { sentWeeks } = useIHKStore();
+  const isSent = sentWeeks.has(weekKey);
+  const dotColor = isSent ? "rgba(16,185,129,0.9)" : (weekEntries.some(e=>e.category===0)||weekEntries.some(e=>e.category===2)) ? "rgba(251,191,36,0.9)" : "rgba(239,68,68,0.7)";
 
   return (
     <button onClick={onNavigate} className="flex-1 min-w-0 text-left rounded-xl p-3 flex flex-col gap-2 transition-opacity hover:opacity-90" style={{ background: `rgba(${AMBER},0.07)`, border: `1px solid rgba(${AMBER},0.25)` }}>
@@ -450,7 +452,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
           <BookOpen size={11} className="text-amber-400 shrink-0" />
           <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">IHK</span>
         </div>
-        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: status==="complete" ? "rgba(16,185,129,0.8)" : status==="partial" ? `rgba(${AMBER},0.8)` : "var(--c-border)" }} />
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
       </div>
       <p className="text-[13px] font-medium text-t2">KW {kw}</p>
       <div className="flex flex-col gap-1">

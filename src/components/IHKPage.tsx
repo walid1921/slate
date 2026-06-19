@@ -73,32 +73,10 @@ function buildCopyText(year: number, kw: number, entries: IHKEntry[]): string {
   return `KW ${kw} / ${year} (${fmtWeekRange(year, kw)})\n\n| **Kategorie** | **Inhalte** |\n| --- | --- |\n${cats.join("\n")}`;
 }
 
-// Status: green if Betrieb≥1 AND Berufsschule≥1 (Schulung optional)
-function weekStatus(entries: IHKEntry[]): "complete" | "partial" | "empty" {
-  const hasBetrieb = entries.some(e => e.category === 0);
-  const hasBerufsschule = entries.some(e => e.category === 2);
-  if (hasBetrieb && hasBerufsschule) return "complete";
-  if (hasBetrieb || hasBerufsschule) return "partial";
-  return "empty";
-}
-
-function StatusDots({ entries }: { entries: IHKEntry[] }) {
-  return (
-    <div className="flex items-center gap-1">
-      {[0, 1, 2].map(cat => {
-        const has = entries.some(e => e.category === cat);
-        const isOptional = cat === 1;
-        const [rgb] = CAT_COLORS[cat];
-        return (
-          <span
-            key={cat}
-            className="w-1.5 h-1.5 rounded-full transition-opacity"
-            style={{ background: `rgba(${rgb},${has || isOptional ? "0.85" : "0.2"})` }}
-          />
-        );
-      })}
-    </div>
-  );
+function weekDotColor(entries: IHKEntry[], sent: boolean): string {
+  if (sent) return "rgba(16,185,129,0.9)";
+  if (entries.some(e => e.category === 0) || entries.some(e => e.category === 2)) return "rgba(251,191,36,0.9)";
+  return "rgba(239,68,68,0.7)";
 }
 
 function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
@@ -246,9 +224,10 @@ function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDe
   );
 }
 
-function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom }: {
+function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle, onToggleSent, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom }: {
   year: number; kw: number; entries: IHKEntry[]; isCurrentWeek: boolean;
-  expanded: boolean; onToggle: () => void;
+  expanded: boolean; sent: boolean;
+  onToggle: () => void; onToggleSent: () => void;
   onAdd: (text: string, cat: IHKCategory, date: string) => Promise<void>;
   onDelete: (id: number) => void;
   onUpdate: (id: number, text: string) => Promise<void>;
@@ -260,7 +239,6 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const { start } = getWeekRange(year, kw);
   const defaultDate = isCurrentWeek ? today() : start.toISOString().slice(0, 10);
-  const status = weekStatus(entries);
 
   const copy = async () => {
     await navigator.clipboard.writeText(buildCopyText(year, kw, entries));
@@ -293,19 +271,28 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>current</span>
         )}
         <span className="text-[11px] text-t5 ml-1">{fmtWeekRange(year, kw)}</span>
-        <StatusDots entries={entries} />
-        {!isCurrentWeek && status !== "empty" && (
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: status === "complete" ? "rgba(16,185,129,0.8)" : "rgba(251,191,36,0.8)" }} />
-        )}
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: weekDotColor(entries, sent) }} />
         <span className="ml-auto text-[10px] text-t5">{entries.length} {entries.length === 1 ? "entry" : "entries"}</span>
         {expanded && (
-          <button onClick={e => { e.stopPropagation(); copy(); }}
-            className="ml-2 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors"
-            style={{ background: `rgba(${ACCENT},0.12)`, color: `rgba(${ACCENT},0.8)`, border: `1px solid rgba(${ACCENT},0.25)` }}
-          >
-            {copied ? <Check size={9} /> : <Copy size={9} />}
-            {copied ? "Copied!" : "Copy IHK"}
-          </button>
+          <>
+            <button onClick={e => { e.stopPropagation(); copy(); }}
+              className="ml-2 flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors"
+              style={{ background: `rgba(${ACCENT},0.12)`, color: `rgba(${ACCENT},0.8)`, border: `1px solid rgba(${ACCENT},0.25)` }}
+            >
+              {copied ? <Check size={9} /> : <Copy size={9} />}
+              {copied ? "Copied!" : "Copy IHK"}
+            </button>
+            <button onClick={e => { e.stopPropagation(); onToggleSent(); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors"
+              style={sent
+                ? { background: "rgba(16,185,129,0.15)", color: "rgba(16,185,129,0.9)", border: "1px solid rgba(16,185,129,0.35)" }
+                : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
+              }
+            >
+              <Check size={9} />
+              {sent ? "Sent" : "Mark sent"}
+            </button>
+          </>
         )}
       </button>
 
@@ -346,7 +333,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, onToggle, onAdd
 }
 
 export default function IHKPage() {
-  const { entries, load, add, update, remove, reorder } = useIHKStore();
+  const { entries, load, add, update, remove, reorder, sentWeeks, toggleSent } = useIHKStore();
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
@@ -397,7 +384,9 @@ export default function IHKPage() {
                 year={year} kw={kw} entries={wEntries}
                 isCurrentWeek={key === currentKey}
                 expanded={openWeek === key}
+                sent={sentWeeks.has(key)}
                 onToggle={() => setOpenWeek(k => k === key ? null : key)}
+                onToggleSent={() => toggleSent(key)}
                 onAdd={add} onDelete={remove} onUpdate={update} onReorder={reorder}
                 pastWeeks={pastWeeks}
                 onFillFrom={handleFillFrom}
