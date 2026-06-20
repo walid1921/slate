@@ -512,7 +512,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
             onClick={() => setNewColorOpen(o => !o)}
           />
           {newColorOpen && (
-            <div className="absolute left-0 bottom-full mb-1 z-50">
+            <div className="absolute left-0 top-full mt-1 z-50">
               <ColorPalette current={newColor} onChange={c => { setNewColor(c); setNewColorOpen(false); }} />
             </div>
           )}
