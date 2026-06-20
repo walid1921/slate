@@ -484,7 +484,7 @@ function TodoRow({
 function CategoryManagerPanel({ categories, onAdd, onRemove, onClose }: {
   categories: TaskCategory[];
   onAdd: (name: string) => Promise<void>;
-  onRemove: (id: number) => Promise<void>;
+  onRemove: (id: number, name: string) => void;
   onClose: () => void;
 }) {
   const [newName, setNewName] = useState("");
@@ -510,7 +510,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onClose }: {
             style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)` }}>
             {cat.name}
             {cat.id !== 1 && (
-              <button onClick={() => onRemove(cat.id)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
+              <button onClick={() => onRemove(cat.id, cat.name)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
             )}
           </div>
         ))}
@@ -1238,7 +1238,7 @@ export default function App() {
             <CategoryManagerPanel
               categories={categories}
               onAdd={addCategory}
-              onRemove={removeCategory}
+              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. Its tasks will move to General.`, () => removeCategory(id))}
               onClose={() => setShowCategoryManager(false)}
             />
           )}
