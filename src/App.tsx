@@ -669,6 +669,14 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
   const { kw, year } = getWeek(todayStr);
   const weekKey = `${year}-${String(kw).padStart(2,"0")}`;
   const weekEntries = entries.filter(e => { const w = getWeek(e.date); return `${w.year}-${String(w.kw).padStart(2,"0")}` === weekKey; });
+  const weekRangeLabel = (() => {
+    const jan4 = new Date(year, 0, 4);
+    const mon = new Date(jan4);
+    mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (kw - 1) * 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const fmt = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
+    return `${fmt(mon)} – ${fmt(sun)}`;
+  })();
   const catCounts = [0,1,2].map(cat => weekEntries.filter(e => e.category === cat).length);
   const CAT_RGB = ["59,130,246","99,102,241","16,185,129"];
   const AMBER = "251,191,36";
@@ -685,7 +693,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
         </div>
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dotColor }} />
       </div>
-      <p className="text-[13px] font-medium text-t2">KW {kw}</p>
+      <p className="text-[13px] font-medium text-t2">{weekRangeLabel}</p>
       <div className="flex flex-col gap-1">
         {[0,1,2].map(cat => (
           <div key={cat} className="flex items-center gap-1.5">
