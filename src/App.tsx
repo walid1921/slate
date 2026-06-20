@@ -39,6 +39,7 @@ import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
+import { useTimerStore, fmtDuration, sessionDurationMs, totalDurationMs } from "./timerStore";
 import logoMarkLight from "./assets/logo-light.png";
 import logoMarkDark from "./assets/logo-dark.png";
 import {
@@ -140,7 +141,9 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt } = useTodoStore();
+  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer } = useTodoStore();
+  const { sessions } = useTimerStore();
+  const taskSessions = sessions.filter(s => s.task_id === todo.id);
   const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
@@ -229,6 +232,38 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           {todo.show_created_at ? "Hide" : "Show"}
         </button>
       </div>
+      {/* Timer toggle row */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
+        <span className="text-[11px] text-t4 w-16 shrink-0">Timer</span>
+        <span className="text-[11px] text-t5">{todo.show_timer ? "Visible on card" : "Hidden"}</span>
+        <button
+          onClick={() => setShowTimer(todo.id, !todo.show_timer)}
+          className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
+        >
+          {todo.show_timer ? "Hide" : "Show"}
+        </button>
+      </div>
+      {/* Sessions log — only when done */}
+      {todo.status === 'done' && taskSessions.length > 0 && (
+        <div className="flex flex-col gap-1.5 px-4 py-3 border-b border-s shrink-0">
+          <span className="text-[11px] text-t4 mb-0.5">Time log</span>
+          {taskSessions.map((s) => {
+            const start = new Date(s.started_at);
+            const end = s.ended_at ? new Date(s.ended_at) : null;
+            const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <div key={s.id} className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-t3">{fmt(start)} → {end ? fmt(end) : "running"}</span>
+                <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+            <span className="text-[10px] text-t4">Total</span>
+            <span className="text-[10px] text-t2 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
+          </div>
+        </div>
+      )}
       {/* Description */}
       <div className="flex flex-col flex-1 overflow-hidden px-4 py-3">
         <span className="text-[11px] text-t4 mb-2 shrink-0">Notes</span>
@@ -378,6 +413,22 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
+  const { sessions, start, stop, finish } = useTimerStore();
+  const { setStatus } = useTodoStore();
+  const taskSessions = sessions.filter(s => s.task_id === todo.id);
+  const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!activeSession) { setElapsed(0); return; }
+    const update = () => setElapsed(Date.now() - new Date(activeSession.started_at).getTime());
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [activeSession?.id]);
+
+  const showTimer = todo.show_timer && todo.status === 'in_progress';
+
   return (
     <div
       ref={setNodeRef}
@@ -404,6 +455,36 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           }
           {todo.show_created_at && (
             <span className="text-[10px] text-t5">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+          )}
+        </div>
+      )}
+      {showTimer && (
+        <div className="flex items-center gap-1.5 pt-0.5" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+          <span className="text-[10px] text-t3 font-mono w-10 shrink-0">
+            {activeSession ? fmtDuration(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+          </span>
+          {activeSession ? (
+            <>
+              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
+                className="text-[9px] px-1.5 py-0.5 rounded text-t3 hover:text-t1 transition-colors"
+                style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>Stop</button>
+              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>Finish</button>
+            </>
+          ) : (
+            <>
+              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); }}
+                className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
+                {taskSessions.length > 0 ? "Extend" : "Start"}
+              </button>
+              {taskSessions.length > 0 && (
+                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                  className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                  style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>Finish</button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -815,7 +896,8 @@ export default function App() {
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
-  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories]);
+  const { load: loadTimers } = useTimerStore();
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
