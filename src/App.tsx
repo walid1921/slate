@@ -303,9 +303,9 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
         <div className="ml-auto flex items-center gap-3">
-          <Tooltip label="Add task"><button onClick={() => onAddInline(col.id)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button></Tooltip>
+          <Tooltip label="Add task" side="top"><button onClick={() => onAddInline(col.id)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button></Tooltip>
           {todos.length > 0 && (
-            <Tooltip label="Clear column"><button onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button></Tooltip>
+            <Tooltip label="Clear column" side="top"><button onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button></Tooltip>
           )}
         </div>
       </div>
