@@ -70,8 +70,10 @@ export default function ActivityHeatmap() {
   const grid = buildGrid(selectedYear, data);
   const CELL = 9, GAP = 2, STEP = CELL + GAP;
   const monthLabels = getMonthLabels(grid, STEP, selectedYear);
-  const totalActions = Object.values(data).reduce((a, b) => a + b, 0);
-  const activeDays = Object.values(data).filter(v => v > 0).length;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const d = new Date();
+  const todayKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const todayCount = data[todayKey] ?? 0;
 
   return (
     <div className="rounded-xl p-3 flex flex-col gap-2 select-none" style={{ background: `rgba(${ACCENT},0.06)`, border: `1px solid rgba(${ACCENT},0.2)`, minWidth: "max-content" }}>
@@ -85,7 +87,7 @@ export default function ActivityHeatmap() {
           <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${ACCENT},0.9)` }}>Activity</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-t5">{activeDays} days · {totalActions} actions</span>
+          <span className="text-[10px] text-t5">today · {todayCount} action{todayCount !== 1 ? "s" : ""}</span>
           {/* Year picker */}
           {years.length > 1 && (
             <div ref={dropRef} className="relative">
