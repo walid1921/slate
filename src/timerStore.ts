@@ -66,12 +66,22 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
 }));
 
 export function fmtDuration(ms: number): string {
-  const s = Math.floor(ms / 1000);
+  const s = Math.floor(Math.max(0, ms) / 1000);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+export function fmtElapsed(ms: number): string {
+  const s = Math.floor(Math.max(0, ms) / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2,"0")}m`;
+  if (m > 0) return `${m}m ${String(sec).padStart(2,"0")}s`;
   return `${sec}s`;
 }
 

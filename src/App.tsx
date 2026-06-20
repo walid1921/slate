@@ -42,7 +42,7 @@ import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
-import { useTimerStore, fmtDuration, sessionDurationMs, totalDurationMs } from "./timerStore";
+import { useTimerStore, fmtDuration, fmtElapsed, sessionDurationMs, totalDurationMs } from "./timerStore";
 import logoMarkLight from "./assets/logo-light.png";
 import logoMarkDark from "./assets/logo-dark.png";
 import {
@@ -250,7 +250,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
         <span className="text-[11px] text-t4 w-16 shrink-0">Timer</span>
         <span className="text-[10px] text-t3 font-mono">
-          {activeSession ? fmtDuration(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+          {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
         </span>
         <div className="flex items-center gap-1 ml-1">
           {activeSession ? (
@@ -502,7 +502,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       {showTimer && (
         <div className="flex items-center gap-1.5 pt-0.5" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
           <span className="text-[10px] text-t3 font-mono w-10 shrink-0">
-            {activeSession ? fmtDuration(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+            {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
           </span>
           {activeSession ? (
             <>
