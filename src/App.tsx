@@ -440,7 +440,7 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
                   {g.rows.map(row => (
                     <div key={row.id} className="flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-t5">{row.isRunning ? "Running" : "Session"}</span>
+                        <span className="text-[10px] text-t5">{row.isRunning ? "Running" : `Session ${g.rows.indexOf(row) + 1}`}</span>
                         <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
                           className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
                       </div>
