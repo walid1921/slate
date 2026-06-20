@@ -10,13 +10,14 @@ import {
   Clock,
   FileText,
   Settings as SettingsIcon,
-  Settings,
   ChevronDown,
   Trash2,
   CheckCheck,
   Zap,
   CalendarDays,
   BookOpen,
+  FolderPlus,
+  Pencil,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -419,6 +420,51 @@ function ColorPalette({ current, onChange }: { current: string; onChange: (c: st
   );
 }
 
+function AddCategoryModal({ onAdd, onClose }: {
+  onAdd: (name: string, color: string) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [color, setColor] = useState(PRESET_COLORS[4]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+
+  const save = async () => {
+    if (!name.trim()) return;
+    await onAdd(name.trim(), color);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 240, border: "1px solid var(--c-border)" }}>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
+          <span className="text-[13px] font-semibold text-t1">New category</span>
+          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
+        </div>
+        <input
+          ref={inputRef}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
+          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          placeholder="Category name…"
+        />
+        <div>
+          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+          <ColorPalette current={color} onChange={setColor} />
+        </div>
+        <div className="flex gap-2 justify-end pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+          <button onClick={save} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Create</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
   cat: TaskCategory;
   onRename: (id: number, name: string) => Promise<void>;
@@ -472,123 +518,7 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
   );
 }
 
-function SortableCategoryChip({ cat, onEdit }: { cat: TaskCategory; onEdit: (cat: TaskCategory) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
-  return (
-    <div
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
-      className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] cursor-grab active:cursor-grabbing select-none"
-      style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)`, transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
-      onPointerUp={() => { if (!isDragging) onEdit(cat); }}
-    >
-      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgb(${cat.color})` }} />
-      {cat.name}
-    </div>
-  );
-}
 
-function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor, onReorder, onClose }: {
-  categories: TaskCategory[];
-  onAdd: (name: string, color: string) => Promise<void>;
-  onRemove: (id: number, name: string) => void;
-  onRename: (id: number, name: string) => Promise<void>;
-  onRecolor: (id: number, color: string) => Promise<void>;
-  onReorder: (ids: number[]) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
-  const [newColorOpen, setNewColorOpen] = useState(false);
-  const [editingCat, setEditingCat] = useState<TaskCategory | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const catSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
-  useEffect(() => {
-    if (!newColorOpen) return;
-    const close = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) setNewColorOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [newColorOpen]);
-
-  const submit = async () => {
-    const n = newName.trim();
-    if (!n) return;
-    await onAdd(n, newColor);
-    setNewName("");
-    setNewColor(PRESET_COLORS[0]);
-  };
-
-  return (
-    <div ref={panelRef} className="px-4 py-3 flex flex-col gap-3 shrink-0" style={{ background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
-      {editingCat && (
-        <CategoryEditModal
-          cat={editingCat}
-          onRename={onRename}
-          onRecolor={onRecolor}
-          onRemove={onRemove}
-          onClose={() => setEditingCat(null)}
-        />
-      )}
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Categories</span>
-        <button onClick={onClose} className="text-t5 hover:text-t3 transition-colors"><X size={11} /></button>
-      </div>
-      <DndContext
-        sensors={catSensors}
-        collisionDetection={closestCenter}
-        onDragEnd={(event: DragEndEvent) => {
-          const { active, over } = event;
-          if (!over || active.id === over.id) return;
-          const oldIdx = categories.findIndex(c => c.id === active.id);
-          const newIdx = categories.findIndex(c => c.id === over.id);
-          if (oldIdx === -1 || newIdx === -1) return;
-          const reordered = [...categories];
-          reordered.splice(oldIdx, 1);
-          reordered.splice(newIdx, 0, categories[oldIdx]);
-          onReorder(reordered.map(c => c.id));
-        }}
-      >
-        <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map(cat => (
-              <SortableCategoryChip key={cat.id} cat={cat} onEdit={setEditingCat} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-      <div className="flex items-center gap-2">
-        {/* Color picker for new category */}
-        <div className="relative">
-          <button
-            className="w-5 h-5 rounded-full shrink-0 border-2 transition-transform hover:scale-110"
-            style={{ background: `rgb(${newColor})`, borderColor: `rgba(${newColor},0.5)` }}
-            onClick={() => setNewColorOpen(o => !o)}
-          />
-          {newColorOpen && (
-            <div className="absolute left-0 top-full mt-1 z-50">
-              <ColorPalette current={newColor} onChange={c => { setNewColor(c); setNewColorOpen(false); }} />
-            </div>
-          )}
-        </div>
-        <input
-          ref={inputRef}
-          value={newName}
-          onChange={e => setNewName(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); submit(); } e.stopPropagation(); }}
-          placeholder="New category name…"
-          className="flex-1 px-2 py-1 rounded text-[12px] text-t1 outline-none"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-        />
-        <button onClick={submit} className="px-2 py-1 rounded text-[11px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)" }}>
-          <Plus size={11} />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function StreakWidget() {
   const [current, setCurrent] = useState(0);
@@ -689,7 +619,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -720,7 +650,9 @@ export default function App() {
   const [todoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number>(1);
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [catContextMenu, setCatContextMenu] = useState<{ cat: TaskCategory; x: number; y: number } | null>(null);
+  const [catEditModal, setCatEditModal] = useState<TaskCategory | null>(null);
   const [pendingKanbanStatus, setPendingKanbanStatus] = useState<TodoStatus | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
 
@@ -1233,6 +1165,48 @@ export default function App() {
             setPendingKanbanStatus(null);
           }} />}
 
+          {/* Category context menu */}
+          {catContextMenu && (
+            <div
+              className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+              style={{ top: catContextMenu.y, left: catContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
+              onMouseLeave={() => setCatContextMenu(null)}
+            >
+              <button
+                className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                onClick={() => { setCatEditModal(catContextMenu.cat); setCatContextMenu(null); }}
+              >
+                <Pencil size={11} className="text-t4" /> Edit
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
+                onClick={() => {
+                  const { cat } = catContextMenu;
+                  setCatContextMenu(null);
+                  askConfirm("Delete category?", `"${cat.name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(cat.id));
+                }}
+              >
+                <Trash2 size={11} /> Delete
+              </button>
+            </div>
+          )}
+          {/* Add category modal */}
+          {showAddCategoryModal && (
+            <AddCategoryModal
+              onAdd={addCategory}
+              onClose={() => setShowAddCategoryModal(false)}
+            />
+          )}
+          {/* Edit category modal */}
+          {catEditModal && (
+            <CategoryEditModal
+              cat={catEditModal}
+              onRename={updateCategoryName}
+              onRecolor={updateCategoryColor}
+              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
+              onClose={() => setCatEditModal(null)}
+            />
+          )}
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
             <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
@@ -1246,6 +1220,7 @@ export default function App() {
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategoryId(cat.id)}
+                    onContextMenu={e => { e.preventDefault(); setCatContextMenu({ cat, x: e.clientX, y: e.clientY }); }}
                     className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
                     style={activeCategoryId === cat.id
                       ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
@@ -1258,13 +1233,13 @@ export default function App() {
                 );
               })}
             </div>
-            {/* Manage categories */}
-            <Tooltip label="Manage categories">
+            {/* Add category */}
+            <Tooltip label="Add category">
               <button
-                onClick={() => setShowCategoryManager(o => !o)}
+                onClick={() => setShowAddCategoryModal(true)}
                 className="p-1.5 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors shrink-0 mr-1"
               >
-                <Settings size={11} />
+                <FolderPlus size={11} />
               </button>
             </Tooltip>
             <div className="relative shrink-0 mr-2">
@@ -1302,18 +1277,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Category manager panel */}
-          {showCategoryManager && (
-            <CategoryManagerPanel
-              categories={categories}
-              onAdd={addCategory}
-              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
-              onRename={updateCategoryName}
-              onRecolor={updateCategoryColor}
-              onReorder={reorderCategories}
-              onClose={() => setShowCategoryManager(false)}
-            />
-          )}
 
           {/* FilterBar */}
           {/* Kanban board */}
