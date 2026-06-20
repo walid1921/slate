@@ -47,6 +47,18 @@ export async function loadActivityForYear(year: number): Promise<Record<string, 
   }
 }
 
+export async function loadAllActivityDates(): Promise<string[]> {
+  try {
+    const db = await getDb();
+    const rows = await db.select<{ date: string }[]>(
+      "SELECT DISTINCT date FROM activity ORDER BY date ASC"
+    );
+    return rows.map(r => r.date);
+  } catch {
+    return [];
+  }
+}
+
 export async function loadActivityYears(): Promise<number[]> {
   try {
     const db = await getDb();

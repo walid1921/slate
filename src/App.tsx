@@ -33,7 +33,7 @@ import SearchModal from "./components/SearchModal";
 import { useIHKStore } from "./ihkStore";
 import ConfirmDialog from "./components/ConfirmDialog";
 import ActivityHeatmap from "./components/ActivityHeatmap";
-import { logActivity } from "./activity";
+import { logActivity, loadAllActivityDates } from "./activity";
 import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
@@ -427,6 +427,67 @@ function TodoRow({
         </div>
       </div>
 
+    </div>
+  );
+}
+
+function StreakWidget() {
+  const [current, setCurrent] = useState(0);
+  const [longest, setLongest] = useState(0);
+
+  useEffect(() => {
+    loadAllActivityDates().then(dates => {
+      if (!dates.length) return;
+      const set = new Set(dates);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const today = new Date(); today.setHours(0,0,0,0);
+
+      // current streak: walk backwards from today (or yesterday if today has no activity)
+      let cur = 0;
+      const start = set.has(fmt(today)) ? new Date(today) : (() => { const y = new Date(today); y.setDate(y.getDate()-1); return y; })();
+      if (set.has(fmt(start))) {
+        const d = new Date(start);
+        while (set.has(fmt(d))) { cur++; d.setDate(d.getDate()-1); }
+      }
+
+      // longest streak
+      let max = 0, run = 0;
+      const sorted = [...set].sort();
+      for (let i = 0; i < sorted.length; i++) {
+        if (i === 0) { run = 1; }
+        else {
+          const prev = new Date(sorted[i-1]+"T00:00:00");
+          prev.setDate(prev.getDate()+1);
+          run = prev.toISOString().slice(0,10) === sorted[i] ? run+1 : 1;
+        }
+        if (run > max) max = run;
+      }
+
+      setCurrent(cur);
+      setLongest(max);
+    });
+  }, []);
+
+  const FLAME = "251,146,60";
+
+  return (
+    <div className="rounded-xl p-3 flex flex-col gap-3 select-none" style={{ background: `rgba(${FLAME},0.06)`, border: `1px solid rgba(${FLAME},0.2)` }}>
+      <div className="flex items-center gap-1.5">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill={`rgba(${FLAME},0.9)`} stroke="none"><path d="M12 2C9 7 6 8.5 6 13a6 6 0 0012 0c0-4.5-3-6-6-11zm0 17a4 4 0 01-2.83-6.83C10 13 11 14.5 12 15c1-0.5 2-2 2.83-2.83A4 4 0 0112 19z"/></svg>
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${FLAME},0.9)` }}>Streak</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
+          <span className="text-[28px] font-bold leading-none" style={{ color: current > 0 ? `rgba(${FLAME},0.95)` : "var(--c-text-5)" }}>{current}</span>
+          <span className="text-[10px] text-t5 mt-0.5">day{current !== 1 ? "s" : ""} current</span>
+        </div>
+        <div className="w-full h-px" style={{ background: `rgba(${FLAME},0.15)` }} />
+        <div className="flex flex-col">
+          <span className="text-[18px] font-semibold leading-none text-t3">{longest}</span>
+          <span className="text-[10px] text-t5 mt-0.5">day{longest !== 1 ? "s" : ""} best</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -882,8 +943,11 @@ export default function App() {
               </div>
             </div>
 
-            {/* Activity heatmap */}
-            <div className="overflow-x-auto"><ActivityHeatmap /></div>
+            {/* Activity heatmap + streak */}
+            <div className="flex gap-3 items-stretch">
+              <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
+              <div className="shrink-0 w-28"><StreakWidget /></div>
+            </div>
 
             {/* Preview cards */}
             <div className="grid grid-cols-4 gap-3">
