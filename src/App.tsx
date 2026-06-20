@@ -501,7 +501,7 @@ export default function App() {
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [collapsedTrashGroups, setCollapsedTrashGroups] = useState<Set<string>>(new Set());
+  const [openTrashGroup, setOpenTrashGroup] = useState<string | null>(null);
   const [todoFilter] = useState<TodoFilter>("all");
   const [todoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
@@ -1178,8 +1178,8 @@ export default function App() {
                       groups.push({ key: `del-${cid}`, catId: cid, label: dc?.name ?? "Deleted Category", color: dc?.color ?? "156,163,175", items: orphanTasks.filter(t => (t.category_id ?? 1) === cid) });
                     });
                     return groups.map(({ key, catId, label, color, items }) => {
-                      const collapsed = collapsedTrashGroups.has(key);
-                      const toggleCollapse = () => setCollapsedTrashGroups(prev => { const next = new Set(prev); collapsed ? next.delete(key) : next.add(key); return next; });
+                      const collapsed = openTrashGroup !== key;
+                      const toggleCollapse = () => setOpenTrashGroup(prev => prev === key ? null : key);
                       const isDeleted = key.startsWith("del-");
                       return (
                         <div key={key}>
