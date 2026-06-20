@@ -117,7 +117,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   );
 }
 
-function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClose: () => void; withDeadline?: boolean; categoryId?: number }) {
+function AddTaskModal({ onClose, withDeadline = false, categoryId = 1, lockedCategoryId, initialStatus }: { onClose: () => void; withDeadline?: boolean; categoryId?: number; lockedCategoryId?: number; initialStatus?: TodoStatus }) {
   const { add, categories } = useTodoStore();
   const { defaultPriority } = useSettingsStore();
   const [text, setText] = useState("");
@@ -163,7 +163,13 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
               <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
             </svg>
           </div>
-          <span className="text-[14px] font-semibold text-t1">{withDeadline ? "New Task with Deadline" : "New Task"}</span>
+            <div className="flex-1 flex items-center gap-2">
+            <span className="text-[14px] font-semibold text-t1">{withDeadline ? "New Task with Deadline" : "New Task"}</span>
+            {initialStatus && (() => {
+              const col = KANBAN_COLS.find(c => c.id === initialStatus);
+              return col ? <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `rgba(${col.color},0.12)`, color: `rgba(${col.color},0.9)`, border: `1px solid rgba(${col.color},0.25)` }}>{col.label}</span> : null;
+            })()}
+          </div>
         </div>
         {/* Body */}
         <div className="flex flex-col gap-3 px-4 py-4">
@@ -183,14 +189,14 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
               <div ref={catDropRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => setCatDropOpen(o => !o)}
+                  onClick={() => !lockedCategoryId && setCatDropOpen(o => !o)}
                   onKeyDown={e => e.stopPropagation()}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:opacity-90"
-                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)` }}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left"
+                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)`, opacity: lockedCategoryId ? 0.6 : 1, cursor: lockedCategoryId ? "default" : "pointer" }}
                 >
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${active?.color},0.85)` }} />
                   <span style={{ color: `rgba(${active?.color},0.95)` }}>{active?.name}</span>
-                  <ChevronDown size={11} className="ml-auto text-t5" />
+                  {!lockedCategoryId && <ChevronDown size={11} className="ml-auto text-t5" />}
                 </button>
                 {catDropOpen && (
                   <div className="absolute left-0 right-0 top-full mt-1 rounded-lg py-1 overflow-y-auto" style={{ zIndex: 200, maxHeight: 200, scrollbarWidth: "none", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
@@ -245,7 +251,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
   return (
     <div
       ref={setNodeRef}
-      className="group rounded-lg p-2.5 flex flex-col gap-1.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
+      className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
       style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       onClick={onOpen}
     >
@@ -987,7 +993,12 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
-          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} categoryId={activeCategoryId} onClose={async () => {
+          {addTaskOpen && <AddTaskModal
+            withDeadline={addTaskOpen === "deadline"}
+            categoryId={activeCategoryId}
+            lockedCategoryId={pendingKanbanStatus != null ? activeCategoryId : undefined}
+            initialStatus={pendingKanbanStatus ?? undefined}
+            onClose={async () => {
             setAddTaskOpen(false);
             if (pendingKanbanStatus && pendingKanbanStatus !== 'todo') {
               // apply status to most recently added task in this category
