@@ -1103,14 +1103,28 @@ export default function App() {
                   if (!over) return;
                   const activeId = active.id as number;
                   const overId = over.id;
-                  // dropped on a column
+                  // dropped on a column droppable
                   const col = KANBAN_COLS.find(c => c.id === overId);
                   if (col) { setStatus(activeId, col.id); return; }
-                  // dropped on another card — move to same column
+                  // dropped on another card
                   const overTodo = todos.find(t => t.id === overId);
                   const activeTodo = todos.find(t => t.id === activeId);
-                  if (overTodo && activeTodo && overTodo.status !== activeTodo.status) {
+                  if (!overTodo || !activeTodo) return;
+                  if (overTodo.status !== activeTodo.status) {
+                    // cross-column: just update status
                     setStatus(activeId, overTodo.status);
+                  } else {
+                    // same column: reorder within that column's slice
+                    const colTodos = todos.filter(t => t.category_id === activeCategoryId && t.status === activeTodo.status);
+                    const oldIdx = colTodos.findIndex(t => t.id === activeId);
+                    const newIdx = colTodos.findIndex(t => t.id === Number(overId));
+                    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
+                    const reordered = [...colTodos];
+                    reordered.splice(oldIdx, 1);
+                    reordered.splice(newIdx, 0, activeTodo);
+                    // rebuild full todos order: replace the column slice in place
+                    const otherTodos = todos.filter(t => !(t.category_id === activeCategoryId && t.status === activeTodo.status));
+                    useTodoStore.getState().reorder([...otherTodos, ...reordered].map(t => t.id));
                   }
                 }}
               >
