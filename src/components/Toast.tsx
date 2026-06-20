@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, Download, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, Download, Upload } from "lucide-react";
 
-export type ToastType = "exported" | "imported" | "exported-imported";
+export type ToastType = "exported" | "imported" | "exported-imported" | "error";
 
 interface ToastProps {
   type: ToastType;
+  message?: string;
   onDone: () => void;
 }
 
@@ -24,9 +25,14 @@ const CONFIG: Record<ToastType, { icon: React.ReactNode; title: string; sub: str
     title: "Backup saved & imported",
     sub: "Old data exported, new data loaded",
   },
+  error: {
+    icon: <AlertCircle size={15} className="text-red-400" />,
+    title: "Something went wrong",
+    sub: "Please try again",
+  },
 };
 
-export function Toast({ type, onDone }: ToastProps) {
+export function Toast({ type, message, onDone }: ToastProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -36,7 +42,8 @@ export function Toast({ type, onDone }: ToastProps) {
     return () => { clearTimeout(show); clearTimeout(hide); clearTimeout(done); };
   }, []);
 
-  const { icon, title, sub } = CONFIG[type];
+  const { icon, title, sub: defaultSub } = CONFIG[type];
+  const sub = message ?? defaultSub;
 
   return (
     <div

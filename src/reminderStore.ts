@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { getDb } from "./db";
 import { notify } from "./notifications";
 import { logActivity } from "./activity";
+import { showErrorToast } from "./toastStore";
 
 export interface Reminder {
   id: number;
@@ -39,11 +40,16 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   dismissAlert: () => set({ pendingAlert: null }),
 
   load: async () => {
-    const db = await getDb();
-    const rows = await db.select<Reminder[]>(
-      "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NULL ORDER BY remind_at ASC"
-    );
-    set({ reminders: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
+    try {
+      const db = await getDb();
+      const rows = await db.select<Reminder[]>(
+        "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NULL ORDER BY remind_at ASC"
+      );
+      set({ reminders: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
+    } catch (e) {
+      console.error("load reminders failed:", e);
+      showErrorToast("Failed to load reminders");
+    }
   },
 
   loadTrash: async () => {
@@ -55,14 +61,19 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   },
 
   add: async (text, remind_at) => {
-    const db = await getDb();
-    await db.execute(
-      "INSERT INTO reminders (text, remind_at) VALUES (?, ?)",
-      [text, remind_at]
-    );
-    logActivity();
-    await get().load();
-    await get().checkDue();
+    try {
+      const db = await getDb();
+      await db.execute(
+        "INSERT INTO reminders (text, remind_at) VALUES (?, ?)",
+        [text, remind_at]
+      );
+      logActivity();
+      await get().load();
+      await get().checkDue();
+    } catch (e) {
+      console.error("add reminder failed:", e);
+      showErrorToast("Couldn't save reminder — please try again");
+    }
   },
 
   update: async (id, text, remind_at) => {

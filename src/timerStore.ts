@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { getDb } from "./db";
 import { logActivity } from "./activity";
+import { showErrorToast } from "./toastStore";
 
 export interface TaskSession {
   id: number;
@@ -38,23 +39,28 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   runningTaskId: () => get().sessions.find(s => !s.ended_at)?.task_id ?? null,
 
   load: async () => {
-    const db = await getDb();
-    // Cap any orphaned open sessions at started_at + 4 hours to prevent corrupt time logs
-    const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
-    const open = await db.select<TaskSession[]>(
-      "SELECT id, task_id, started_at, ended_at FROM task_sessions WHERE ended_at IS NULL"
-    );
-    for (const s of open) {
-      const elapsed = Date.now() - new Date(s.started_at).getTime();
-      if (elapsed > MAX_SESSION_MS) {
-        const cappedEnd = new Date(new Date(s.started_at).getTime() + MAX_SESSION_MS).toISOString().slice(0, 19) + "Z";
-        await db.execute("UPDATE task_sessions SET ended_at = ? WHERE id = ?", [cappedEnd, s.id]);
+    try {
+      const db = await getDb();
+      // Cap any orphaned open sessions at started_at + 4 hours to prevent corrupt time logs
+      const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
+      const open = await db.select<TaskSession[]>(
+        "SELECT id, task_id, started_at, ended_at FROM task_sessions WHERE ended_at IS NULL"
+      );
+      for (const s of open) {
+        const elapsed = Date.now() - new Date(s.started_at).getTime();
+        if (elapsed > MAX_SESSION_MS) {
+          const cappedEnd = new Date(new Date(s.started_at).getTime() + MAX_SESSION_MS).toISOString().slice(0, 19) + "Z";
+          await db.execute("UPDATE task_sessions SET ended_at = ? WHERE id = ?", [cappedEnd, s.id]);
+        }
       }
+      const rows = await db.select<TaskSession[]>(
+        "SELECT id, task_id, started_at, ended_at FROM task_sessions ORDER BY started_at ASC"
+      );
+      set({ sessions: rows });
+    } catch (e) {
+      console.error("load timer sessions failed:", e);
+      showErrorToast("Failed to load timers");
     }
-    const rows = await db.select<TaskSession[]>(
-      "SELECT id, task_id, started_at, ended_at FROM task_sessions ORDER BY started_at ASC"
-    );
-    set({ sessions: rows });
   },
 
   start: async (taskId) => {
@@ -63,50 +69,76 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       set({ blockedMsg: `Another task's timer is already running.`, pendingTaskId: taskId });
       return "blocked";
     }
-    const db = await getDb();
-    await db.execute(
-      "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
-      [nowIso(), taskId]
-    );
-    await db.execute(
-      "INSERT INTO task_sessions (task_id, started_at) VALUES (?, ?)",
-      [taskId, nowIso()]
-    );
-    logActivity();
-    await get().load();
-    return "ok";
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
+        [nowIso(), taskId]
+      );
+      await db.execute(
+        "INSERT INTO task_sessions (task_id, started_at) VALUES (?, ?)",
+        [taskId, nowIso()]
+      );
+      logActivity();
+      await get().load();
+      return "ok";
+    } catch (e) {
+      console.error("start timer failed:", e);
+      showErrorToast("Couldn't start timer — please try again");
+      return "blocked";
+    }
   },
 
   stop: async (taskId) => {
-    const db = await getDb();
-    await db.execute(
-      "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
-      [nowIso(), taskId]
-    );
-    await get().load();
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
+        [nowIso(), taskId]
+      );
+      await get().load();
+    } catch (e) {
+      console.error("stop timer failed:", e);
+      showErrorToast("Couldn't stop timer — please try again");
+    }
   },
 
   updateSession: async (id, started_at, ended_at) => {
-    const db = await getDb();
-    await db.execute("UPDATE task_sessions SET started_at = ?, ended_at = ? WHERE id = ?", [started_at, ended_at, id]);
-    await get().load();
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE task_sessions SET started_at = ?, ended_at = ? WHERE id = ?", [started_at, ended_at, id]);
+      await get().load();
+    } catch (e) {
+      console.error("update session failed:", e);
+      showErrorToast("Couldn't update session — please try again");
+    }
   },
 
   deleteSession: async (id) => {
-    const db = await getDb();
-    await db.execute("DELETE FROM task_sessions WHERE id = ?", [id]);
-    await get().load();
+    try {
+      const db = await getDb();
+      await db.execute("DELETE FROM task_sessions WHERE id = ?", [id]);
+      await get().load();
+    } catch (e) {
+      console.error("delete session failed:", e);
+      showErrorToast("Couldn't delete session — please try again");
+    }
   },
 
   finish: async (taskId, setStatus) => {
-    const db = await getDb();
-    await db.execute(
-      "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
-      [nowIso(), taskId]
-    );
-    logActivity();
-    await get().load();
-    await setStatus(taskId, "done");
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
+        [nowIso(), taskId]
+      );
+      logActivity();
+      await get().load();
+      await setStatus(taskId, "done");
+    } catch (e) {
+      console.error("finish timer failed:", e);
+      showErrorToast("Couldn't finish task — please try again");
+    }
   },
 }));
 

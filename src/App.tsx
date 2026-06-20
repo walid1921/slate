@@ -46,6 +46,8 @@ import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
+import { useToastStore } from "./toastStore";
+import { Toast } from "./components/Toast";
 import { useTimerStore, fmtDuration, fmtElapsed, sessionDurationMs, totalDurationMs } from "./timerStore";
 import logoMarkLight from "./assets/logo-light.png";
 import logoMarkDark from "./assets/logo-dark.png";
@@ -2147,8 +2149,15 @@ export default function App() {
     )}
     <GlobalTooltip />
     <TimerBlockedBanner />
+    <GlobalToast />
     </div>
   );
+}
+
+function GlobalToast() {
+  const { kind, message, clear } = useToastStore();
+  if (!kind) return null;
+  return <Toast type={kind} message={message ?? undefined} onDone={clear} />;
 }
 
 function TimerBlockedBanner() {

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { getDb } from "./db";
 import { notify } from "./notifications";
 import { logActivity } from "./activity";
+import { showErrorToast } from "./toastStore";
 
 export type Priority = "none" | "low" | "medium" | "high";
 
@@ -155,6 +156,7 @@ export const useTodoStore = create<State>((set, get) => ({
       set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
     } catch (e) {
       console.error("load todos failed:", e);
+      showErrorToast("Failed to load tasks");
       set({ loading: false });
     }
   },
@@ -207,14 +209,19 @@ export const useTodoStore = create<State>((set, get) => ({
   add: async (text, priority = "none", due_date = null, due_time = null, category_id = 1) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    const db = await getDb();
-    await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
-    await db.execute(
-      "INSERT INTO todos (text, priority, due_date, due_time, position, category_id) VALUES (?, ?, ?, ?, 0, ?)",
-      [trimmed, priority, due_date, due_time, category_id]
-    );
-    logActivity();
-    await get().load();
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
+      await db.execute(
+        "INSERT INTO todos (text, priority, due_date, due_time, position, category_id) VALUES (?, ?, ?, ?, 0, ?)",
+        [trimmed, priority, due_date, due_time, category_id]
+      );
+      logActivity();
+      await get().load();
+    } catch (e) {
+      console.error("add todo failed:", e);
+      showErrorToast("Couldn't save task — please try again");
+    }
   },
 
   toggle: async (id) => {

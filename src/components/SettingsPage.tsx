@@ -13,7 +13,7 @@ import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore"
 import { useTodoStore } from "../store";
 import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
-import { Toast, ToastType } from "./Toast";
+import { useToastStore } from "../toastStore";
 
 const guideSections = [
   {
@@ -401,7 +401,7 @@ function DataTab() {
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const [exportedPath, setExportedPath] = useState<string | null>(null);
-  const [toast, setToast] = useState<ToastType | null>(null);
+  const showToast = useToastStore((s) => s.show);
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -432,7 +432,7 @@ function DataTab() {
       const filePath = await join(dir, `slate-${today}.json`);
       await writeTextFile(filePath, payload);
       setExportedPath(filePath);
-      setToast("exported");
+      showToast("exported");
     } catch (e) {
     } finally {
       setExporting(false);
@@ -534,7 +534,7 @@ function DataTab() {
         );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
-      setToast(withBackup ? "exported-imported" : "imported");
+      showToast(withBackup ? "exported-imported" : "imported");
     } catch {
     } finally {
       setImporting(false);
@@ -585,8 +585,6 @@ function DataTab() {
           </button>
         </SettingRow>
       </Section>
-
-      {toast && <Toast type={toast} onDone={() => setToast(null)} />}
 
       {/* Import confirm modal */}
       {importConfirm && (

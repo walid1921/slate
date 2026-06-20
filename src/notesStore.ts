@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { getDb } from "./db";
 import { logActivity } from "./activity";
+import { showErrorToast } from "./toastStore";
 
 export interface Note {
   id: number;
@@ -28,11 +29,16 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   trash: [],
 
   load: async () => {
-    const db = await getDb();
-    const rows = await db.select<Note[]>(
-      "SELECT id, title, content, created_at, updated_at FROM notes WHERE deleted_at IS NULL ORDER BY created_at DESC"
-    );
-    set({ notes: rows });
+    try {
+      const db = await getDb();
+      const rows = await db.select<Note[]>(
+        "SELECT id, title, content, created_at, updated_at FROM notes WHERE deleted_at IS NULL ORDER BY created_at DESC"
+      );
+      set({ notes: rows });
+    } catch (e) {
+      console.error("load notes failed:", e);
+      showErrorToast("Failed to load notes");
+    }
   },
 
   loadTrash: async () => {
@@ -44,24 +50,35 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   add: async (title, content) => {
-    const db = await getDb();
-    const result = await db.execute(
-      "INSERT INTO notes (title, content) VALUES (?, ?)",
-      [title.trim() || "Untitled", content]
-    );
-    logActivity();
-    await get().load();
-    return result.lastInsertId as number;
+    try {
+      const db = await getDb();
+      const result = await db.execute(
+        "INSERT INTO notes (title, content) VALUES (?, ?)",
+        [title.trim() || "Untitled", content]
+      );
+      logActivity();
+      await get().load();
+      return result.lastInsertId as number;
+    } catch (e) {
+      console.error("add note failed:", e);
+      showErrorToast("Couldn't save note — please try again");
+      return 0;
+    }
   },
 
   update: async (id, title, content) => {
-    const db = await getDb();
-    await db.execute(
-      "UPDATE notes SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?",
-      [title.trim() || "Untitled", content, id]
-    );
-    logActivity();
-    await get().load();
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE notes SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?",
+        [title.trim() || "Untitled", content, id]
+      );
+      logActivity();
+      await get().load();
+    } catch (e) {
+      console.error("update note failed:", e);
+      showErrorToast("Couldn't save note — please try again");
+    }
   },
 
   remove: async (id) => {
