@@ -861,12 +861,12 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
           <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-white/3 transition-colors flex-1">
-            {/* Meta row: status + category */}
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-medium text-t5">{statusLabel}</span>
+            {/* Meta row: category + status */}
+            <div className="flex items-center justify-between">
               {category && (
                 <span className="text-[9px] font-medium" style={{ color: catColor }}>{category.name}</span>
               )}
+              <span className="text-[9px] font-medium text-t5">{statusLabel}</span>
             </div>
             {/* Name row */}
             <div className="flex items-start justify-between gap-2">
