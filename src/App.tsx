@@ -351,7 +351,14 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
   const [colorPickId, setColorPickId] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const editRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+  useEffect(() => {
+    if (colorPickId === null && !newColorOpen) return;
+    const close = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) { setColorPickId(null); setNewColorOpen(false); } };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [colorPickId, newColorOpen]);
   useEffect(() => { if (editingId !== null) setTimeout(() => editRef.current?.select(), 10); }, [editingId]);
 
   const submit = async () => {
@@ -369,7 +376,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
   };
 
   return (
-    <div className="px-4 py-3 flex flex-col gap-3 shrink-0" style={{ background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+    <div ref={panelRef} className="px-4 py-3 flex flex-col gap-3 shrink-0" style={{ background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Categories</span>
         <button onClick={onClose} className="text-t5 hover:text-t3 transition-colors"><X size={11} /></button>
