@@ -124,22 +124,10 @@ body {
 /* Category tabs: horizontal only, no vertical bar */
 .category-tabs-scroll {
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: var(--c-scrollbar) transparent;
+  scrollbar-width: none;
 }
 .category-tabs-scroll::-webkit-scrollbar {
-  width: 0;
-  height: 3px;
-}
-.category-tabs-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.category-tabs-scroll::-webkit-scrollbar-thumb {
-  background: var(--c-scrollbar);
-  border-radius: 999px;
-}
-.category-tabs-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--c-text-3);
+  display: none;
 }
 
 #root {
