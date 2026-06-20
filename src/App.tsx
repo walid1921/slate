@@ -716,9 +716,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
         <div className="ml-auto flex items-center gap-3">
           <div className="relative">
-            <Tooltip label="Add task" side="top">
-              <button onClick={() => setAddMenuOpen(o => !o)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button>
-            </Tooltip>
+            <TipBtn label="Add task" side="bottom" onClick={() => setAddMenuOpen(o => !o)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></TipBtn>
             {addMenuOpen && (
               <div
                 className="absolute right-0 top-full mt-1 dropdown rounded-lg overflow-hidden z-50"
@@ -737,7 +735,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
             )}
           </div>
           {todos.length > 0 && (
-            <Tooltip label="Clear column" side="top"><button onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button></Tooltip>
+            <TipBtn label="Clear column" side="bottom" onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></TipBtn>
           )}
         </div>
       </div>
