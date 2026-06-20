@@ -393,10 +393,11 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
   todos: Todo[];
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
-  onAddInline: (status: TodoStatus) => void;
+  onAddInline: (status: TodoStatus, mode: "quick" | "deadline") => void;
   onClearColumn: (status: TodoStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   return (
     <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-visible" style={{ background: "var(--c-surface-0)", border: `1px solid rgba(${col.color},0.25)` }}>
       {/* Column header */}
@@ -405,7 +406,27 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
         <div className="ml-auto flex items-center gap-3">
-          <Tooltip label="Add task" side="top"><button onClick={() => onAddInline(col.id)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button></Tooltip>
+          <div className="relative">
+            <Tooltip label="Add task" side="top">
+              <button onClick={() => setAddMenuOpen(o => !o)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button>
+            </Tooltip>
+            {addMenuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 dropdown rounded-lg overflow-hidden z-50"
+                style={{ width: 160, border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}
+                onMouseLeave={() => setAddMenuOpen(false)}
+              >
+                <button className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                  onClick={() => { setAddMenuOpen(false); onAddInline(col.id, "quick"); }}>
+                  <Zap size={12} className="text-blue-400" /> Quick task
+                </button>
+                <button className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                  onClick={() => { setAddMenuOpen(false); onAddInline(col.id, "deadline"); }}>
+                  <CalendarDays size={12} className="text-blue-400" /> With deadline
+                </button>
+              </div>
+            )}
+          </div>
           {todos.length > 0 && (
             <Tooltip label="Clear column" side="top"><button onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button></Tooltip>
           )}
@@ -1373,8 +1394,8 @@ export default function App() {
                     todos={todos.filter(t => t.category_id === activeCategoryId && t.status === col.id)}
                     onOpen={id => setSelectedTodoId(id)}
                     onDelete={id => askConfirm("Delete task?", `This task will be moved to trash.`, () => useTodoStore.getState().remove(id))}
-                    onAddInline={status => {
-                      setAddTaskOpen("quick");
+                    onAddInline={(status, mode) => {
+                      setAddTaskOpen(mode);
                       setPendingKanbanStatus(status);
                     }}
                     onClearColumn={status => {
