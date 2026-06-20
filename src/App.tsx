@@ -284,21 +284,23 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
                 {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
               </button>
             </div>
-            <div className="flex items-center gap-1">
-              {activeSession ? (
-                <>
-                  <span className="text-[11px] text-t3 font-mono min-w-[32px]">{fmtElapsed(elapsed)}</span>
-                  <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
-                  <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
-                  {todo.status !== 'done' && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                {activeSession ? (
+                  <>
+                    <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
                     <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-                  )}
-                </>
-              )}
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                    {todo.status !== 'done' && (
+                      <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                    )}
+                  </>
+                )}
+              </div>
+              {activeSession && <span className="text-[11px] text-t3 font-mono">{fmtElapsed(elapsed)}</span>}
             </div>
           </div>
           {/* Time log half */}
