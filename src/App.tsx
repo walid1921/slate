@@ -445,14 +445,17 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   );
 }
 
-function SubtaskProgressBar({ subtasks, className }: { subtasks: SubTask[]; className?: string }) {
+function SubtaskProgressBar({ subtasks, className, showCount }: { subtasks: SubTask[]; className?: string; showCount?: boolean }) {
   const done = subtasks.filter(s => s.done).length;
   const pct = subtasks.length > 0 ? (done / subtasks.length) * 100 : 0;
-  return (
-    <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>
-      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? "rgba(16,185,129,0.8)" : "rgba(16,185,129,0.55)" }} />
+  const fill = <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? "rgba(16,185,129,0.8)" : "rgba(16,185,129,0.55)" }} />;
+  if (showCount) return (
+    <div className={`flex items-center gap-2 ${className ?? ""}`}>
+      <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: "var(--c-border)" }}>{fill}</div>
+      <span className="text-[9px] text-t5 shrink-0 font-mono">{done}/{subtasks.length}</span>
     </div>
   );
+  return <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>{fill}</div>;
 }
 
 function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggle: () => void; onEdit: (text: string) => void; onDelete: () => void }) {
@@ -824,26 +827,28 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
         </div>
       )}
       {showTimer && (
-        <div className="flex items-center gap-1.5 pt-0.5" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
-          <span className="text-[10px] text-t3 font-mono w-10 shrink-0">
+        <div className="flex items-center justify-between mt-2" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+          <span className="text-[10px] text-t3 font-mono">
             {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
           </span>
-          {activeSession ? (
-            <>
-              <TipBtn label="Pause" className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}><Pause size={9} /></TipBtn>
-              <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={9} /></TipBtn>
-            </>
-          ) : (
-            <>
-              <TipBtn label="Start timer" className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={9} /></TipBtn>
-              {todo.status !== 'done' && (
+          <div className="flex items-center gap-1.5">
+            {activeSession ? (
+              <>
+                <TipBtn label="Pause" className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}><Pause size={9} /></TipBtn>
                 <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={9} /></TipBtn>
-              )}
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <TipBtn label="Start timer" className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={9} /></TipBtn>
+                {todo.status !== 'done' && (
+                  <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={9} /></TipBtn>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
-      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} />}
+      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} showCount />}
     </div>
   );
 }
