@@ -9,7 +9,7 @@ export interface TaskSession {
 }
 
 function nowIso(): string {
-  return new Date().toISOString().slice(0, 19);
+  return new Date().toISOString().slice(0, 19) + "Z";
 }
 
 interface TimerStore {
