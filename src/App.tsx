@@ -322,12 +322,14 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
                 <Timer size={10} className="text-t5 shrink-0" />
                 <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between">
                 <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
-                <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors ml-auto">
-                  <Pencil size={9} />
-                </TipBtn>
-                {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+                <div className="flex items-center gap-1">
+                  <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
+                    <Pencil size={9} />
+                  </TipBtn>
+                  {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+                </div>
               </div>
             </button>
           ) : (
