@@ -1404,7 +1404,7 @@ export default function App() {
                       const colTodos = todos.filter(t => t.category_id === activeCategoryId && t.status === status);
                       askConfirm(`Clear "${colLabel}"?`, `${colTodos.length} task${colTodos.length !== 1 ? "s" : ""} will be moved to trash.`, () => {
                         colTodos.forEach(t => useTodoStore.getState().remove(t.id));
-                      }, "Clear", "text-red-400 hover:text-red-300");
+                      }, "Clear");
                     }}
                   />
                 ))}
