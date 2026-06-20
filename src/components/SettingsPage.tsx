@@ -420,7 +420,8 @@ function DataTab() {
       const todos = await db.select("SELECT * FROM todos");
       const reminders = await db.select("SELECT * FROM reminders");
       const notes = await db.select("SELECT * FROM notes");
-      const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes }, null, 2);
+      const taskSessions = await db.select("SELECT * FROM task_sessions");
+      const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions }, null, 2);
       const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
       const filePath = await join(dir, `slate-${today}.json`);
@@ -448,7 +449,8 @@ function DataTab() {
         const backupTodos = await db.select("SELECT * FROM todos");
         const backupReminders = await db.select("SELECT * FROM reminders");
         const backupNotes = await db.select("SELECT * FROM notes");
-        const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes }, null, 2);
+        const backupTaskSessions = await db.select("SELECT * FROM task_sessions");
+        const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions }, null, 2);
         const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
         const dir = await appDataDir();
         await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
@@ -459,6 +461,7 @@ function DataTab() {
       await db.execute("DELETE FROM todos");
       await db.execute("DELETE FROM reminders");
       await db.execute("DELETE FROM notes");
+      await db.execute("DELETE FROM task_sessions");
       for (const t of data.todos) {
         await db.execute(
           "INSERT INTO todos (id, text, done, priority, due_date, due_time, deadline_notified, description, position, created_at, deleted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
@@ -475,6 +478,12 @@ function DataTab() {
         await db.execute(
           "INSERT INTO notes (id, title, content, created_at, updated_at, deleted_at) VALUES (?,?,?,?,?,?)",
           [n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at ?? null]
+        );
+      }
+      for (const s of (data.taskSessions ?? [])) {
+        await db.execute(
+          "INSERT INTO task_sessions (id, task_id, started_at, ended_at) VALUES (?,?,?,?)",
+          [s.id, s.task_id, s.started_at, s.ended_at ?? null]
         );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
