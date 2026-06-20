@@ -221,7 +221,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: "none" }}>
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: "none" }}>
       {showDeadlinePicker && (
         <DateTimeModal
           title="Set deadline"
@@ -441,8 +441,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           </div>
         </button>
         {openSection === "subtasks" && (
-          <div className="px-4 pb-4 border-t border-s">
-            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mt-3 mb-2" />}
+          <div className="border-t border-s">
+            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mx-4 mt-3 mb-1" />}
+            <div className="overflow-y-auto px-4" style={{ maxHeight: 200, scrollbarWidth: "thin" }}>
             {todo.subtasks.map((sub) => (
               <SubtaskRow
                 key={sub.id}
@@ -452,10 +453,13 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
                 onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
               />
             ))}
-            <AddSubtaskRow onAdd={(text) => {
-              const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-              setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
-            }} />
+            </div>
+            <div className="px-4 pb-4">
+              <AddSubtaskRow onAdd={(text) => {
+                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
+              }} />
+            </div>
           </div>
         )}
       </div>
@@ -1983,7 +1987,7 @@ export default function App() {
       {/* Task detail modal */}
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, minHeight: 560, maxHeight: "92vh", border: "1px solid var(--c-border)" }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, maxHeight: "82vh", border: "1px solid var(--c-border)" }}>
             <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
