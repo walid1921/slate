@@ -153,11 +153,17 @@ function TipBtn({ label, side = "top", className, style, onClick, onMouseDown, c
   onMouseDown?: React.MouseEventHandler<HTMLButtonElement>;
   children: React.ReactNode;
 }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const show = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (r && _setGlobalTooltip) _setGlobalTooltip({ label, x: r.left + r.width / 2, y: side === "top" ? r.top - 5 : r.bottom + 5, side });
+  };
   return (
-    <div className="group/tip relative inline-flex">
-      <button className={className} style={style} onClick={onClick} onMouseDown={onMouseDown}>{children}</button>
-      <span className={`pointer-events-none absolute left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[999999] ${side === "top" ? "-top-7" : "top-full mt-1"}`} style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>{label}</span>
-    </div>
+    <button ref={ref} className={className} style={style} onClick={onClick} onMouseDown={onMouseDown}
+      onMouseEnter={show} onPointerEnter={show}
+      onMouseLeave={() => _setGlobalTooltip?.(null)} onPointerLeave={() => _setGlobalTooltip?.(null)}>
+      {children}
+    </button>
   );
 }
 
