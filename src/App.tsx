@@ -875,7 +875,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
               </div>
               {countdown && (
-                <span className={`text-[10px] pl-3.5 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+                <span className={`text-[10px] ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
               )}
             </div>
 
