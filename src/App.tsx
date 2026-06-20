@@ -821,33 +821,31 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   return (
     <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: "1px solid rgba(59,130,246,0.35)", background: "rgba(59,130,246,0.07)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid rgba(59,130,246,0.15)" }}>
+      <div className="relative flex items-center justify-between px-3 py-2" ref={dropRef} style={{ borderBottom: "1px solid rgba(59,130,246,0.15)" }}>
         <div className="flex items-center gap-1.5">
           <Zap size={11} style={{ color: "rgba(96,165,250,0.9)" }} className="shrink-0" />
           <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(96,165,250,0.9)" }}>Clockify</span>
         </div>
         {/* Task picker */}
-        <div className="relative" ref={dropRef}>
-          <button onClick={() => setDropOpen(v => !v)}
-            className="flex items-center gap-1 text-[10px] text-t4 hover:text-t2 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
-            <span className="max-w-[60px] truncate">{todo ? todo.text : "Pick a task"}</span>
-            <ChevronDown size={9} />
-          </button>
-          {dropOpen && (
-            <div className="dropdown absolute right-0 top-full mt-1 rounded-lg z-50 py-1 overflow-y-auto" style={{ minWidth: 160, maxWidth: 220, maxHeight: 180 }}>
-              {activeTodos.length === 0
-                ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
-                : activeTodos.map(t => (
-                  <button key={t.id} onClick={() => selectTask(t.id)}
-                    className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
-                    <span className="truncate">{t.text}</span>
-                  </button>
-                ))
-              }
-            </div>
-          )}
-        </div>
+        <button onClick={() => setDropOpen(v => !v)}
+          className="flex items-center gap-1 text-[10px] text-t4 hover:text-t2 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
+          <span className="max-w-[60px] truncate">{todo ? todo.text : "Pick a task"}</span>
+          <ChevronDown size={9} />
+        </button>
+        {dropOpen && (
+          <div className="dropdown absolute left-0 right-0 top-full mt-0.5 rounded-b-lg z-50 py-1 overflow-y-auto" style={{ maxHeight: 180 }}>
+            {activeTodos.length === 0
+              ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
+              : activeTodos.map(t => (
+                <button key={t.id} onClick={() => selectTask(t.id)}
+                  className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
+                  <span className="truncate">{t.text}</span>
+                </button>
+              ))
+            }
+          </div>
+        )}
       </div>
 
       {/* Body */}
