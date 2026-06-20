@@ -818,15 +818,13 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
-  const ACCENT = "147,150,255";
-
   return (
-    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: "1px solid rgba(99,102,241,0.35)", background: "rgba(99,102,241,0.07)" }}>
+    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: "1px solid rgba(59,130,246,0.35)", background: "rgba(59,130,246,0.07)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid rgba(99,102,241,0.15)" }}>
+      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid rgba(59,130,246,0.15)" }}>
         <div className="flex items-center gap-1.5">
-          <Zap size={11} style={{ color: `rgba(${ACCENT},0.9)` }} className="shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${ACCENT},0.9)` }}>Focus</span>
+          <Zap size={11} style={{ color: "rgba(96,165,250,0.9)" }} className="shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(96,165,250,0.9)" }}>Clockify</span>
         </div>
         {/* Task picker */}
         <div className="relative" ref={dropRef}>
