@@ -422,7 +422,11 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         <div className="flex items-center gap-1.5 pt-3 mb-2">
           <CheckSquare size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Subtasks</span>
+          {todo.subtasks.length > 0 && (
+            <span className="text-[10px] text-t5 ml-auto">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
+          )}
         </div>
+        {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mb-2" />}
         {todo.subtasks.map((sub) => (
           <SubtaskRow
             key={sub.id}
@@ -437,6 +441,16 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
         }} />
       </div>
+    </div>
+  );
+}
+
+function SubtaskProgressBar({ subtasks, className }: { subtasks: SubTask[]; className?: string }) {
+  const done = subtasks.filter(s => s.done).length;
+  const pct = subtasks.length > 0 ? (done / subtasks.length) * 100 : 0;
+  return (
+    <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>
+      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: pct === 100 ? "rgba(16,185,129,0.8)" : "rgba(16,185,129,0.55)" }} />
     </div>
   );
 }
@@ -829,6 +843,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           )}
         </div>
       )}
+      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} />}
     </div>
   );
 }
