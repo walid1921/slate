@@ -1173,7 +1173,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
-          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-4 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer">
+          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer" style={{ gap: 12 }}>
             {/* Meta row: category + status */}
             <div className="flex items-center justify-between">
               {category && (
@@ -1734,7 +1734,7 @@ export default function App() {
             </div>
 
             {/* Activity heatmap + focus */}
-            <div className="flex gap-3 items-stretch">
+            <div className="flex gap-3 items-stretch" style={{ minHeight: 230 }}>
               <div className="flex-1 min-w-0 overflow-x-auto h-full"><ActivityHeatmap /></div>
               <div className="shrink-0 flex flex-col" style={{ width: "calc(25% - 9px)" }}><FocusCard onOpenTask={(id) => setSelectedTodoId(id)} /></div>
             </div>
