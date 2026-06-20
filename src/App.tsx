@@ -1182,7 +1182,7 @@ export default function App() {
     if (windowMode === "compact") {
       win.setSize({ type: "Logical", width: 640, height: 480 } as any);
     } else {
-      win.setSize({ type: "Logical", width: 860, height: 560 } as any);
+      win.setSize({ type: "Logical", width: 920, height: 680 } as any);
     }
   }, [windowMode]);
 
