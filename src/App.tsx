@@ -60,6 +60,20 @@ import { CSS } from "@dnd-kit/utilities";
 
 
 
+function Tooltip({ label, children, side = "bottom" }: { label: string; children: React.ReactNode; side?: "top" | "bottom" }) {
+  return (
+    <div className="relative group/tip">
+      {children}
+      <div
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] text-t1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-50"
+        style={{ [side === "bottom" ? "top" : "bottom"]: "calc(100% + 5px)", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
   const { updateText, setPriority, setDescription } = useTodoStore();
   const [title, setTitle] = useState(todo.text);
@@ -289,9 +303,9 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
         <div className="ml-auto flex items-center gap-3">
-          <button onClick={() => onAddInline(col.id)} title="Add task" className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button>
+          <Tooltip label="Add task"><button onClick={() => onAddInline(col.id)} className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button></Tooltip>
           {todos.length > 0 && (
-            <button onClick={() => onClearColumn(col.id)} title={`Clear ${col.label}`} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button>
+            <Tooltip label="Clear column"><button onClick={() => onClearColumn(col.id)} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button></Tooltip>
           )}
         </div>
       </div>
@@ -1103,22 +1117,24 @@ export default function App() {
               ))}
             </div>
             {/* Manage categories */}
-            <button
-              onClick={() => setShowCategoryManager(o => !o)}
-              className="p-1.5 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors shrink-0 mr-1"
-              title="Manage categories"
-            >
-              <Settings size={11} />
-            </button>
-            <div className="relative shrink-0 mr-2">
+            <Tooltip label="Manage categories">
               <button
-                ref={addTaskBtnRef}
-                onClick={() => setAddTaskMenuOpen((o) => !o)}
-                className="p-1 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors"
-                title="Add task"
+                onClick={() => setShowCategoryManager(o => !o)}
+                className="p-1.5 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors shrink-0 mr-1"
               >
-                <Plus size={12} />
+                <Settings size={11} />
               </button>
+            </Tooltip>
+            <div className="relative shrink-0 mr-2">
+              <Tooltip label="Add task">
+                <button
+                  ref={addTaskBtnRef}
+                  onClick={() => setAddTaskMenuOpen((o) => !o)}
+                  className="p-1 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors"
+                >
+                  <Plus size={12} />
+                </button>
+              </Tooltip>
               {addTaskMenuOpen && (
                 <div
                   className="absolute right-0 top-full mt-1 dropdown rounded-lg overflow-hidden z-50"
