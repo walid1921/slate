@@ -869,13 +869,13 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
               <span className="text-[9px] font-medium text-t5">{statusLabel}</span>
             </div>
             {/* Name row */}
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: PRIORITY_COLOR[todo.priority] }} />
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[todo.priority] }} />
                 <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
               </div>
               {countdown && (
-                <span className={`text-[10px] shrink-0 mt-0.5 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+                <span className={`text-[10px] pl-3.5 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
               )}
             </div>
 
