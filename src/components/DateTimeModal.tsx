@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from "react";
+import { useTodoStore } from "../store";
 
 interface Props {
   title: string;
   subtitle: string;
   showDate: boolean;
-  onConfirm: (datetime: string) => void;
+  initialCategoryId?: number;
+  onConfirm: (datetime: string, categoryId: number) => void;
   onCancel: () => void;
 }
 
-export default function DateTimeModal({ title, subtitle, showDate, onConfirm, onCancel }: Props) {
+export default function DateTimeModal({ title, subtitle, showDate, initialCategoryId = 1, onConfirm, onCancel }: Props) {
+  const categories = useTodoStore(s => s.categories);
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const defaultDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
@@ -16,16 +19,26 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
 
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState(defaultTime);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId);
+  const [catDropOpen, setCatDropOpen] = useState(false);
+  const catDropRef = useRef<HTMLDivElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { timeRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    if (!catDropOpen) return;
+    const close = (e: MouseEvent) => { if (catDropRef.current && !catDropRef.current.contains(e.target as Node)) setCatDropOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [catDropOpen]);
 
   const handleConfirm = () => {
     const dateStr = showDate ? date : defaultDate;
     const t = time || defaultTime;
     const localIso = `${dateStr}T${t}:00`;
     if (isNaN(new Date(localIso).getTime())) return;
-    onConfirm(localIso);
+    onConfirm(localIso, selectedCategoryId);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -56,6 +69,46 @@ export default function DateTimeModal({ title, subtitle, showDate, onConfirm, on
 
         {/* Body */}
         <div className="flex flex-col gap-3 px-4 py-4">
+          {/* Category dropdown */}
+          {categories.length > 0 && (() => {
+            const active = categories.find(c => c.id === selectedCategoryId) ?? categories[0];
+            return (
+              <div ref={catDropRef} className="relative">
+                <button
+                  type="button"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={() => setCatDropOpen(o => !o)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:opacity-90"
+                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)` }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${active?.color},0.85)` }} />
+                  <span style={{ color: `rgba(${active?.color},0.95)` }}>{active?.name}</span>
+                  <svg className="ml-auto text-t5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {catDropOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg overflow-hidden py-1"
+                    style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => { setSelectedCategoryId(cat.id); setCatDropOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-left transition-colors hover:bg-s2"
+                        style={cat.id === selectedCategoryId ? { background: `rgba(${cat.color},0.1)` } : {}}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${cat.color},0.85)` }} />
+                        <span style={{ color: cat.id === selectedCategoryId ? `rgba(${cat.color},0.95)` : "var(--c-text-2)" }}>{cat.name}</span>
+                        {cat.id === selectedCategoryId && (
+                          <svg className="ml-auto" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={`rgba(${cat.color},0.8)`} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {showDate && (
             <input
               type="date"

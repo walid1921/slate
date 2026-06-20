@@ -414,6 +414,7 @@ function TodoRow({
             setDeadline(todo.id, datePart, timePart?.slice(0, 5) ?? null);
             setShowDeadlinePicker(false);
           }}
+
         />
       )}
       {/* Drag handle */}
@@ -1498,14 +1499,15 @@ export default function App() {
           title="Set deadline"
           subtitle={pendingModal.text}
           showDate={true}
-          onConfirm={async (datetime) => {
+          initialCategoryId={activeCategoryId}
+          onConfirm={async (datetime, categoryId) => {
             const snapshot = pendingModal;
             setPendingModal(null);
             setTimeout(() => inputRef.current?.focus(), 50);
             try {
               const date = datetime.split("T")[0];
               const time = datetime.split("T")[1]?.slice(0, 5);
-              await useTodoStore.getState().add(snapshot.text);
+              await useTodoStore.getState().add(snapshot.text, "none", null, null, categoryId);
               const db = await import("./db").then((m) => m.getDb());
               await db.execute(
                 "UPDATE todos SET due_date = ?, due_time = ? WHERE id = (SELECT id FROM todos WHERE text = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1)",
