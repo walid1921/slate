@@ -1640,7 +1640,7 @@ export default function App() {
                 <div className="group/trash relative">
                   <button
                     onClick={openTrash}
-                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-t2 transition-colors"
+                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-red-400 transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>

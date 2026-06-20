@@ -371,7 +371,7 @@ function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAd
               <div key={m.id} className="group flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]"
                 style={{ background: `rgba(${SCHOOL_RGB},0.12)`, color: `rgba(${SCHOOL_RGB},0.85)`, border: `1px solid rgba(${SCHOOL_RGB},0.3)` }}>
                 <span className="font-medium">{m.name}</span>
-                <button onClick={() => onRemove(m.id)} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-current hover:opacity-70">
+                <button onClick={() => onRemove(m.id)} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-current hover:text-red-400 hover:opacity-70">
                   <X size={9} />
                 </button>
               </div>
