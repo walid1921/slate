@@ -173,6 +173,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [logExpanded, setLogExpanded] = useState(false);
+  const [editingLog, setEditingLog] = useState(false);
 
   useEffect(() => {
     if (!activeSession) { setElapsed(0); return; }
@@ -305,6 +306,10 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-t3 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
+              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }}
+                className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
+                <Pencil size={9} />
+              </button>
               {logExpanded
                 ? <ChevronDown size={11} className="text-t5" />
                 : <ChevronRight size={11} className="text-t5" />
@@ -328,6 +333,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           )}
         </div>
       )}
+      {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
       {/* Description */}
       <div className="flex flex-col px-4 py-3">
         <div className="flex items-center gap-1.5 mb-2 shrink-0">
@@ -342,6 +348,72 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
           style={{ minHeight: "80px" }}
         />
+      </div>
+    </div>
+  );
+}
+
+function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStore").TaskSession[]; onClose: () => void }) {
+  const { updateSession, deleteSession } = useTimerStore();
+  const toLocal = (iso: string) => {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const toUtcIso = (local: string) => {
+    const d = new Date(local);
+    return d.toISOString().slice(0, 19) + "Z";
+  };
+  type Row = { id: number; start: string; end: string; isRunning: boolean };
+  const [rows, setRows] = useState<Row[]>(() =>
+    sessions.map(s => ({ id: s.id, start: toLocal(s.started_at), end: s.ended_at ? toLocal(s.ended_at) : "", isRunning: !s.ended_at }))
+  );
+  const update = (id: number, field: "start" | "end", val: string) =>
+    setRows(r => r.map(row => row.id === id ? { ...row, [field]: val } : row));
+  const save = async () => {
+    for (const row of rows) {
+      const endIso = row.isRunning || !row.end ? null : toUtcIso(row.end);
+      await updateSession(row.id, toUtcIso(row.start), endIso);
+    }
+    onClose();
+  };
+  return (
+    <div className="absolute inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12 }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 400, maxHeight: "70vh", border: "1px solid var(--c-border)" }}>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <span className="text-[13px] font-semibold text-t1">Edit Time Log</span>
+          <button onClick={onClose} className="text-t4 hover:text-t1 transition-colors"><X size={13} /></button>
+        </div>
+        <div className="flex flex-col gap-2 px-4 py-3 overflow-y-auto flex-1">
+          {rows.map((row, i) => (
+            <div key={row.id} className="flex flex-col gap-1.5 pb-2" style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border-subtle)" : "none" }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-t5">Session {i + 1}{row.isRunning ? " · running" : ""}</span>
+                <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
+                  className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1 flex-1">
+                  <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
+                  <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
+                    className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
+                    style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
+                  <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
+                    disabled={row.isRunning}
+                    className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
+                    style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+          <button onClick={save} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
+        </div>
       </div>
     </div>
   );

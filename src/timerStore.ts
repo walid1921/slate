@@ -24,6 +24,8 @@ interface TimerStore {
   stop: (taskId: number) => Promise<void>;
   finish: (taskId: number, setStatus: (id: number, s: "done") => Promise<void>) => Promise<void>;
   runningTaskId: () => number | null;
+  updateSession: (id: number, started_at: string, ended_at: string | null) => Promise<void>;
+  deleteSession: (id: number) => Promise<void>;
 }
 
 export const useTimerStore = create<TimerStore>((set, get) => ({
@@ -79,6 +81,18 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
       [nowIso(), taskId]
     );
+    await get().load();
+  },
+
+  updateSession: async (id, started_at, ended_at) => {
+    const db = await getDb();
+    await db.execute("UPDATE task_sessions SET started_at = ?, ended_at = ? WHERE id = ?", [started_at, ended_at, id]);
+    await get().load();
+  },
+
+  deleteSession: async (id) => {
+    const db = await getDb();
+    await db.execute("DELETE FROM task_sessions WHERE id = ?", [id]);
     await get().load();
   },
 
