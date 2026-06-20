@@ -306,7 +306,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       {...attributes}
       {...listeners}
       className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 cursor-grab active:cursor-grabbing select-none"
-      style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      style={{ background: countdown?.overdue ? "rgba(239,68,68,0.07)" : "var(--c-surface-2)", border: countdown?.overdue ? "1px solid rgba(239,68,68,0.25)" : "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       onClick={onOpen}
     >
       <div className="flex items-center gap-1.5">
@@ -319,10 +319,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
         </button>
       </div>
       {countdown && (
-        <span
-          className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}
-          style={countdown.overdue ? { background: "rgba(239,68,68,0.1)", borderRadius: 4, padding: "1px 6px" } : {}}
-        >{countdown.label}</span>
+        <span className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
       )}
     </div>
   );
