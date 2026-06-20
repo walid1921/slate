@@ -18,6 +18,8 @@ import {
   BookOpen,
   FolderPlus,
   Pencil,
+  Play,
+  Pause,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -427,7 +429,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
     return () => clearInterval(id);
   }, [activeSession?.id]);
 
-  const showTimer = todo.show_timer && todo.status === 'in_progress';
+  const showTimer = todo.show_timer && todo.status !== 'done';
 
   return (
     <div
@@ -466,23 +468,29 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           {activeSession ? (
             <>
               <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
-                className="text-[9px] px-1.5 py-0.5 rounded text-t3 hover:text-t1 transition-colors"
-                style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>Stop</button>
+                className="p-1 rounded text-t3 hover:text-t1 transition-colors"
+                style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
+                <Pause size={9} />
+              </button>
               <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
-                className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
-                style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>Finish</button>
+                className="p-1 rounded transition-colors"
+                style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                <CheckCheck size={9} />
+              </button>
             </>
           ) : (
             <>
               <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); }}
-                className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
+                className="p-1 rounded transition-colors"
                 style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
-                {taskSessions.length > 0 ? "Extend" : "Start"}
+                <Play size={9} />
               </button>
               {taskSessions.length > 0 && (
                 <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
-                  className="text-[9px] px-1.5 py-0.5 rounded transition-colors"
-                  style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>Finish</button>
+                  className="p-1 rounded transition-colors"
+                  style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                  <CheckCheck size={9} />
+                </button>
               )}
             </>
           )}
