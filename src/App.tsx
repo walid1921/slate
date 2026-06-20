@@ -256,20 +256,18 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       onClick={onOpen}
     >
-      <div className="flex items-start gap-1.5">
+      <div className="flex items-center gap-1.5">
+        {todo.priority !== 'none' && (
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_DOT[todo.priority] }} />
+        )}
         <span className="flex-1 text-[12px] text-t1 leading-snug truncate">{todo.text}</span>
         <button onMouseDown={e => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-100 text-t5 hover:text-red-400 transition-all shrink-0">
           <X size={10} />
         </button>
       </div>
-      <div className="flex items-center gap-1.5 pl-4">
-        {todo.priority !== 'none' && (
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_DOT[todo.priority] }} />
-        )}
-        {todo.due_date && (
-          <span className="text-[10px] text-t5">{todo.due_date}</span>
-        )}
-      </div>
+      {todo.due_date && (
+        <span className="text-[10px] text-t5 pl-3">{todo.due_date}</span>
+      )}
     </div>
   );
 }
