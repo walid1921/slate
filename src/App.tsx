@@ -462,7 +462,7 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
             return groups.map((g, i) => {
               const c = DAY_COLORS[i % DAY_COLORS.length];
               return (
-                <div key={g.label} className="flex flex-col gap-2 rounded-lg px-3 py-2" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                <div key={g.label} className="flex flex-col gap-2 px-3 py-2">
                   <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
                   {g.rows.map(row => (
                     <div key={row.id} className="flex items-center gap-2">
