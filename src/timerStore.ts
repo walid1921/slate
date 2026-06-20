@@ -26,6 +26,18 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
 
   load: async () => {
     const db = await getDb();
+    // Cap any orphaned open sessions at started_at + 4 hours to prevent corrupt time logs
+    const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
+    const open = await db.select<TaskSession[]>(
+      "SELECT id, task_id, started_at, ended_at FROM task_sessions WHERE ended_at IS NULL"
+    );
+    for (const s of open) {
+      const elapsed = Date.now() - new Date(s.started_at).getTime();
+      if (elapsed > MAX_SESSION_MS) {
+        const cappedEnd = new Date(new Date(s.started_at).getTime() + MAX_SESSION_MS).toISOString().slice(0, 19) + "Z";
+        await db.execute("UPDATE task_sessions SET ended_at = ? WHERE id = ?", [cappedEnd, s.id]);
+      }
+    }
     const rows = await db.select<TaskSession[]>(
       "SELECT id, task_id, started_at, ended_at FROM task_sessions ORDER BY started_at ASC"
     );
