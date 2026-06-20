@@ -1296,12 +1296,15 @@ export default function App() {
                     <button onClick={() => askConfirm("Delete all tasks?", "All deleted tasks will be permanently removed.", () => deleteAllPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {(() => {
-                    const groups = categories.map(cat => ({ cat, items: trash.filter(t => (t.category_id ?? 1) === cat.id) })).filter(g => g.items.length > 0);
-                    return groups.map(({ cat, items }) => (
-                      <div key={cat.id}>
+                    const catIds = new Set(categories.map(c => c.id));
+                    const groups = categories.map(cat => ({ key: String(cat.id), label: cat.name, color: cat.color, items: trash.filter(t => (t.category_id ?? 1) === cat.id) })).filter(g => g.items.length > 0);
+                    const orphans = trash.filter(t => !catIds.has(t.category_id ?? 1));
+                    if (orphans.length > 0) groups.push({ key: "orphan", label: "Deleted Category", color: "156,163,175", items: orphans });
+                    return groups.map(({ key, label, color, items }) => (
+                      <div key={key}>
                         <div className="flex items-center gap-2 px-5 py-1.5 mt-1">
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},0.7)` }} />
-                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${cat.color},0.7)` }}>{cat.name}</span>
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{label}</span>
                           <span className="text-[10px] text-t6">{items.length}</span>
                         </div>
                         {items.map(todo => (
