@@ -1226,7 +1226,7 @@ export default function App() {
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategoryId(cat.id)}
-                    onContextMenu={e => { e.preventDefault(); setCatContextMenu({ cat, x: e.clientX, y: e.clientY }); }}
+                    onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left, y: r.bottom + 4 }); }}
                     className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
                     style={activeCategoryId === cat.id
                       ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
