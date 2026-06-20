@@ -40,6 +40,13 @@ export async function getDb(): Promise<Database> {
   await _db.execute(`ALTER TABLE todos ADD COLUMN category_id INTEGER NOT NULL DEFAULT 1`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN status TEXT NOT NULL DEFAULT 'todo'`).catch(() => {});
   await _db.execute(`UPDATE todos SET status = 'done' WHERE done = 1 AND status = 'todo'`).catch(() => {});
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS deleted_categories (
+      id    INTEGER PRIMARY KEY,
+      name  TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '156,163,175'
+    )
+  `);
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS reminders (

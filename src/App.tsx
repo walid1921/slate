@@ -475,7 +475,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -501,6 +501,7 @@ export default function App() {
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [collapsedTrashGroups, setCollapsedTrashGroups] = useState<Set<string>>(new Set());
   const [todoFilter] = useState<TodoFilter>("all");
   const [todoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
@@ -1165,28 +1166,48 @@ export default function App() {
                   </div>
                   {(() => {
                     const catIds = new Set(categories.map(c => c.id));
-                    const groups = categories.map(cat => ({ key: String(cat.id), label: cat.name, color: cat.color, items: trash.filter(t => (t.category_id ?? 1) === cat.id) })).filter(g => g.items.length > 0);
-                    const orphans = trash.filter(t => !catIds.has(t.category_id ?? 1));
-                    if (orphans.length > 0) groups.push({ key: "orphan", label: "Deleted Category", color: "156,163,175", items: orphans });
-                    return groups.map(({ key, label, color, items }) => (
-                      <div key={key}>
-                        <div className="flex items-center gap-2 px-5 py-1.5 mt-1">
-                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
-                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{label}</span>
-                          <span className="text-[10px] text-t6">{items.length}</span>
-                        </div>
-                        {items.map(todo => (
-                          <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
-                            {(() => { const sc = KANBAN_COLS.find(c => c.id === (todo.status || (todo.done ? 'done' : 'todo'))); return sc ? <span className="w-1.5 h-1.5 rounded-full shrink-0" title={sc.label} style={{ background: `rgba(${sc.color},0.8)` }} /> : null; })()}
-                            <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
-                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
-                              <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
-                            </div>
+                    const groups: { key: string; catId: number | null; label: string; color: string; items: typeof trash }[] = categories
+                      .map(cat => ({ key: String(cat.id), catId: cat.id, label: cat.name, color: cat.color, items: trash.filter(t => (t.category_id ?? 1) === cat.id) }))
+                      .filter(g => g.items.length > 0);
+                    // orphans: tasks whose category_id is not in active categories
+                    const orphanTasks = trash.filter(t => !catIds.has(t.category_id ?? 1));
+                    // group orphans by their category_id, using deleted_categories for name/color
+                    const orphanCatIds = [...new Set(orphanTasks.map(t => t.category_id ?? 1))];
+                    orphanCatIds.forEach(cid => {
+                      const dc = deletedCategories.find(d => d.id === cid);
+                      groups.push({ key: `del-${cid}`, catId: cid, label: dc?.name ?? "Deleted Category", color: dc?.color ?? "156,163,175", items: orphanTasks.filter(t => (t.category_id ?? 1) === cid) });
+                    });
+                    return groups.map(({ key, catId, label, color, items }) => {
+                      const collapsed = collapsedTrashGroups.has(key);
+                      const toggleCollapse = () => setCollapsedTrashGroups(prev => { const next = new Set(prev); collapsed ? next.delete(key) : next.add(key); return next; });
+                      const isDeleted = key.startsWith("del-");
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center gap-2 px-5 py-1.5 mt-1 group/hdr cursor-pointer select-none" onClick={toggleCollapse}>
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{label}</span>
+                            <span className="text-[10px] text-t6">{items.length}</span>
+                            <ChevronDown size={10} className="text-t6 transition-transform ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
+                            {isDeleted && catId != null && (
+                              <button
+                                onClick={e => { e.stopPropagation(); askConfirm(`Delete "${label}" permanently?`, `${items.length} task${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => deleteGroupPermanently(catId)); }}
+                                className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-[10px] text-red-400/60 hover:text-red-400 transition-all"
+                              >Delete group</button>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    ));
+                          {!collapsed && items.map(todo => (
+                            <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                              {(() => { const sc = KANBAN_COLS.find(c => c.id === (todo.status || (todo.done ? 'done' : 'todo'))); return sc ? <span className="w-1.5 h-1.5 rounded-full shrink-0" title={sc.label} style={{ background: `rgba(${sc.color},0.8)` }} /> : null; })()}
+                              <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
+                              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                                <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    });
                   })()}
                 </>
           )}

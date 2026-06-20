@@ -35,10 +35,17 @@ const PRESET_COLORS = [
   "239,68,68",  "245,158,11", "16,185,129", "20,184,166",
 ];
 
+export interface DeletedCategory {
+  id: number;
+  name: string;
+  color: string;
+}
+
 interface State {
   todos: Todo[];
   trash: Todo[];
   categories: TaskCategory[];
+  deletedCategories: DeletedCategory[];
   query: string;
   loading: boolean;
   hasUnread: boolean;
@@ -56,6 +63,7 @@ interface State {
   restore: (id: number) => Promise<void>;
   deletePermanently: (id: number) => Promise<void>;
   deleteAllPermanently: () => Promise<void>;
+  deleteGroupPermanently: (categoryId: number) => Promise<void>;
   setPriority: (id: number, priority: Priority) => Promise<void>;
   updateText: (id: number, text: string) => Promise<void>;
   setDeadline: (id: number, due_date: string | null, due_time: string | null) => Promise<void>;
@@ -68,6 +76,7 @@ export const useTodoStore = create<State>((set, get) => ({
   todos: [],
   trash: [],
   categories: [],
+  deletedCategories: [],
   query: "",
   loading: true,
   hasUnread: false,
@@ -91,8 +100,12 @@ export const useTodoStore = create<State>((set, get) => ({
   },
 
   removeCategory: async (id) => {
-    if (id === 1) return; // General is permanent
+    if (id === 1) return;
     const db = await getDb();
+    const rows = await db.select<{ name: string; color: string }[]>("SELECT name, color FROM task_categories WHERE id = ?", [id]);
+    if (rows[0]) {
+      await db.execute("INSERT OR REPLACE INTO deleted_categories (id, name, color) VALUES (?, ?, ?)", [id, rows[0].name, rows[0].color]);
+    }
     await db.execute("UPDATE todos SET deleted_at = datetime('now') WHERE category_id = ? AND deleted_at IS NULL", [id]);
     await db.execute("DELETE FROM task_categories WHERE id = ?", [id]);
     await get().loadCategories();
@@ -137,7 +150,19 @@ export const useTodoStore = create<State>((set, get) => ({
     const rows = await db.select<Todo[]>(
       "SELECT id, text, done, priority, due_date, position, created_at, deleted_at, category_id, status FROM todos WHERE deleted_at IS NOT NULL ORDER BY category_id ASC, deleted_at DESC"
     );
-    set({ trash: rows.map((r) => ({ ...r, done: Boolean(r.done) })) });
+    const deletedCats = await db.select<DeletedCategory[]>("SELECT id, name, color FROM deleted_categories");
+    set({ trash: rows.map((r) => ({ ...r, done: Boolean(r.done) })), deletedCategories: deletedCats });
+  },
+
+  deleteGroupPermanently: async (categoryId) => {
+    const db = await getDb();
+    await db.execute("DELETE FROM todos WHERE deleted_at IS NOT NULL AND category_id = ?", [categoryId]);
+    await db.execute("DELETE FROM deleted_categories WHERE id = ?", [categoryId]);
+    const { trash, deletedCategories } = get();
+    set({
+      trash: trash.filter(t => t.category_id !== categoryId),
+      deletedCategories: deletedCategories.filter(c => c.id !== categoryId),
+    });
   },
 
   add: async (text, priority = "none", due_date = null, due_time = null, category_id = 1) => {
