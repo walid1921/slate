@@ -826,7 +826,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const accentColor = done ? "rgba(52,211,153,0.9)" : overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
 
   return (
-    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: cardBorder, background: cardBg }}>
+    <div className="rounded-xl flex flex-col gap-0 h-full" style={{ border: cardBorder, background: cardBg }}>
       {/* Header */}
       <div className="relative flex items-center justify-between px-3 py-2" ref={dropRef} style={{ borderBottom: headerBorder }}>
         <div className="flex items-center gap-1.5">
