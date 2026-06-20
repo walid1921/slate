@@ -423,6 +423,7 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
   const [rows, setRows] = useState<Row[]>(() =>
     sessions.map(s => ({ id: s.id, start: toLocal(s.started_at), end: s.ended_at ? toLocal(s.ended_at) : "", isRunning: !s.ended_at }))
   );
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const update = (id: number, field: "start" | "end", val: string) =>
     setRows(r => r.map(row => row.id === id ? { ...row, [field]: val } : row));
   const save = async () => {
@@ -478,8 +479,16 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
                           className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
                           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
                       </div>
-                      <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
-                        className="text-t5 hover:text-red-400 transition-colors mt-4 shrink-0"><Trash2 size={10} /></button>
+                      {confirmingId === row.id ? (
+                        <div className="flex flex-col items-center gap-1 mt-4 shrink-0">
+                          <button onClick={() => { deleteSession(row.id).then(() => { setRows(r => r.filter(r2 => r2.id !== row.id)); setConfirmingId(null); }); }}
+                            className="text-[9px] text-red-400 hover:text-red-300 transition-colors font-medium">Delete</button>
+                          <button onClick={() => setConfirmingId(null)} className="text-[9px] text-t5 hover:text-t2 transition-colors">Cancel</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmingId(row.id)}
+                          className="text-t5 hover:text-red-400 transition-colors mt-4 shrink-0"><Trash2 size={10} /></button>
+                      )}
                     </div>
                   ))}
                 </div>
