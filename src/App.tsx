@@ -399,6 +399,9 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       {countdown && (
         <span className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
       )}
+      {todo.show_created_at && (
+        <span className="text-[10px] pl-3 text-t5">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+      )}
     </div>
   );
 }
