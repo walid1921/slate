@@ -403,31 +403,48 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
           <span className="text-[13px] font-semibold text-t1">Edit Time Log</span>
           <button onClick={onClose} className="text-t4 hover:text-t1 transition-colors"><X size={13} /></button>
         </div>
-        <div className="flex flex-col gap-2 px-4 py-3 overflow-y-auto flex-1">
-          {rows.map((row, i) => (
-            <div key={row.id} className="flex flex-col gap-1.5 pb-2" style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border-subtle)" : "none" }}>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-t5">Session {i + 1}{row.isRunning ? " · running" : ""}</span>
-                <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
-                  className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
+        <div className="flex flex-col gap-3 px-4 py-3 overflow-y-auto flex-1">
+          {(() => {
+            const dayKey = (localStr: string) => {
+              const d = new Date(localStr);
+              return d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+            };
+            const groups: { label: string; rows: typeof rows }[] = [];
+            for (const row of rows) {
+              const label = dayKey(row.start);
+              const g = groups.find(g => g.label === label);
+              if (g) g.rows.push(row); else groups.push({ label, rows: [row] });
+            }
+            return groups.map(g => (
+              <div key={g.label} className="flex flex-col gap-2">
+                <span className="text-[9px] font-semibold text-t5 uppercase tracking-wide pb-1" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>{g.label}</span>
+                {g.rows.map(row => (
+                  <div key={row.id} className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-t5">{row.isRunning ? "Running" : "Session"}</span>
+                      <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
+                        className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
+                        <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
+                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
+                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                      </div>
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
+                        <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
+                          disabled={row.isRunning}
+                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
+                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
-                  <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
-                    className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
-                    style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
-                </div>
-                <div className="flex flex-col gap-1 flex-1">
-                  <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
-                  <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
-                    disabled={row.isRunning}
-                    className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
-                    style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
-                </div>
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
         <div className="flex justify-end gap-2 px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
