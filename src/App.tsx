@@ -848,6 +848,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           )}
         </div>
       )}
+      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} showCount className="mt-2" />}
       {showTimer && (
         <div className="flex items-center justify-between mt-2" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
           <span className="text-[10px] text-t3 font-mono">
@@ -870,7 +871,6 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           </div>
         </div>
       )}
-      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} showCount />}
     </div>
   );
 }
