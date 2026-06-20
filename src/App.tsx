@@ -419,12 +419,64 @@ function ColorPalette({ current, onChange }: { current: string; onChange: (c: st
   );
 }
 
-function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor, onClose }: {
+function SortableCategoryChip({ cat, editingId, editingVal, editRef, colorPickId, setColorPickId, setEditingId, setEditingVal, commitRename, onRecolor, onRemove }: {
+  cat: TaskCategory; editingId: number | null; editingVal: string; editRef: React.RefObject<HTMLInputElement | null>;
+  colorPickId: number | null; setColorPickId: (id: number | null) => void;
+  setEditingId: (id: number | null) => void; setEditingVal: (v: string) => void;
+  commitRename: () => void; onRecolor: (id: number, color: string) => Promise<void>; onRemove: (id: number, name: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className="relative flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] cursor-grab active:cursor-grabbing"
+      style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)`, transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+    >
+      <button
+        className="w-2 h-2 rounded-full shrink-0 transition-transform hover:scale-125"
+        style={{ background: `rgb(${cat.color})` }}
+        onPointerDown={e => e.stopPropagation()}
+        onClick={() => setColorPickId(colorPickId === cat.id ? null : cat.id)}
+      />
+      {colorPickId === cat.id && (
+        <div className="absolute left-0 top-full mt-1 z-50">
+          <ColorPalette current={cat.color} onChange={async c => { await onRecolor(cat.id, c); setColorPickId(null); }} />
+        </div>
+      )}
+      {editingId === cat.id ? (
+        <input
+          ref={editRef}
+          value={editingVal}
+          onChange={e => setEditingVal(e.target.value)}
+          onBlur={commitRename}
+          onPointerDown={e => e.stopPropagation()}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }}
+          className="bg-transparent outline-none w-24 text-[11px]"
+          style={{ color: `rgba(${cat.color},0.9)` }}
+        />
+      ) : (
+        <span
+          className="cursor-text"
+          onPointerDown={e => e.stopPropagation()}
+          onDoubleClick={() => { if (cat.id !== 1) { setEditingId(cat.id); setEditingVal(cat.name); } }}
+        >{cat.name}</span>
+      )}
+      {cat.id !== 1 && (
+        <button onPointerDown={e => e.stopPropagation()} onClick={() => onRemove(cat.id, cat.name)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
+      )}
+    </div>
+  );
+}
+
+function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor, onReorder, onClose }: {
   categories: TaskCategory[];
   onAdd: (name: string, color: string) => Promise<void>;
   onRemove: (id: number, name: string) => void;
   onRename: (id: number, name: string) => Promise<void>;
   onRecolor: (id: number, color: string) => Promise<void>;
+  onReorder: (ids: number[]) => Promise<void>;
   onClose: () => void;
 }) {
   const [newName, setNewName] = useState("");
@@ -436,6 +488,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
   const inputRef = useRef<HTMLInputElement>(null);
   const editRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const catSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
   useEffect(() => {
     if (colorPickId === null && !newColorOpen) return;
@@ -465,44 +518,42 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
         <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Categories</span>
         <button onClick={onClose} className="text-t5 hover:text-t3 transition-colors"><X size={11} /></button>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {categories.map(cat => (
-          <div key={cat.id} className="relative flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
-            style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)` }}>
-            {/* Color dot — click to pick */}
-            <button
-              className="w-2 h-2 rounded-full shrink-0 transition-transform hover:scale-125"
-              style={{ background: `rgb(${cat.color})` }}
-              onClick={() => setColorPickId(colorPickId === cat.id ? null : cat.id)}
-            />
-            {colorPickId === cat.id && (
-              <div className="absolute left-0 top-full mt-1 z-50">
-                <ColorPalette current={cat.color} onChange={async c => { await onRecolor(cat.id, c); setColorPickId(null); }} />
-              </div>
-            )}
-            {editingId === cat.id ? (
-              <input
-                ref={editRef}
-                value={editingVal}
-                onChange={e => setEditingVal(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }}
-                className="bg-transparent outline-none w-24 text-[11px]"
-                style={{ color: `rgba(${cat.color},0.9)` }}
+      <DndContext
+        sensors={catSensors}
+        collisionDetection={closestCenter}
+        onDragEnd={(event: DragEndEvent) => {
+          const { active, over } = event;
+          if (!over || active.id === over.id) return;
+          const oldIdx = categories.findIndex(c => c.id === active.id);
+          const newIdx = categories.findIndex(c => c.id === over.id);
+          if (oldIdx === -1 || newIdx === -1) return;
+          const reordered = [...categories];
+          reordered.splice(oldIdx, 1);
+          reordered.splice(newIdx, 0, categories[oldIdx]);
+          onReorder(reordered.map(c => c.id));
+        }}
+      >
+        <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map(cat => (
+              <SortableCategoryChip
+                key={cat.id}
+                cat={cat}
+                editingId={editingId}
+                editingVal={editingVal}
+                editRef={editRef}
+                colorPickId={colorPickId}
+                setColorPickId={setColorPickId}
+                setEditingId={setEditingId}
+                setEditingVal={setEditingVal}
+                commitRename={commitRename}
+                onRecolor={onRecolor}
+                onRemove={onRemove}
               />
-            ) : (
-              <span
-                className="cursor-text"
-                onDoubleClick={() => { if (cat.id !== 1) { setEditingId(cat.id); setEditingVal(cat.name); } }}
-                title={cat.id !== 1 ? "Double-click to rename" : undefined}
-              >{cat.name}</span>
-            )}
-            {cat.id !== 1 && (
-              <button onClick={() => onRemove(cat.id, cat.name)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
       <div className="flex items-center gap-2">
         {/* Color picker for new category */}
         <div className="relative">
@@ -633,7 +684,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -1254,6 +1305,7 @@ export default function App() {
               onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
               onRename={updateCategoryName}
               onRecolor={updateCategoryColor}
+              onReorder={reorderCategories}
               onClose={() => setShowCategoryManager(false)}
             />
           )}

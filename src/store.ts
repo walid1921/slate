@@ -60,6 +60,7 @@ interface State {
   removeCategory: (id: number) => Promise<void>;
   updateCategoryName: (id: number, name: string) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
+  reorderCategories: (ids: number[]) => Promise<void>;
   checkDueTodos: () => Promise<void>;
   loadTrash: () => Promise<void>;
   add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null, category_id?: number) => Promise<void>;
@@ -102,6 +103,16 @@ export const useTodoStore = create<State>((set, get) => ({
     const pos = existing.length;
     await db.execute("INSERT OR IGNORE INTO task_categories (name, color, position) VALUES (?, ?, ?)", [name.trim(), resolvedColor, pos]);
     await get().loadCategories();
+  },
+
+  reorderCategories: async (ids) => {
+    const current = get().categories;
+    const reordered = ids.map(id => current.find(c => c.id === id)!).filter(Boolean);
+    set({ categories: reordered });
+    const db = await getDb();
+    for (let i = 0; i < ids.length; i++) {
+      await db.execute("UPDATE task_categories SET position = ? WHERE id = ?", [i, ids[i]]);
+    }
   },
 
   updateCategoryColor: async (id, color) => {
