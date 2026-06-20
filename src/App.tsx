@@ -480,7 +480,7 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
                           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
                       </div>
                       {confirmingId === row.id ? (
-                        <div className="flex flex-col items-center gap-1 mt-4 shrink-0">
+                        <div className="flex items-center gap-2 mt-4 shrink-0">
                           <button onClick={() => { deleteSession(row.id).then(() => { setRows(r => r.filter(r2 => r2.id !== row.id)); setConfirmingId(null); }); }}
                             className="text-[9px] text-red-400 hover:text-red-300 transition-colors font-medium">Delete</button>
                           <button onClick={() => setConfirmingId(null)} className="text-[9px] text-t5 hover:text-t2 transition-colors">Cancel</button>
