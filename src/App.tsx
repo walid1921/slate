@@ -826,9 +826,9 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const accentColor = done ? "rgba(52,211,153,0.9)" : overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
 
   return (
-    <div className="rounded-xl flex flex-col gap-0 h-full" style={{ border: cardBorder, background: cardBg }}>
+    <div className="relative rounded-xl flex flex-col gap-0 h-full" ref={dropRef} style={{ border: cardBorder, background: cardBg }}>
       {/* Header */}
-      <div className="relative flex items-center justify-between px-3 py-2" ref={dropRef} style={{ borderBottom: headerBorder }}>
+      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: headerBorder }}>
         <div className="flex items-center gap-1.5">
           <Zap size={11} style={{ color: accentColor }} className="shrink-0" />
           <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accentColor }}>Clockify</span>
@@ -840,7 +840,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
           <ChevronDown size={9} />
         </button>
         {dropOpen && (
-          <div className="dropdown absolute left-0 right-0 top-full mt-0.5 rounded-lg z-50 py-1 overflow-y-scroll" style={{ maxHeight: "50vh" }}>
+          <div className="dropdown absolute left-0 right-0 z-50 py-1 overflow-y-scroll rounded-b-xl" style={{ top: 33, bottom: 0 }}>
             {activeTodos.length === 0
               ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
               : activeTodos.map(t => (
