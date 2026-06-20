@@ -106,11 +106,21 @@ const guideSections = [
     ],
   },
   {
-    title: "Activity & Streak",
+    title: "Activity",
     items: [
       { keys: ["Heatmap"], desc: "Shows today's action count — darker = more activity" },
-      { keys: ["Counted actions"], desc: "App open, add/edit tasks, set deadline/priority/description, toggle done, add/reschedule reminders, send reminder now, create/edit notes, add/edit IHK entries, mark week as sent" },
-      { keys: ["Streak"], desc: "Current and longest consecutive days with at least one action" },
+      { keys: ["Counted actions"], desc: "App open, add/edit tasks, set deadline/priority/description, toggle done, start/finish timer, add/reschedule reminders, send reminder now, create/edit notes, add/edit IHK entries, mark week as sent" },
+    ],
+  },
+  {
+    title: "Clockify",
+    items: [
+      { keys: ["Focus card"], desc: "Sits beside the heatmap on the Home screen — pick one task to track at a time" },
+      { keys: ["Task picker"], desc: "Dropdown in the card header — shows only active (non-done) tasks" },
+      { keys: ["Play / Pause"], desc: "Start or pause the timer for the selected task; each session is logged with start and end time" },
+      { keys: ["Done"], desc: "Stop the timer and mark the task as done" },
+      { keys: ["Card color"], desc: "Blue by default · Red when deadline is overdue · Green when task is done" },
+      { keys: ["Time log"], desc: "Open the task detail to see all sessions, total time, and session count" },
     ],
   },
 ];
