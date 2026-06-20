@@ -318,18 +318,18 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           {/* Time log half */}
           {taskSessions.length > 0 ? (
             <button onClick={() => setLogExpanded(v => !v)} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
-              <div className="flex items-center gap-1.5">
-                <Timer size={10} className="text-t5 shrink-0" />
-                <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Timer size={10} className="text-t5 shrink-0" />
+                  <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+                </div>
+                {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
-                <div className="flex items-center gap-1">
-                  <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
-                    <Pencil size={9} />
-                  </TipBtn>
-                  {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-                </div>
+                <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
+                  <Pencil size={9} />
+                </TipBtn>
               </div>
             </button>
           ) : (
