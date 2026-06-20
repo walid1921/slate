@@ -156,7 +156,7 @@ function TipBtn({ label, side = "top", className, style, onClick, onMouseDown, c
   return (
     <div className="group/tip relative inline-flex">
       <button className={className} style={style} onClick={onClick} onMouseDown={onMouseDown}>{children}</button>
-      <span className={`pointer-events-none absolute left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[99999] ${side === "top" ? "-top-7" : "top-full mt-1"}`} style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>{label}</span>
+      <span className={`pointer-events-none absolute left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[999999] ${side === "top" ? "-top-7" : "top-full mt-1"}`} style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>{label}</span>
     </div>
   );
 }
