@@ -364,7 +364,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               {groups.map((g, i) => {
                 const c = DAY_COLORS[i % DAY_COLORS.length];
                 return (
-                  <div key={g.label} className="rounded-lg px-2 py-1.5" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                  <div key={g.label} className="px-2 py-1.5">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
                       <span className="text-[9px]" style={{ color: c.text }}>{fmtDuration(totalDurationMs(g.sessions))}</span>
