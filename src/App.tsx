@@ -218,7 +218,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
               <button key={p} onClick={() => setPriority(todo.id, p)}
                 className="rounded-full transition-all"
-                style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 3 } : {}}
+                style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 0 } : {}}
               >
                 <span className={`block w-2.5 h-2.5 rounded-full ${PRIORITY_DOT_DETAIL[p]}`} style={{ opacity: todo.priority === p ? 1 : 0.3 }} />
               </button>
