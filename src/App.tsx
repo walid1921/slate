@@ -1180,20 +1180,28 @@ export default function App() {
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
             <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategoryId(cat.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
-                  style={activeCategoryId === cat.id
-                    ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
-                    : { color: "var(--c-text-2)", borderBottom: "2px solid transparent", marginBottom: -1 }}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${activeCategoryId === cat.id ? "0.9" : "0.4"})` }} />
-                  {cat.name}
-                  <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
-                </button>
-              ))}
+              {categories.map(cat => {
+                const nowMs = Date.now();
+                const hasOverdue = todos.some(t =>
+                  t.category_id === cat.id && !t.done && t.due_date &&
+                  buildDueDate(t.due_date, t.due_time).getTime() < nowMs
+                );
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategoryId(cat.id)}
+                    className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
+                    style={activeCategoryId === cat.id
+                      ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
+                      : { color: "var(--c-text-2)", borderBottom: "2px solid transparent", marginBottom: -1 }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${activeCategoryId === cat.id ? "0.9" : "0.4"})` }} />
+                    {cat.name}
+                    <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
+                    {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />}
+                  </button>
+                );
+              })}
             </div>
             {/* Manage categories */}
             <Tooltip label="Manage categories">
