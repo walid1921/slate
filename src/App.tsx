@@ -347,8 +347,8 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 cursor-grab active:cursor-grabbing select-none"
-      style={{ background: countdown?.overdue ? "rgba(239,68,68,0.07)" : "var(--c-surface-2)", border: countdown?.overdue ? "1px solid rgba(239,68,68,0.25)" : "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 select-none"
+      style={{ background: countdown?.overdue ? "rgba(239,68,68,0.07)" : "var(--c-surface-2)", border: countdown?.overdue ? "1px solid rgba(239,68,68,0.25)" : "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, cursor: isDragging ? "grabbing" : "pointer" }}
       onClick={onOpen}
     >
       <div className="flex items-center gap-1.5">
