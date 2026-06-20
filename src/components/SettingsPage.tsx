@@ -17,12 +17,14 @@ import { Toast, ToastType } from "./Toast";
 
 const guideSections = [
   {
-    title: "Adding Tasks",
+    title: "Slash Commands",
     items: [
-      { keys: ["Type anything", "↵"], desc: "Add a new task" },
-      { keys: ["/tm", "task name", "↵"], desc: "Add a task with a deadline — picks date & time" },
+      { keys: ["Type anything", "↵"], desc: "Add a quick task to the active category" },
+      { keys: ["/tm", "task name", "↵"], desc: "Add a task with deadline — opens date & time picker" },
+      { keys: ["/t", "category", "↵", "task", "↵"], desc: "Add a task to a specific category" },
       { keys: ["/rm", "reminder text", "↵"], desc: "Add a reminder — navigates to Reminders after" },
       { keys: ["/nt", "title", "↵"], desc: "Create a new note — opens it immediately" },
+      { keys: ["/i", "module", "↵", "entry", "↵"], desc: "Add an IHK training entry — pick module then type text" },
     ],
   },
   {
@@ -31,35 +33,38 @@ const guideSections = [
       { keys: ["⌥S"], desc: "Toggle Slate from anywhere" },
       { keys: ["⌥N"], desc: "Open quick-note window from anywhere" },
       { keys: ["Esc"], desc: "Close Slate (or clear search if text is entered)" },
-      { keys: ["↑ ↓"], desc: "Navigate through the list" },
-      { keys: ["Space"], desc: "Toggle task done / undone" },
-      { keys: ["⌫ Delete"], desc: "Move focused item to trash" },
+      { keys: ["↑ ↓"], desc: "Navigate command / category / module picker" },
+      { keys: ["⌫ Delete"], desc: "Move focused task to trash" },
     ],
   },
   {
-    title: "Task Actions",
+    title: "Kanban Board",
     items: [
-      { keys: ["Right-click task"], desc: "Open context menu — edit text, set priority, delete" },
-      { keys: ["Double-click text"], desc: "Edit task text inline — Enter to save, Esc to cancel" },
-      { keys: ["Drag ⠿"], desc: "Drag handle to reorder tasks manually" },
+      { keys: ["Click card"], desc: "Open task detail — edit text, description, deadline, priority" },
+      { keys: ["Drag card"], desc: "Move a task between columns or reorder within a column" },
+      { keys: ["+ in column header"], desc: "Add a task directly to that status column" },
+      { keys: ["🗑 in column header"], desc: "Clear all tasks in the column (moves to trash)" },
+      { keys: ["Red card bg"], desc: "Task is overdue" },
     ],
   },
   {
-    title: "Search & Filter",
+    title: "Categories",
     items: [
-      { keys: ["Type to search"], desc: "Input doubles as a live search filter" },
-      { keys: ["✕ button"], desc: "Clear search and return to full list" },
-      { keys: ["Filter bar"], desc: "Filter by All / Active / Done" },
-      { keys: ["Sort menu"], desc: "Sort by manual order, due date, priority, or A–Z" },
+      { keys: ["Category tab"], desc: "Switch the active category shown on the board" },
+      { keys: ["Drag tab"], desc: "Reorder categories by dragging tabs left or right" },
+      { keys: ["Right-click tab"], desc: "Edit name & color, or delete the category" },
+      { keys: ["📁 button"], desc: "Create a new category with a name and color" },
+      { keys: ["Red dot on tab"], desc: "One or more tasks in that category are overdue" },
     ],
   },
   {
     title: "Due Dates & Notifications",
     items: [
-      { keys: ["/tm", "task", "↵"], desc: "Set deadline via date & time picker" },
-      { keys: ["Countdown"], desc: "Shows months · days · hours · minutes · seconds live" },
-      { keys: ["Red label"], desc: "Task is overdue" },
-      { keys: ["Red dot on ✓ icon"], desc: "A deadline notification fired — click the tab to dismiss" },
+      { keys: ["/tm", "task", "↵"], desc: "Set deadline at creation via date & time picker" },
+      { keys: ["Task detail → Deadline"], desc: "Add or change a deadline after creation" },
+      { keys: ["Countdown"], desc: "Live timer — shows days · hours · minutes · seconds" },
+      { keys: ["overdue · date time"], desc: "Overdue label with exact date and time it passed" },
+      { keys: ["Red dot on ✓ icon"], desc: "A deadline notification fired — click to dismiss" },
     ],
   },
   {
@@ -68,9 +73,8 @@ const guideSections = [
       { keys: ["Footer → ⏱"], desc: "View all upcoming and sent reminders" },
       { keys: ["Right-click reminder"], desc: "Send now, edit text/time, or delete" },
       { keys: ["Blue dot"], desc: "Upcoming reminder" },
-      { keys: ["Red dot on reminder text"], desc: "Overdue — notification hasn't fired yet" },
       { keys: ["Grey dot · sent"], desc: "Notification already fired" },
-      { keys: ["Red dot on ⏱ icon"], desc: "A reminder notification fired — click the tab to dismiss" },
+      { keys: ["Red dot on ⏱ icon"], desc: "A reminder notification fired — click to dismiss" },
     ],
   },
   {
@@ -80,15 +84,25 @@ const guideSections = [
       { keys: ["⊞ button"], desc: "Toggle sidebar to browse all notes" },
       { keys: ["+ button"], desc: "Create a new note" },
       { keys: ["Right-click note"], desc: "Delete note from sidebar" },
-      { keys: ["Auto-save"], desc: "Notes save automatically after 500ms" },
+      { keys: ["Auto-save"], desc: "Notes save automatically after 500 ms" },
+    ],
+  },
+  {
+    title: "IHK Training Log",
+    items: [
+      { keys: ["/i", "module", "↵", "entry", "↵"], desc: "Fastest way — type and pick a module, then the entry text" },
+      { keys: ["Footer → IHK"], desc: "Open full IHK log — weeks, modules, entries" },
+      { keys: ["Drag entry"], desc: "Reorder entries within a week block" },
+      { keys: ["Send week"], desc: "Mark a week as submitted" },
     ],
   },
   {
     title: "Deleted",
     items: [
-      { keys: ["Footer → 🗑"], desc: "View all deleted tasks, reminders and notes" },
-      { keys: ["↺"], desc: "Restore an item back to its list" },
-      { keys: ["✕"], desc: "Permanently delete an item" },
+      { keys: ["Footer → 🗑"], desc: "View all deleted tasks grouped by category" },
+      { keys: ["↺"], desc: "Restore a task back to its category" },
+      { keys: ["✕"], desc: "Permanently delete a single task" },
+      { keys: ["🗑 on group"], desc: "Permanently delete all tasks in a deleted category" },
     ],
   },
 ];
