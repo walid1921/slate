@@ -179,10 +179,11 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
 }
 
 function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClose: () => void; withDeadline?: boolean; categoryId?: number }) {
-  const { add } = useTodoStore();
+  const { add, categories } = useTodoStore();
   const { defaultPriority } = useSettingsStore();
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId);
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
@@ -193,7 +194,7 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
     if (!text.trim() || saving) return;
     setSaving(true);
     try {
-      await add(text.trim(), defaultPriority, withDeadline ? date : null, withDeadline ? time : null, categoryId);
+      await add(text.trim(), defaultPriority, withDeadline ? date : null, withDeadline ? time : null, selectedCategoryId);
       onClose();
     } catch {
       setSaving(false);
@@ -227,6 +228,26 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
             className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none placeholder:text-t5"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           />
+          {/* Category selector */}
+          {categories.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setSelectedCategoryId(cat.id)}
+                  onKeyDown={e => e.stopPropagation()}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] transition-all"
+                  style={selectedCategoryId === cat.id
+                    ? { background: `rgba(${cat.color},0.2)`, border: `1px solid rgba(${cat.color},0.6)`, color: `rgba(${cat.color},1)` }
+                    : { background: "var(--c-surface-2)", border: "1px solid var(--c-border)", color: "var(--c-text-4)" }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${selectedCategoryId === cat.id ? "0.9" : "0.4"})` }} />
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
           {withDeadline && (
             <div className="flex gap-2">
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} onKeyDown={handleKey} className="flex-1 px-3 py-2 rounded-lg text-[13px] text-t1 outline-none" style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
