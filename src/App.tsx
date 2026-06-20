@@ -255,7 +255,7 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
                   <ChevronDown size={11} className="ml-auto text-t5" />
                 </button>
                 {catDropOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 rounded-lg py-1 overflow-y-auto" style={{ zIndex: 200, maxHeight: 200, background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                  <div className="absolute left-0 right-0 top-full mt-1 rounded-lg py-1 overflow-y-auto" style={{ zIndex: 200, maxHeight: 200, scrollbarWidth: "none", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
                     {categories.map(cat => (
                       <button
                         key={cat.id}
