@@ -404,21 +404,28 @@ function validateSlateExport(raw: string): string | null {
   const d = data as Record<string, unknown>;
   if (typeof d.version !== "number" || ![1, 2].includes(d.version))
     return "Unrecognized format — this file was not exported by Slate";
-  for (const key of ["todos", "reminders", "notes"]) {
+
+  const v1Tables = ["todos", "reminders", "notes"];
+  const v2Tables = [...v1Tables, "taskSessions", "taskCategories", "ihkEntries", "ihkModules", "ihkWeeks", "activity"];
+  const required = d.version === 2 ? v2Tables : v1Tables;
+  for (const key of required) {
     if (!Array.isArray(d[key]))
       return `Invalid export — missing or invalid "${key}" section`;
   }
-  const todos = d.todos as unknown[];
-  if (todos.length > 0) {
-    const t = todos[0] as Record<string, unknown>;
-    if (t.id === undefined || t.text === undefined)
-      return "Invalid task format — this file may be from a different app";
-  }
-  const reminders = d.reminders as unknown[];
-  if (reminders.length > 0) {
-    const r = reminders[0] as Record<string, unknown>;
-    if (r.id === undefined || r.remind_at === undefined)
-      return "Invalid reminder format — this file may be from a different app";
+
+  // Sample-check first item of each core table to catch files from a different app
+  const checks: [string, string[]][] = [
+    ["todos",     ["id", "text"]],
+    ["reminders", ["id", "remind_at"]],
+    ["notes",     ["id", "title"]],
+  ];
+  for (const [key, fields] of checks) {
+    const arr = d[key] as unknown[];
+    if (arr.length > 0) {
+      const item = arr[0] as Record<string, unknown>;
+      const missing = fields.find(f => item[f] === undefined);
+      if (missing) return `Invalid ${key.slice(0, -1)} format — this file may be from a different app`;
+    }
   }
   return null;
 }
