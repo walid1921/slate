@@ -106,7 +106,6 @@ function useNow(dueDate: string | null, dueTime: string | null): Date {
 
 // Global tooltip rendered outside the scale transform via a simple event bus
 let _setGlobalTooltip: ((t: { label: string; x: number; y: number; side: "top" | "bottom" } | null) => void) | null = null;
-let _textScale = 1;
 
 function GlobalTooltip() {
   const [tip, setTip] = useState<{ label: string; x: number; y: number; side: "top" | "bottom" } | null>(null);
@@ -131,11 +130,10 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
   const ref = useRef<HTMLDivElement>(null);
   const show = () => {
     const r = ref.current?.getBoundingClientRect();
-    const s = _textScale;
-    if (r && _setGlobalTooltip) _setGlobalTooltip({ label, x: (r.left + r.width / 2) / s, y: side === "top" ? (r.top - 5) / s : (r.bottom + 5) / s, side });
+    if (r && _setGlobalTooltip) _setGlobalTooltip({ label, x: r.left + r.width / 2, y: side === "top" ? r.top - 5 : r.bottom + 5, side });
   };
   return (
-    <div ref={ref} onMouseEnter={show} onMouseLeave={() => _setGlobalTooltip?.(null)}>
+    <div ref={ref} className="inline-flex" onMouseEnter={show} onMouseLeave={() => _setGlobalTooltip?.(null)}>
       {children}
     </div>
   );
@@ -776,7 +774,6 @@ export default function App() {
   }, [theme]);
 
   const textScale = textSize === "small" ? 0.88 : textSize === "large" ? 1.12 : 1;
-  _textScale = textScale;
 
   useEffect(() => {
     const win = getCurrentWindow();
