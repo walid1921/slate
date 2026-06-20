@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, PRESET_COLORS } from "./store";
+import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, PRESET_COLORS, SubTask } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
@@ -181,7 +181,7 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus } = useTodoStore();
+  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus, setSubtasks } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
@@ -417,6 +417,109 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           style={{ minHeight: "80px" }}
         />
       </div>
+
+      <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+        <div className="flex items-center gap-1.5 pt-3 mb-2">
+          <CheckSquare size={10} className="text-t5 shrink-0" />
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Subtasks</span>
+        </div>
+        {todo.subtasks.map((sub) => (
+          <SubtaskRow
+            key={sub.id}
+            sub={sub}
+            onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+            onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+            onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
+          />
+        ))}
+        <AddSubtaskRow onAdd={(text) => {
+          const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+          setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggle: () => void; onEdit: (text: string) => void; onDelete: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(sub.text);
+
+  useEffect(() => { if (!editing) setVal(sub.text); }, [sub.text, editing]);
+
+  const commit = () => {
+    const trimmed = val.trim();
+    if (trimmed && trimmed !== sub.text) onEdit(trimmed);
+    else setVal(sub.text);
+    setEditing(false);
+  };
+
+  return (
+    <div className="group/sub flex items-center gap-2 py-0.5 min-h-[22px]">
+      <button
+        onClick={onToggle}
+        className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
+        style={sub.done ? { background: "rgba(16,185,129,0.15)" } : {}}
+      >
+        {sub.done && <Check size={8} className="text-emerald-400" />}
+      </button>
+      {editing ? (
+        <input
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(sub.text); setEditing(false); } e.stopPropagation(); }}
+          className="flex-1 text-[12px] bg-transparent outline-none text-t1 border-b"
+          style={{ borderColor: "var(--c-border)" }}
+          autoFocus
+        />
+      ) : (
+        <span
+          onDoubleClick={() => setEditing(true)}
+          className={`flex-1 text-[12px] cursor-default select-none ${sub.done ? "line-through text-t5" : "text-t2"}`}
+        >
+          {sub.text}
+        </span>
+      )}
+      <button onClick={onDelete} className="opacity-0 group-hover/sub:opacity-100 transition-opacity text-t5 hover:text-red-400 shrink-0">
+        <X size={9} />
+      </button>
+    </div>
+  );
+}
+
+function AddSubtaskRow({ onAdd }: { onAdd: (text: string) => void }) {
+  const [active, setActive] = useState(false);
+  const [val, setVal] = useState("");
+
+  const submit = () => {
+    if (val.trim()) onAdd(val.trim());
+    setVal("");
+    setActive(false);
+  };
+
+  if (!active) return (
+    <button onClick={() => setActive(true)} className="flex items-center gap-1.5 mt-1 text-[11px] text-t5 hover:text-t3 transition-colors">
+      <Plus size={9} /><span>Add subtask</span>
+    </button>
+  );
+
+  return (
+    <div className="flex items-center gap-2 py-0.5 mt-0.5">
+      <div className="w-3.5 h-3.5 rounded border shrink-0" style={{ borderColor: "var(--c-border-subtle)" }} />
+      <input
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={submit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); if (val.trim()) { onAdd(val.trim()); setVal(""); } else setActive(false); }
+          if (e.key === "Escape") { setVal(""); setActive(false); }
+          e.stopPropagation();
+        }}
+        placeholder="New subtask…"
+        className="flex-1 text-[12px] bg-transparent outline-none text-t1 placeholder-themed"
+        autoFocus
+      />
     </div>
   );
 }
