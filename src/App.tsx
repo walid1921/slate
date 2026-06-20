@@ -468,7 +468,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
     return () => clearInterval(id);
   }, [activeSession?.id]);
 
-  const showTimer = todo.show_timer;
+  const showTimer = todo.show_timer && todo.status !== 'done';
 
   return (
     <div
