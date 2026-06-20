@@ -188,8 +188,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
-  const [logExpanded, setLogExpanded] = useState(false);
+  const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
+  const toggleSection = (s: "timelog" | "notes" | "subtasks") => setOpenSection(v => v === s ? null : s);
   const descTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -330,13 +331,13 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           </div>
           {/* Time log half */}
           {taskSessions.length > 0 ? (
-            <button onClick={() => setLogExpanded(v => !v)} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
+            <button onClick={() => toggleSection("timelog")} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Timer size={10} className="text-t5 shrink-0" />
                   <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
                 </div>
-                {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+                {openSection === "timelog" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
@@ -356,7 +357,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           )}
         </div>
         {/* Expanded log — full width below the row */}
-        {logExpanded && taskSessions.length > 0 && (() => {
+        {openSection === "timelog" && taskSessions.length > 0 && (() => {
           const DAY_COLORS = [
             { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.4)", text: "rgba(96,165,250,0.9)", bar: "rgba(59,130,246,0.5)" },
             { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.4)", text: "rgba(192,132,252,0.9)", bar: "rgba(168,85,247,0.5)" },
@@ -402,44 +403,61 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         })()}
       </div>
       {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
-      {/* Description */}
-      <div className="flex flex-col px-4 py-4">
-        <div className="flex items-center gap-1.5 mb-2 shrink-0">
-          <FileText size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Notes</span>
-        </div>
-        <textarea
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          onBlur={saveDesc}
-          placeholder="Add notes…"
-          className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
-          style={{ minHeight: "80px" }}
-        />
+      {/* Notes */}
+      <div className="flex flex-col border-t border-s shrink-0">
+        <button onClick={() => toggleSection("notes")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
+          <div className="flex items-center gap-1.5">
+            <FileText size={10} className="text-t5 shrink-0" />
+            <span className="text-[10px] text-t5 uppercase tracking-wider">Notes</span>
+          </div>
+          {openSection === "notes" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+        </button>
+        {openSection === "notes" && (
+          <div className="px-4 pb-4 border-t border-s">
+            <textarea
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              onBlur={saveDesc}
+              placeholder="Add notes…"
+              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-3"
+              style={{ minHeight: "80px" }}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="px-4 pb-4" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-        <div className="flex items-center gap-1.5 pt-3 mb-2">
-          <CheckSquare size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Subtasks</span>
-          {todo.subtasks.length > 0 && (
-            <span className="text-[10px] text-t5 ml-auto">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
-          )}
-        </div>
-        {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mb-2" />}
-        {todo.subtasks.map((sub) => (
-          <SubtaskRow
-            key={sub.id}
-            sub={sub}
-            onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
-            onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
-            onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
-          />
-        ))}
-        <AddSubtaskRow onAdd={(text) => {
-          const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-          setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
-        }} />
+      {/* Subtasks */}
+      <div className="flex flex-col border-t border-s shrink-0">
+        <button onClick={() => toggleSection("subtasks")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
+          <div className="flex items-center gap-1.5">
+            <CheckSquare size={10} className="text-t5 shrink-0" />
+            <span className="text-[10px] text-t5 uppercase tracking-wider">Subtasks</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {todo.subtasks.length > 0 && (
+              <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
+            )}
+            {openSection === "subtasks" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+          </div>
+        </button>
+        {openSection === "subtasks" && (
+          <div className="px-4 pb-4 border-t border-s">
+            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mt-3 mb-2" />}
+            {todo.subtasks.map((sub) => (
+              <SubtaskRow
+                key={sub.id}
+                sub={sub}
+                onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+                onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+                onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
+              />
+            ))}
+            <AddSubtaskRow onAdd={(text) => {
+              const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+              setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
+            }} />
+          </div>
+        )}
       </div>
     </div>
   );
