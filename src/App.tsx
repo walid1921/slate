@@ -316,21 +316,40 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               }
             </div>
           </button>
-          {logExpanded && (
-            <div className="flex flex-col gap-1.5 mt-2 overflow-y-auto pr-3" style={{ maxHeight: 160, scrollbarGutter: "stable" }}>
-              {taskSessions.map((s) => {
-                const start = new Date(s.started_at);
-                const end = s.ended_at ? new Date(s.ended_at) : null;
-                const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-                return (
-                  <div key={s.id} className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-t3">{fmt(start)} → {end ? fmt(end) : "running"}</span>
-                    <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+          {logExpanded && (() => {
+            const fmtTime = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+            const dayKey = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+            const groups: { label: string; sessions: typeof taskSessions }[] = [];
+            for (const s of taskSessions) {
+              const label = dayKey(new Date(s.started_at));
+              const g = groups.find(g => g.label === label);
+              if (g) g.sessions.push(s); else groups.push({ label, sessions: [s] });
+            }
+            return (
+              <div className="flex flex-col gap-2 mt-2 overflow-y-auto pr-3" style={{ maxHeight: 180, scrollbarGutter: "stable" }}>
+                {groups.map(g => (
+                  <div key={g.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-semibold text-t5 uppercase tracking-wide">{g.label}</span>
+                      <span className="text-[9px] text-t5">{fmtDuration(totalDurationMs(g.sessions))}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {g.sessions.map(s => {
+                        const start = new Date(s.started_at);
+                        const end = s.ended_at ? new Date(s.ended_at) : null;
+                        return (
+                          <div key={s.id} className="flex items-center justify-between gap-2 pl-2" style={{ borderLeft: "1px solid var(--c-border-subtle)" }}>
+                            <span className="text-[10px] text-t3">{fmtTime(start)} → {end ? fmtTime(end) : "running"}</span>
+                            <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
       {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
