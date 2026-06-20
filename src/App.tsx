@@ -294,7 +294,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         </div>
       </div>
       {/* Sessions log — only when done */}
-      {todo.status === 'done' && taskSessions.length > 0 && (
+      {taskSessions.length > 0 && (
         <div className="flex flex-col px-4 py-3 border-b border-s shrink-0">
           <button onClick={() => setLogExpanded(v => !v)} className="flex items-center justify-between w-full group">
             <div className="flex items-center gap-1.5">
