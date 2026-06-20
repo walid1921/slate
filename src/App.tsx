@@ -1238,7 +1238,7 @@ export default function App() {
             <CategoryManagerPanel
               categories={categories}
               onAdd={addCategory}
-              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. Its tasks will move to General.`, () => removeCategory(id))}
+              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
               onClose={() => setShowCategoryManager(false)}
             />
           )}

@@ -89,7 +89,7 @@ export const useTodoStore = create<State>((set, get) => ({
   removeCategory: async (id) => {
     if (id === 1) return; // General is permanent
     const db = await getDb();
-    await db.execute("UPDATE todos SET category_id = 1 WHERE category_id = ?", [id]);
+    await db.execute("UPDATE todos SET deleted_at = datetime('now') WHERE category_id = ? AND deleted_at IS NULL", [id]);
     await db.execute("DELETE FROM task_categories WHERE id = ?", [id]);
     await get().loadCategories();
     await get().load();
