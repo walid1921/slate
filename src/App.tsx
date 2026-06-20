@@ -851,8 +851,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
       {/* Body */}
       {todo ? (() => {
         const category = categories.find(c => c.id === todo.category_id);
-        const descPreview = todo.description?.trim().split("\n")[0] ?? "";
-        const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
+const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const statusStyle = todo.status === 'in_progress'
           ? { background: "rgba(59,130,246,0.15)", color: "rgba(96,165,250,0.9)", border: "1px solid rgba(59,130,246,0.3)" }
           : { background: "rgba(156,163,175,0.1)", color: "var(--c-text-4)", border: "1px solid var(--c-border-subtle)" };
@@ -877,10 +876,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 </span>
               )}
             </div>
-            {/* Description preview */}
-            {descPreview && (
-              <p className="text-[10px] text-t5 truncate leading-tight">{descPreview}</p>
-            )}
+
             {/* Timer row */}
             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
               <span className="text-[11px] text-t3 font-mono min-w-[36px]">
