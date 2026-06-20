@@ -1183,7 +1183,7 @@ export default function App() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
                   style={activeCategoryId === cat.id
                     ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
-                    : { color: "var(--c-text-4)", borderBottom: "2px solid transparent", marginBottom: -1 }}
+                    : { color: "var(--c-text-2)", borderBottom: "2px solid transparent", marginBottom: -1 }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${activeCategoryId === cat.id ? "0.9" : "0.4"})` }} />
                   {cat.name}
