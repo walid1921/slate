@@ -1692,7 +1692,7 @@ export default function App() {
       {/* Task detail modal */}
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, maxHeight: "92vh", border: "1px solid var(--c-border)" }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, minHeight: 560, maxHeight: "92vh", border: "1px solid var(--c-border)" }}>
             <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
