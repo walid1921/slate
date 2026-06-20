@@ -276,12 +276,13 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
   );
 }
 
-function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline }: {
+function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn }: {
   col: typeof KANBAN_COLS[number];
   todos: Todo[];
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
   onAddInline: (status: TodoStatus) => void;
+  onClearColumn: (status: TodoStatus) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
@@ -290,7 +291,16 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline }: {
       <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
-        <span className="text-[10px] text-t5 ml-auto">{todos.length}</span>
+        <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
+        {todos.length > 0 && (
+          <button
+            onClick={() => onClearColumn(col.id)}
+            title={`Clear ${col.label}`}
+            className="ml-auto text-t6 hover:text-red-400 transition-colors"
+          >
+            <Trash2 size={11} />
+          </button>
+        )}
       </div>
       {/* Cards */}
       <div
@@ -1112,8 +1122,14 @@ export default function App() {
                     onDelete={id => askConfirm("Delete task?", `This task will be moved to trash.`, () => useTodoStore.getState().remove(id))}
                     onAddInline={status => {
                       setAddTaskOpen("quick");
-                      // store pending status to apply after add
                       setPendingKanbanStatus(status);
+                    }}
+                    onClearColumn={status => {
+                      const colLabel = KANBAN_COLS.find(c => c.id === status)?.label ?? status;
+                      const colTodos = todos.filter(t => t.category_id === activeCategoryId && t.status === status);
+                      askConfirm(`Clear "${colLabel}"?`, `${colTodos.length} task${colTodos.length !== 1 ? "s" : ""} will be moved to trash.`, () => {
+                        colTodos.forEach(t => useTodoStore.getState().remove(t.id));
+                      }, "Clear", "text-red-400 hover:text-red-300");
                     }}
                   />
                 ))}
@@ -1161,6 +1177,7 @@ export default function App() {
                         </div>
                         {items.map(todo => (
                           <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                            {(() => { const sc = KANBAN_COLS.find(c => c.id === (todo.status || (todo.done ? 'done' : 'todo'))); return sc ? <span className="w-1.5 h-1.5 rounded-full shrink-0" title={sc.label} style={{ background: `rgba(${sc.color},0.8)` }} /> : null; })()}
                             <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
                             <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
