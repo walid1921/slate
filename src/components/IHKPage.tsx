@@ -41,14 +41,12 @@ function getWeekRange(year: number, kw: number): { start: Date; end: Date } {
 function fmtWeekRange(year: number, kw: number): string {
   const { start, end } = getWeekRange(year, kw);
   const opts: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short" };
-  return `${start.toLocaleDateString("de-DE", opts)} – ${end.toLocaleDateString("de-DE", opts)}`;
+  return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`;
 }
 
 function fmtDayStamp(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
-  const day = d.toLocaleDateString("de-DE", { weekday: "short" });
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${day} ${p(d.getDate())}.${p(d.getMonth() + 1)}`;
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" });
 }
 
 function buildWeekKey(year: number, kw: number) { return `${year}-${String(kw).padStart(2, "0")}`; }

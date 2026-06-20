@@ -674,7 +674,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
     const mon = new Date(jan4);
     mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (kw - 1) * 7);
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    const fmt = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", month: "short" });
+    const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
     return `${fmt(mon)} – ${fmt(sun)}`;
   })();
   const catCounts = [0,1,2].map(cat => weekEntries.filter(e => e.category === cat).length);
