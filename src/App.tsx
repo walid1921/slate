@@ -274,33 +274,31 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
           {/* Timer half */}
           <div className="flex flex-col justify-between px-4 py-3 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
-            <div className="flex items-center gap-1.5">
-              <Timer size={10} className="text-t5 shrink-0" />
-              <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[11px] text-t3 font-mono min-w-[32px]">
-                {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
-              </span>
-              <div className="flex items-center gap-1">
-                {activeSession ? (
-                  <>
-                    <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
-                    <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
-                    {todo.status !== 'done' && (
-                      <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-                    )}
-                  </>
-                )}
-                <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
-                  className="ml-0.5 p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
-                  {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
-                </button>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Timer size={10} className="text-t5 shrink-0" />
+                <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
               </div>
+              <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
+                className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+                {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              {activeSession ? (
+                <>
+                  <span className="text-[11px] text-t3 font-mono min-w-[32px]">{fmtElapsed(elapsed)}</span>
+                  <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
+                  <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                  {todo.status !== 'done' && (
+                    <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                  )}
+                </>
+              )}
             </div>
           </div>
           {/* Time log half */}
