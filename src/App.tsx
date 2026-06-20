@@ -717,7 +717,7 @@ export default function App() {
           setQuery("");
           return;
         }
-        add(val, defaultPriority);
+        add(val, defaultPriority, null, null, activeCategoryId);
         setInputVal("");
         setQuery("");
         navigate("todos");
