@@ -43,7 +43,7 @@ const guideSections = [
       { keys: ["Click card"], desc: "Open task detail — edit text, description, deadline, priority" },
       { keys: ["Drag card"], desc: "Move a task between columns or reorder within a column" },
       { keys: ["+ in column header"], desc: "Add a task directly to that status column" },
-      { keys: ["🗑 in column header"], desc: "Clear all tasks in the column (moves to trash)" },
+      { keys: ["Trash icon in column header"], desc: "Clear all tasks in the column (moves to trash)" },
       { keys: ["Red card bg"], desc: "Task is overdue" },
     ],
   },
@@ -53,7 +53,7 @@ const guideSections = [
       { keys: ["Category tab"], desc: "Switch the active category shown on the board" },
       { keys: ["Drag tab"], desc: "Reorder categories by dragging tabs left or right" },
       { keys: ["Right-click tab"], desc: "Edit name & color, or delete the category" },
-      { keys: ["📁 button"], desc: "Create a new category with a name and color" },
+      { keys: ["FolderPlus button"], desc: "Create a new category with a name and color" },
       { keys: ["Red dot on tab"], desc: "One or more tasks in that category are overdue" },
     ],
   },
@@ -70,18 +70,18 @@ const guideSections = [
   {
     title: "Reminders",
     items: [
-      { keys: ["Footer → ⏱"], desc: "View all upcoming and sent reminders" },
+      { keys: ["Footer → Clock icon"], desc: "View all upcoming and sent reminders" },
       { keys: ["Right-click reminder"], desc: "Send now, edit text/time, or delete" },
       { keys: ["Blue dot"], desc: "Upcoming reminder" },
       { keys: ["Grey dot · sent"], desc: "Notification already fired" },
-      { keys: ["Red dot on ⏱ icon"], desc: "A reminder notification fired — click to dismiss" },
+      { keys: ["Red dot on Clock icon"], desc: "A reminder notification fired — click to dismiss" },
     ],
   },
   {
     title: "Notes",
     items: [
-      { keys: ["Footer → 📄"], desc: "Open notes — editor with collapsible sidebar" },
-      { keys: ["⊞ button"], desc: "Toggle sidebar to browse all notes" },
+      { keys: ["Footer → FileText icon"], desc: "Open notes — editor with collapsible sidebar" },
+      { keys: ["Sidebar toggle button"], desc: "Collapse or expand the notes list sidebar" },
       { keys: ["+ button"], desc: "Create a new note" },
       { keys: ["Right-click note"], desc: "Delete note from sidebar" },
       { keys: ["Auto-save"], desc: "Notes save automatically after 500 ms" },
@@ -99,10 +99,18 @@ const guideSections = [
   {
     title: "Deleted",
     items: [
-      { keys: ["Footer → 🗑"], desc: "View all deleted tasks grouped by category" },
-      { keys: ["↺"], desc: "Restore a task back to its category" },
-      { keys: ["✕"], desc: "Permanently delete a single task" },
-      { keys: ["🗑 on group"], desc: "Permanently delete all tasks in a deleted category" },
+      { keys: ["Footer → Trash icon"], desc: "View all deleted tasks grouped by category" },
+      { keys: ["RotateCcw icon"], desc: "Restore a task back to its category" },
+      { keys: ["X icon"], desc: "Permanently delete a single task" },
+      { keys: ["Trash icon on group"], desc: "Permanently delete all tasks in a deleted category" },
+    ],
+  },
+  {
+    title: "Activity & Streak",
+    items: [
+      { keys: ["Heatmap"], desc: "Shows today's action count — darker = more activity" },
+      { keys: ["Counted actions"], desc: "App open, add/edit tasks, set deadline/priority/description, toggle done, add/reschedule reminders, send reminder now, create/edit notes, add/edit IHK entries, mark week as sent" },
+      { keys: ["Streak"], desc: "Current and longest consecutive days with at least one action" },
     ],
   },
 ];

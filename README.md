@@ -42,8 +42,9 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 ### Home Dashboard
 - Quick-add a task by typing and pressing Enter — goes into the active category
 - Slash commands: `/tm`, `/t`, `/rm`, `/nt`, `/i` (see Slash Commands below)
-- Activity heatmap — visualize your daily output across the year
-- Streak counter — current and longest active streaks
+- Activity heatmap — shows today's action count; darker squares = more activity that day
+- Streak counter — current and longest consecutive active days
+- Counted actions: opening the app, adding/editing tasks (text, priority, deadline, description, status), adding/rescheduling/sending reminders, creating/editing notes, adding/editing IHK entries, marking a week as sent
 - Preview cards for Tasks, Reminders, Notes, and IHK records
 
 ### Tasks (Kanban Board)
