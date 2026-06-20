@@ -21,6 +21,10 @@ import {
   Play,
   Pause,
   ChevronRight,
+  Eye,
+  EyeOff,
+  Flag,
+  Timer,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -170,7 +174,6 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
-  const PRIORITY_LABELS: Record<Priority, string> = { none: "None", low: "Low", medium: "Medium", high: "High" };
   const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
 
   return (
@@ -201,31 +204,35 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         />
       </div>
 
-      {/* Priority + Deadline — 2 col grid */}
-      <div className="grid grid-cols-2 border-t border-s shrink-0">
-        <div className="flex flex-col gap-1.5 px-4 py-3 border-r border-s">
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
-          <div className="flex flex-wrap gap-1">
+      {/* Priority + Deadline — weighted 2-col grid */}
+      <div className="grid border-t border-s shrink-0" style={{ gridTemplateColumns: "1fr 2fr" }}>
+        <div className="flex flex-col gap-2 px-4 py-3 border-r border-s">
+          <div className="flex items-center gap-1.5">
+            <Flag size={10} className="text-t5 shrink-0" />
+            <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
+          </div>
+          <div className="flex gap-1.5">
             {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
               <button key={p} onClick={() => setPriority(todo.id, p)}
-                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] transition-colors ${todo.priority === p ? "text-t1" : "text-t4 hover:text-t2"}`}
-                style={todo.priority === p ? { background: "var(--c-surface-3)" } : {}}
+                className="p-1.5 rounded transition-all"
+                style={todo.priority === p ? { background: "var(--c-surface-3)", outline: `2px solid var(--c-border)`, outlineOffset: 1 } : {}}
               >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT_DETAIL[p]}`} />
-                {PRIORITY_LABELS[p]}
+                <span className={`block w-2.5 h-2.5 rounded-full ${PRIORITY_DOT_DETAIL[p]}`} style={{ opacity: todo.priority === p ? 1 : 0.35 }} />
               </button>
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-1.5 px-4 py-3">
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
+        <div className="flex flex-col gap-2 px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            <CalendarDays size={10} className="text-t5 shrink-0" />
+            <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
+          </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowDeadlinePicker(true)}
               className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2 -ml-1.5"
               style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
             >
-              <CalendarDays size={11} />
               {todo.due_date
                 ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
                 : <span>Set deadline</span>
@@ -241,8 +248,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {/* Timer + Created — one compact row */}
       <div className="flex items-center gap-3 px-4 py-2.5 border-t border-s shrink-0">
         {/* Timer controls */}
-        <div className="flex items-center gap-1.5 flex-1">
-          <span className="text-[10px] text-t5 uppercase tracking-wider w-10 shrink-0">Timer</span>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Timer size={10} className="text-t5 shrink-0" />
+          <span className="text-[10px] text-t5 uppercase tracking-wider shrink-0">Timer</span>
           <span className="text-[11px] text-t3 font-mono min-w-[32px]">
             {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
           </span>
@@ -263,12 +271,13 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
               className="ml-1 p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
               title={todo.show_timer ? "Hide from card" : "Show on card"}>
-              {todo.show_timer ? <X size={9} /> : <Plus size={9} />}
+              {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
             </button>
           </div>
         </div>
         {/* Created date */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <Clock size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
           {todo.show_created_at
             ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
@@ -277,7 +286,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
             className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
             title={todo.show_created_at ? "Hide" : "Show"}>
-            {todo.show_created_at ? <X size={9} /> : <Plus size={9} />}
+            {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
           </button>
         </div>
       </div>
@@ -285,7 +294,10 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {todo.status === 'done' && taskSessions.length > 0 && (
         <div className="flex flex-col px-4 py-3 border-b border-s shrink-0">
           <button onClick={() => setLogExpanded(v => !v)} className="flex items-center justify-between w-full group">
-            <span className="text-[11px] text-t4">Time log</span>
+            <div className="flex items-center gap-1.5">
+              <Timer size={10} className="text-t5 shrink-0" />
+              <span className="text-[11px] text-t4">Time log</span>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-t3 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
               {logExpanded
@@ -313,7 +325,10 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       )}
       {/* Description */}
       <div className="flex flex-col px-4 py-3">
-        <span className="text-[11px] text-t4 mb-2 shrink-0">Notes</span>
+        <div className="flex items-center gap-1.5 mb-2 shrink-0">
+          <FileText size={10} className="text-t5 shrink-0" />
+          <span className="text-[11px] text-t4">Notes</span>
+        </div>
         <textarea
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
