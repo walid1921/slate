@@ -2018,6 +2018,19 @@ export default function App() {
       </div>
     )}
     <GlobalTooltip />
+    <TimerBlockedBanner />
+    </div>
+  );
+}
+
+function TimerBlockedBanner() {
+  const { blockedMsg, clearBlockedMsg } = useTimerStore();
+  if (!blockedMsg) return null;
+  return (
+    <div className="fixed bottom-16 left-1/2 z-[99999] flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-xl"
+      style={{ transform: "translateX(-50%)", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)", backdropFilter: "blur(8px)" }}>
+      <span className="text-[12px] text-red-300">{blockedMsg}</span>
+      <button onClick={clearBlockedMsg} className="text-red-400 hover:text-red-200 transition-colors text-[11px] font-medium">Dismiss</button>
     </div>
   );
 }

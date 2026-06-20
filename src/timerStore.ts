@@ -13,16 +13,25 @@ function nowIso(): string {
   return new Date().toISOString().slice(0, 19) + "Z";
 }
 
+export type StartResult = "ok" | "blocked";
+
 interface TimerStore {
   sessions: TaskSession[];
+  blockedMsg: string | null;
+  clearBlockedMsg: () => void;
   load: () => Promise<void>;
-  start: (taskId: number) => Promise<void>;
+  start: (taskId: number) => Promise<StartResult>;
   stop: (taskId: number) => Promise<void>;
   finish: (taskId: number, setStatus: (id: number, s: "done") => Promise<void>) => Promise<void>;
+  runningTaskId: () => number | null;
 }
 
 export const useTimerStore = create<TimerStore>((set, get) => ({
   sessions: [],
+  blockedMsg: null,
+  clearBlockedMsg: () => set({ blockedMsg: null }),
+
+  runningTaskId: () => get().sessions.find(s => !s.ended_at)?.task_id ?? null,
 
   load: async () => {
     const db = await getDb();
@@ -45,8 +54,12 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   },
 
   start: async (taskId) => {
+    const running = get().runningTaskId();
+    if (running !== null && running !== taskId) {
+      set({ blockedMsg: `Another task's timer is already running. Pause or finish it first.` });
+      return "blocked";
+    }
     const db = await getDb();
-    // Stop any running session first (safety)
     await db.execute(
       "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
       [nowIso(), taskId]
@@ -57,6 +70,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
     );
     logActivity();
     await get().load();
+    return "ok";
   },
 
   stop: async (taskId) => {
