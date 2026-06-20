@@ -72,7 +72,12 @@ function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { 
   const totalSecs = Math.floor(abs / 1000);
   const days = Math.floor(totalSecs / 86400);
   const months = Math.floor(days / 30);
-  if (overdue) return { label: "overdue", overdue: true };
+  if (overdue) {
+    const d = target;
+    const dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+    const timeStr = dueTime ? ` ${dueTime}` : "";
+    return { label: `overdue · ${dateStr}${timeStr}`, overdue: true };
+  }
   if (months >= 2) return { label: `${months}mo`, overdue: false };
   if (days >= 2) return { label: `${days}d`, overdue: false };
   if (days === 1) return { label: "tomorrow", overdue: false };
