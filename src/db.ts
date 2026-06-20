@@ -65,7 +65,8 @@ export async function getDb(): Promise<Database> {
       text       TEXT    NOT NULL,
       remind_at  TEXT    NOT NULL,
       notified   INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
     )
   `);
 
@@ -75,7 +76,8 @@ export async function getDb(): Promise<Database> {
       title      TEXT    NOT NULL DEFAULT 'Untitled',
       content    TEXT    NOT NULL DEFAULT '',
       created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-      updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      deleted_at TEXT
     )
   `);
 
