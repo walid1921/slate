@@ -12,7 +12,7 @@ A macOS desktop productivity app built with **Tauri 2** (Rust + WKWebView), **Re
 |---|---|
 | Desktop shell | Tauri 2 (Rust) |
 | UI | React + TypeScript + Tailwind CSS v4 |
-| State | Zustand (`src/store.ts`, `src/ihkStore.ts`) |
+| State | Zustand (`src/store.ts`, `src/ihkStore.ts`, `src/timerStore.ts`) |
 | DB | SQLite via `tauri-plugin-sql` (`src/db.ts`) |
 | DnD | `@dnd-kit/core` + `@dnd-kit/sortable` |
 
@@ -20,22 +20,33 @@ A macOS desktop productivity app built with **Tauri 2** (Rust + WKWebView), **Re
 
 ## Key Files
 
-- `src/App.tsx` — entire UI (main view, kanban, trash, settings, modals, tooltips)
+- `src/App.tsx` — entire UI (main view, kanban, trash, settings, modals, tooltips, Clockify card)
 - `src/store.ts` — todos, categories, trash state + all DB mutations
+- `src/timerStore.ts` — task session timer (start/stop/finish, `task_sessions` table, helpers: `fmtElapsed`, `fmtDuration`, `totalDurationMs`)
 - `src/ihkStore.ts` — IHK journal entries + modules
+- `src/activity.ts` — activity logging for heatmap (`logActivity`, `loadActivityDates`)
 - `src/db.ts` — SQLite schema + migrations (all via `IF NOT EXISTS` / `.catch(() => {})`)
 - `src/components/ConfirmDialog.tsx` — shared confirm modal (`fixed inset-0, zIndex 100`)
-- `src/components/IHKPage.tsx` — IHK weekly journal view
+- `src/components/IHKPage.tsx` — IHK weekly journal view (week range titles in en-GB)
 
 ---
 
 ## Data Model
 
 ### Todos
-`id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, deleted_at, description, category_id, status`
+`id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, deleted_at, description, category_id, status, show_created_at, show_timer`
 
 - `status: 'todo' | 'in_progress' | 'done'` — synced with `done` boolean
 - Soft-deleted via `deleted_at`
+- `show_created_at` / `show_timer` — per-task visibility toggles (Eye icon in detail panel)
+
+### Task Sessions (`task_sessions`)
+`id, task_id, started_at, ended_at`
+
+- Stores individual work sessions (start/stop intervals) for each task
+- `ended_at` is NULL while a session is running
+- All timestamps stored as UTC ISO strings with `Z` suffix (e.g. `2026-06-20T14:30:00Z`)
+- `timerStore.ts` exposes: `load`, `start`, `stop`, `finish`; helpers: `sessionDurationMs`, `totalDurationMs`, `fmtDuration`, `fmtElapsed`
 
 ### Categories (`task_categories`)
 `id, name, color (RGB string e.g. "59,130,246"), position`
@@ -67,7 +78,7 @@ Same pattern — rendered outside the scale transform. Triggered by right-click 
 
 | View | Key |
 |---|---|
-| Main | Home feed + quick input |
+| Main | Home feed + quick input + Clockify card |
 | Tasks (Kanban) | 3 columns: To Do · In Progress · Done |
 | Trash | Soft-deleted tasks grouped by category |
 | Reminders | Time-based alerts |
@@ -109,6 +120,30 @@ Type these in the main input bar:
 - Cards show pointer cursor; grabbing cursor only activates during drag
 - Overdue cards get soft red background + border
 - Column header: Add task (+) and Clear column (trash) buttons with tooltips
+- **Timer on card:** visible when `show_timer = true` and task is not done — Play/Pause/Finish/Extend buttons with live elapsed counter
+- **Task detail modal:** title editable in header, priority dots, deadline picker (category pre-filled + disabled), time log collapsible section, `minHeight: 380`, `maxHeight: 92vh`
+
+---
+
+## Clockify Card (Home)
+
+- Placed beside the activity heatmap, matches its height
+- User picks one task from a dropdown (non-done tasks only); selection persisted in `localStorage` as `focus_task_id`
+- Shows: category name (colored) · status · task name · priority dot · deadline countdown · elapsed/total time · session count
+- Card color: blue (default) → red (overdue) → green (done)
+- Timer actions (Play/Pause/Done) log to the heatmap activity
+
+---
+
+## Activity Heatmap
+
+Tracked actions (each calls `logActivity()`):
+- App open
+- Task: add, toggle done, set priority, update text, set deadline, set description, set status
+- Timer: start, finish
+- Reminder: add, reschedule, send now
+- Note: create, update title, update content
+- IHK: add entry, update entry, mark week as sent
 
 ---
 

@@ -43,17 +43,19 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 - Quick-add a task by typing and pressing Enter — goes into the active category
 - Slash commands: `/tm`, `/t`, `/rm`, `/nt`, `/i` (see Slash Commands below)
 - Activity heatmap — shows today's action count; darker squares = more activity that day
-- Streak counter — current and longest consecutive active days
-- Counted actions: opening the app, adding/editing tasks (text, priority, deadline, description, status), adding/rescheduling/sending reminders, creating/editing notes, adding/editing IHK entries, marking a week as sent
+- Counted actions: opening the app, adding/editing tasks (text, priority, deadline, description, status), adding/rescheduling/sending reminders, creating/editing notes, adding/editing IHK entries, marking a week as sent, starting or extending a task timer
+- **Clockify card** — focus widget beside the heatmap; pick one task to track, shows priority dot, category, status, deadline countdown, and elapsed/total time with Play / Pause / Done controls; card turns red when overdue, green when done
 - Preview cards for Tasks, Reminders, Notes, and IHK records
 
 ### Tasks (Kanban Board)
 - Tasks are organised into **categories** (tabs) and across three status columns: **To Do**, **In Progress**, **Done**
 - Drag cards between columns or reorder within a column
 - Click a card to open the task detail panel — edit title, description, deadline, and priority
-- Set deadlines at creation (`/tm`) or later via the detail panel — live countdown shows days · hours · minutes · seconds
+- Set deadlines at creation (`/tm`) or later via the detail panel — live countdown shows days · hours · minutes · seconds; deadline picker pre-fills and locks the task's category
 - Overdue tasks show a soft red background and "overdue · date time" label
 - Priority levels: none / low / medium / high — colour-coded dot inline with the task name
+- **Timer:** each task can have a timer — show/hide the timer controls on the card via the Eye icon in the detail panel; start, pause, finish, or extend sessions; all sessions are logged with start/end times and shown as a collapsible time log in the detail panel; total time and session count are tracked
+- Creation date can be shown/hidden per task via the Eye icon in the detail panel
 - **Categories:** create, rename, recolour, reorder by dragging tabs, or delete — right-click any tab for a context menu
 - Add tasks or clear columns directly from each column header
 - Red dot on a category tab = one or more overdue tasks in that category
@@ -166,7 +168,8 @@ src/
 ├── notesStore.ts            # Notes store
 ├── settingsStore.ts         # Persisted settings (localStorage)
 ├── notifications.ts         # macOS notification permission + send
-├── activity.ts              # Activity logging for heatmap + streak
+├── activity.ts              # Activity logging for heatmap
+├── timerStore.ts            # Task session timer store (start/stop/finish, session log)
 ├── db.ts                    # SQLite init & migrations
 └── components/
     ├── ActivityHeatmap.tsx      # GitHub-style activity heatmap
