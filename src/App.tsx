@@ -265,8 +265,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               </>
             ) : (
               <>
-                <button onClick={() => start(todo.id)} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
-                {taskSessions.length > 0 && todo.status !== 'done' && (
+                <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                {todo.status !== 'done' && (
                   <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
                 )}
               </>
@@ -544,12 +544,12 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
             </>
           ) : (
             <>
-              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); }}
+              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
                 className="p-1 rounded transition-colors"
                 style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
                 <Play size={9} />
               </button>
-              {taskSessions.length > 0 && todo.status !== 'done' && (
+              {todo.status !== 'done' && (
                 <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
                   className="p-1 rounded transition-colors"
                   style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
