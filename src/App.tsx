@@ -851,12 +851,17 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
       {/* Body */}
       {todo ? (() => {
         const category = categories.find(c => c.id === todo.category_id);
-const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
-        const statusStyle = todo.status === 'in_progress'
-          ? { background: "rgba(59,130,246,0.15)", color: "rgba(96,165,250,0.9)", border: "1px solid rgba(59,130,246,0.3)" }
-          : { background: "rgba(156,163,175,0.1)", color: "var(--c-text-4)", border: "1px solid var(--c-border-subtle)" };
+        const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
+        const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
           <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-white/3 transition-colors flex-1">
+            {/* Meta row: status + category */}
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-medium text-t5">{statusLabel}</span>
+              {category && (
+                <span className="text-[9px] font-medium" style={{ color: catColor }}>{category.name}</span>
+              )}
+            </div>
             {/* Name row */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -865,15 +870,6 @@ const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
               </div>
               {countdown && (
                 <span className={`text-[10px] shrink-0 mt-0.5 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
-              )}
-            </div>
-            {/* Meta row: status + category */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={statusStyle}>{statusLabel}</span>
-              {category && (
-                <span className="text-[9px] text-t5 px-1.5 py-0.5 rounded-full" style={{ background: `rgba(${category.color},0.12)`, color: `rgba(${category.color},0.8)`, border: `1px solid rgba(${category.color},0.2)` }}>
-                  {category.name}
-                </span>
               )}
             </div>
 
