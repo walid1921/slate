@@ -319,7 +319,10 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
         </button>
       </div>
       {countdown && (
-        <span className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+        <span
+          className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}
+          style={countdown.overdue ? { background: "rgba(239,68,68,0.1)", borderRadius: 4, padding: "1px 6px" } : {}}
+        >{countdown.label}</span>
       )}
     </div>
   );
