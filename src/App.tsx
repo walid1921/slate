@@ -860,7 +860,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
-          <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-white/3 transition-colors flex-1 justify-between">
+          <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between">
             {/* Meta row: category + status */}
             <div className="flex items-center justify-between">
               {category && (
@@ -879,7 +879,6 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
               )}
             </div>
 
-            <div className="flex-1" />
             {/* Timer row */}
             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
               <span className="text-[11px] text-t3 font-mono min-w-[36px]">
