@@ -239,7 +239,7 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1, lockedCat
 
 
 const KANBAN_COLS: { id: TodoStatus; label: string; color: string }[] = [
-  { id: 'todo',        label: 'To Do',       color: '99,102,241'  },
+  { id: 'todo',        label: 'To Do',       color: '156,163,175' },
   { id: 'in_progress', label: 'In Progress', color: '245,158,11'  },
   { id: 'done',        label: 'Done',        color: '16,185,129'  },
 ];
