@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
-  GripVertical,
   Check,
   X,
   Plus,
@@ -251,14 +250,13 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
   return (
     <div
       ref={setNodeRef}
-      className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
+      {...attributes}
+      {...listeners}
+      className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 cursor-grab active:cursor-grabbing select-none"
       style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       onClick={onOpen}
     >
       <div className="flex items-start gap-1.5">
-        <div {...attributes} {...listeners} className="mt-0.5 text-t6 hover:text-t4 shrink-0 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>
-          <GripVertical size={10} />
-        </div>
         <span className="flex-1 text-[12px] text-t1 leading-snug">{todo.text}</span>
         <button onMouseDown={e => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-100 text-t5 hover:text-red-400 transition-all shrink-0">
           <X size={10} />
