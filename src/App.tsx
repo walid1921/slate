@@ -288,7 +288,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-3">
           <button onClick={() => onAddInline(col.id)} title="Add task" className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button>
           {todos.length > 0 && (
             <button onClick={() => onClearColumn(col.id)} title={`Clear ${col.label}`} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button>
