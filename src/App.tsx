@@ -211,7 +211,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       )}
 
       {/* Created */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
           <Clock size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
@@ -229,7 +229,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       </div>
 
       {/* Priority */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
           <Flag size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
@@ -247,7 +247,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       </div>
 
       {/* Deadline */}
-      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
           <CalendarDays size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
@@ -273,7 +273,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       <div className="flex flex-col border-t border-b border-s shrink-0">
         <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
           {/* Timer half */}
-          <div className="flex flex-col justify-between px-3 py-2 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
+          <div className="flex flex-col justify-between px-4 py-3 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
             <div className="flex items-center gap-1.5">
               <Timer size={10} className="text-t5 shrink-0" />
               <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
@@ -305,7 +305,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           </div>
           {/* Time log half */}
           {taskSessions.length > 0 ? (
-            <button onClick={() => setLogExpanded(v => !v)} className="flex flex-col justify-between px-3 py-2 gap-1.5 text-left hover:bg-s1 transition-colors">
+            <button onClick={() => setLogExpanded(v => !v)} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
               <div className="flex items-center gap-1.5">
                 <Timer size={10} className="text-t5 shrink-0" />
                 <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
@@ -377,7 +377,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       </div>
       {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
       {/* Description */}
-      <div className="flex flex-col px-4 py-3">
+      <div className="flex flex-col px-4 py-4">
         <div className="flex items-center gap-1.5 mb-2 shrink-0">
           <FileText size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Notes</span>
@@ -1828,7 +1828,7 @@ export default function App() {
       {/* Task detail modal */}
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, minHeight: 380, maxHeight: "92vh", border: "1px solid var(--c-border)" }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, minHeight: 560, maxHeight: "92vh", border: "1px solid var(--c-border)" }}>
             <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
