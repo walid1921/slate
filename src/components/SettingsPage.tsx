@@ -464,8 +464,8 @@ function DataTab() {
       await db.execute("DELETE FROM task_sessions");
       for (const t of data.todos) {
         await db.execute(
-          "INSERT INTO todos (id, text, done, priority, due_date, due_time, deadline_notified, description, position, created_at, deleted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-          [t.id, t.text, t.done, t.priority, t.due_date, t.due_time, t.deadline_notified, t.description ?? "", t.position, t.created_at, t.deleted_at ?? null]
+          "INSERT INTO todos (id, text, done, priority, due_date, due_time, deadline_notified, description, position, created_at, deleted_at, category_id, status, show_created_at, show_timer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          [t.id, t.text, t.done, t.priority, t.due_date, t.due_time, t.deadline_notified, t.description ?? "", t.position, t.created_at, t.deleted_at ?? null, t.category_id ?? 1, t.status ?? "todo", t.show_created_at ?? 0, t.show_timer ?? 0]
         );
       }
       for (const r of data.reminders) {
