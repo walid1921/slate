@@ -188,91 +188,98 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           }}
         />
       )}
+
       {/* Title */}
-      <div className="px-4 pt-4 pb-2 border-b border-s shrink-0">
+      <div className="px-5 pt-5 pb-3 shrink-0">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={saveTitle}
           onKeyDown={(e) => { if (e.key === "Enter") { saveTitle(); e.currentTarget.blur(); } }}
-          className="w-full text-[15px] font-medium text-t1 bg-transparent outline-none"
+          className="w-full text-[16px] font-semibold text-t1 bg-transparent outline-none"
           placeholder="Task title"
         />
       </div>
-      {/* Priority row */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
-        <span className="text-[11px] text-t4 w-16 shrink-0">Priority</span>
-        <div className="flex gap-2">
-          {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-            <button key={p} onClick={() => setPriority(todo.id, p)}
-              className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors ${todo.priority === p ? "text-t1" : "text-t4 hover:text-t2"}`}
-              style={todo.priority === p ? { background: "var(--c-surface-3)" } : {}}
+
+      {/* Priority + Deadline — 2 col grid */}
+      <div className="grid grid-cols-2 border-t border-s shrink-0">
+        <div className="flex flex-col gap-1.5 px-4 py-3 border-r border-s">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
+          <div className="flex flex-wrap gap-1">
+            {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+              <button key={p} onClick={() => setPriority(todo.id, p)}
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] transition-colors ${todo.priority === p ? "text-t1" : "text-t4 hover:text-t2"}`}
+                style={todo.priority === p ? { background: "var(--c-surface-3)" } : {}}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT_DETAIL[p]}`} />
+                {PRIORITY_LABELS[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5 px-4 py-3">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowDeadlinePicker(true)}
+              className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2 -ml-1.5"
+              style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
             >
-              <span className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT_DETAIL[p]}`} />
-              {PRIORITY_LABELS[p]}
+              <CalendarDays size={11} />
+              {todo.due_date
+                ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
+                : <span>Set deadline</span>
+              }
             </button>
-          ))}
+            {todo.due_date && (
+              <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors ml-auto"><X size={10} /></button>
+            )}
+          </div>
         </div>
       </div>
-      {/* Deadline row */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
-        <span className="text-[11px] text-t4 w-16 shrink-0">Deadline</span>
-        <button
-          onClick={() => setShowDeadlinePicker(true)}
-          className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-2 py-0.5 hover:bg-s2"
-          style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
-        >
-          <CalendarDays size={11} />
-          {todo.due_date
-            ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
-            : <span>Set deadline</span>
-          }
-        </button>
-        {todo.due_date && (
-          <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors ml-auto"><X size={10} /></button>
-        )}
-      </div>
-      {/* Created at row */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
-        <span className="text-[11px] text-t4 w-16 shrink-0">Created</span>
-        {todo.show_created_at
-          ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
-          : <span className="text-[11px] text-t5">Hidden</span>
-        }
-        <button
-          onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
-          className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
-        >
-          {todo.show_created_at ? "Hide" : "Show"}
-        </button>
-      </div>
-      {/* Timer row */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
-        <span className="text-[11px] text-t4 w-16 shrink-0">Timer</span>
-        <span className="text-[10px] text-t3 font-mono">
-          {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
-        </span>
-        <div className="flex items-center gap-1 ml-1">
-          {activeSession ? (
-            <>
-              <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
-              <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => start(todo.id)} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
-              {taskSessions.length > 0 && todo.status !== 'done' && (
+
+      {/* Timer + Created — one compact row */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-s shrink-0">
+        {/* Timer controls */}
+        <div className="flex items-center gap-1.5 flex-1">
+          <span className="text-[10px] text-t5 uppercase tracking-wider w-10 shrink-0">Timer</span>
+          <span className="text-[11px] text-t3 font-mono min-w-[32px]">
+            {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+          </span>
+          <div className="flex items-center gap-1">
+            {activeSession ? (
+              <>
+                <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
                 <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-              )}
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <button onClick={() => start(todo.id)} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                {taskSessions.length > 0 && todo.status !== 'done' && (
+                  <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                )}
+              </>
+            )}
+            <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
+              className="ml-1 p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
+              title={todo.show_timer ? "Hide from card" : "Show on card"}>
+              {todo.show_timer ? <X size={9} /> : <Plus size={9} />}
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowTimer(todo.id, !todo.show_timer)}
-          className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
-        >
-          {todo.show_timer ? "Hide" : "Show"}
-        </button>
+        {/* Created date */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
+          {todo.show_created_at
+            ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+            : <span className="text-[11px] text-t5">—</span>
+          }
+          <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
+            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
+            title={todo.show_created_at ? "Hide" : "Show"}>
+            {todo.show_created_at ? <X size={9} /> : <Plus size={9} />}
+          </button>
+        </div>
       </div>
       {/* Sessions log — only when done */}
       {todo.status === 'done' && taskSessions.length > 0 && (
