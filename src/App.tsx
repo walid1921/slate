@@ -1188,12 +1188,10 @@ export default function App() {
                             <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{label}</span>
                             <span className="text-[10px] text-t6">{items.length}</span>
                             <ChevronDown size={10} className="text-t6 transition-transform ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
-                            {isDeleted && catId != null && (
-                              <button
-                                onClick={e => { e.stopPropagation(); askConfirm(`Delete "${label}" permanently?`, `${items.length} task${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => deleteGroupPermanently(catId)); }}
-                                className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-[10px] text-red-400/60 hover:text-red-400 transition-all"
-                              >Delete group</button>
-                            )}
+                            <button
+                              onClick={e => { e.stopPropagation(); askConfirm(`Delete "${label}" permanently?`, `${items.length} task${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => { items.forEach(t => deletePermanently(t.id)); if (isDeleted && catId != null) deleteGroupPermanently(catId); }); }}
+                              className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
+                            ><Trash2 size={11} /></button>
                           </div>
                           {!collapsed && items.map(todo => (
                             <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
