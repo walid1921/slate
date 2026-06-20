@@ -302,7 +302,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
       <div
         ref={setNodeRef}
         className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto"
-        style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.04)` : undefined, transition: "background 0.15s", scrollbarWidth: "none" }}
+        style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none" }}
       >
         <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {todos.map(t => (
