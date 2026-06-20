@@ -257,7 +257,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       onClick={onOpen}
     >
       <div className="flex items-start gap-1.5">
-        <span className="flex-1 text-[12px] text-t1 leading-snug">{todo.text}</span>
+        <span className="flex-1 text-[12px] text-t1 leading-snug truncate">{todo.text}</span>
         <button onMouseDown={e => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-100 text-t5 hover:text-red-400 transition-all shrink-0">
           <X size={10} />
         </button>
