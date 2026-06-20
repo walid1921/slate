@@ -317,6 +317,13 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             </div>
           </button>
           {logExpanded && (() => {
+            const DAY_COLORS = [
+              { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.4)", text: "rgba(96,165,250,0.9)", bar: "rgba(59,130,246,0.5)" },
+              { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.4)", text: "rgba(192,132,252,0.9)", bar: "rgba(168,85,247,0.5)" },
+              { bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.4)", text: "rgba(52,211,153,0.9)", bar: "rgba(16,185,129,0.5)" },
+              { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.4)", text: "rgba(251,191,36,0.9)", bar: "rgba(245,158,11,0.5)" },
+              { bg: "rgba(236,72,153,0.08)", border: "rgba(236,72,153,0.4)", text: "rgba(244,114,182,0.9)", bar: "rgba(236,72,153,0.5)" },
+            ];
             const fmtTime = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
             const dayKey = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
             const groups: { label: string; sessions: typeof taskSessions }[] = [];
@@ -327,26 +334,29 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             }
             return (
               <div className="flex flex-col gap-2 mt-2 overflow-y-auto pr-3" style={{ maxHeight: 180, scrollbarGutter: "stable" }}>
-                {groups.map(g => (
-                  <div key={g.label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-semibold text-t5 uppercase tracking-wide">{g.label}</span>
-                      <span className="text-[9px] text-t5">{fmtDuration(totalDurationMs(g.sessions))}</span>
+                {groups.map((g, i) => {
+                  const c = DAY_COLORS[i % DAY_COLORS.length];
+                  return (
+                    <div key={g.label} className="rounded-lg px-2 py-1.5" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
+                        <span className="text-[9px]" style={{ color: c.text }}>{fmtDuration(totalDurationMs(g.sessions))}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {g.sessions.map(s => {
+                          const start = new Date(s.started_at);
+                          const end = s.ended_at ? new Date(s.ended_at) : null;
+                          return (
+                            <div key={s.id} className="flex items-center justify-between gap-2 pl-2" style={{ borderLeft: `2px solid ${c.bar}` }}>
+                              <span className="text-[10px] text-t3">{fmtTime(start)} → {end ? fmtTime(end) : "running"}</span>
+                              <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      {g.sessions.map(s => {
-                        const start = new Date(s.started_at);
-                        const end = s.ended_at ? new Date(s.ended_at) : null;
-                        return (
-                          <div key={s.id} className="flex items-center justify-between gap-2 pl-2" style={{ borderLeft: "1px solid var(--c-border-subtle)" }}>
-                            <span className="text-[10px] text-t3">{fmtTime(start)} → {end ? fmtTime(end) : "running"}</span>
-                            <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
@@ -405,6 +415,13 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
         </div>
         <div className="flex flex-col gap-3 px-4 py-3 overflow-y-auto flex-1">
           {(() => {
+            const DAY_COLORS = [
+              { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.4)", text: "rgba(96,165,250,0.9)" },
+              { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.4)", text: "rgba(192,132,252,0.9)" },
+              { bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.4)", text: "rgba(52,211,153,0.9)" },
+              { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.4)", text: "rgba(251,191,36,0.9)" },
+              { bg: "rgba(236,72,153,0.08)", border: "rgba(236,72,153,0.4)", text: "rgba(244,114,182,0.9)" },
+            ];
             const dayKey = (localStr: string) => {
               const d = new Date(localStr);
               return d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
@@ -415,35 +432,38 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
               const g = groups.find(g => g.label === label);
               if (g) g.rows.push(row); else groups.push({ label, rows: [row] });
             }
-            return groups.map(g => (
-              <div key={g.label} className="flex flex-col gap-2">
-                <span className="text-[9px] font-semibold text-t5 uppercase tracking-wide pb-1" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>{g.label}</span>
-                {g.rows.map(row => (
-                  <div key={row.id} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-t5">{row.isRunning ? "Running" : "Session"}</span>
-                      <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
-                        className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col gap-1 flex-1">
-                        <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
-                        <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
-                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
-                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+            return groups.map((g, i) => {
+              const c = DAY_COLORS[i % DAY_COLORS.length];
+              return (
+                <div key={g.label} className="flex flex-col gap-2 rounded-lg px-3 py-2" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                  <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
+                  {g.rows.map(row => (
+                    <div key={row.id} className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-t5">{row.isRunning ? "Running" : "Session"}</span>
+                        <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
+                          className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
                       </div>
-                      <div className="flex flex-col gap-1 flex-1">
-                        <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
-                        <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
-                          disabled={row.isRunning}
-                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
-                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
+                          <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
+                            className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
+                            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                        </div>
+                        <div className="flex flex-col gap-1 flex-1">
+                          <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
+                          <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
+                            disabled={row.isRunning}
+                            className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
+                            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ));
+                  ))}
+                </div>
+              );
+            });
           })()}
         </div>
         <div className="flex justify-end gap-2 px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
