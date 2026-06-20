@@ -821,7 +821,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const ACCENT = "147,150,255";
 
   return (
-    <div className="rounded-xl flex flex-col gap-0 overflow-hidden" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-1)" }}>
+    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-1)" }}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
         <div className="flex items-center gap-1.5">
@@ -1409,7 +1409,7 @@ export default function App() {
             {/* Activity heatmap + focus */}
             <div className="flex gap-3 items-stretch">
               <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
-              <div className="shrink-0" style={{ width: "calc(25% - 9px)" }}><FocusCard onOpenTask={(id) => setSelectedTodoId(id)} /></div>
+              <div className="shrink-0 flex flex-col" style={{ width: "calc(25% - 9px)" }}><FocusCard onOpenTask={(id) => setSelectedTodoId(id)} /></div>
             </div>
 
             {/* Preview cards */}
