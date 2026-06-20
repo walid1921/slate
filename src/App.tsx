@@ -310,7 +310,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             </div>
           </button>
           {logExpanded && (
-            <div className="flex flex-col gap-1.5 mt-2 overflow-y-auto" style={{ maxHeight: 160 }}>
+            <div className="flex flex-col gap-1.5 mt-2 overflow-y-auto pr-1" style={{ maxHeight: 160, scrollbarGutter: "stable" }}>
               {taskSessions.map((s) => {
                 const start = new Date(s.started_at);
                 const end = s.ended_at ? new Date(s.ended_at) : null;
