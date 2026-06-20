@@ -2096,12 +2096,23 @@ export default function App() {
 }
 
 function TimerBlockedBanner() {
-  const { blockedMsg, clearBlockedMsg } = useTimerStore();
+  const { blockedMsg, pendingTaskId, clearBlockedMsg, runningTaskId, stop, start } = useTimerStore();
   if (!blockedMsg) return null;
+  const handleStopAndStart = async () => {
+    const running = runningTaskId();
+    if (running !== null) await stop(running);
+    if (pendingTaskId !== null) await start(pendingTaskId);
+    clearBlockedMsg();
+  };
   return (
     <div className="fixed bottom-16 left-1/2 z-[99999] flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-xl"
       style={{ transform: "translateX(-50%)", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.4)", backdropFilter: "blur(8px)" }}>
       <span className="text-[12px] text-red-300">{blockedMsg}</span>
+      <button onClick={handleStopAndStart}
+        className="text-[11px] font-medium px-2 py-1 rounded-lg transition-colors"
+        style={{ background: "rgba(239,68,68,0.2)", color: "rgba(252,165,165,0.95)", border: "1px solid rgba(239,68,68,0.35)" }}>
+        Stop & Start
+      </button>
       <button onClick={clearBlockedMsg} className="text-red-400 hover:text-red-200 transition-colors text-[11px] font-medium">Dismiss</button>
     </div>
   );

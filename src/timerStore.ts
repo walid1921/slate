@@ -18,6 +18,7 @@ export type StartResult = "ok" | "blocked";
 interface TimerStore {
   sessions: TaskSession[];
   blockedMsg: string | null;
+  pendingTaskId: number | null;
   clearBlockedMsg: () => void;
   load: () => Promise<void>;
   start: (taskId: number) => Promise<StartResult>;
@@ -31,7 +32,8 @@ interface TimerStore {
 export const useTimerStore = create<TimerStore>((set, get) => ({
   sessions: [],
   blockedMsg: null,
-  clearBlockedMsg: () => set({ blockedMsg: null }),
+  pendingTaskId: null,
+  clearBlockedMsg: () => set({ blockedMsg: null, pendingTaskId: null }),
 
   runningTaskId: () => get().sessions.find(s => !s.ended_at)?.task_id ?? null,
 
@@ -58,7 +60,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   start: async (taskId) => {
     const running = get().runningTaskId();
     if (running !== null && running !== taskId) {
-      set({ blockedMsg: `Another task's timer is already running. Pause or finish it first.` });
+      set({ blockedMsg: `Another task's timer is already running.`, pendingTaskId: taskId });
       return "blocked";
     }
     const db = await getDb();
