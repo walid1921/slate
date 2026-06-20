@@ -131,7 +131,7 @@ export const useTodoStore = create<State>((set, get) => ({
   loadTrash: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, position, created_at, deleted_at FROM todos WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+      "SELECT id, text, done, priority, due_date, position, created_at, deleted_at, category_id FROM todos WHERE deleted_at IS NOT NULL ORDER BY category_id ASC, deleted_at DESC"
     );
     set({ trash: rows.map((r) => ({ ...r, done: Boolean(r.done) })) });
   },

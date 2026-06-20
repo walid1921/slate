@@ -1295,15 +1295,27 @@ export default function App() {
                     <span className="text-[10px] text-t5 uppercase tracking-wider">{trash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all tasks?", "All deleted tasks will be permanently removed.", () => deleteAllPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
-                  {trash.map((todo) => (
-                    <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
-                      <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
-                      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
-                        <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                  {(() => {
+                    const groups = categories.map(cat => ({ cat, items: trash.filter(t => (t.category_id ?? 1) === cat.id) })).filter(g => g.items.length > 0);
+                    return groups.map(({ cat, items }) => (
+                      <div key={cat.id}>
+                        <div className="flex items-center gap-2 px-5 py-1.5 mt-1">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},0.7)` }} />
+                          <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${cat.color},0.7)` }}>{cat.name}</span>
+                          <span className="text-[10px] text-t6">{items.length}</span>
+                        </div>
+                        {items.map(todo => (
+                          <div key={todo.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                            <span className="flex-1 text-[14px] text-t3 line-through truncate">{todo.text}</span>
+                            <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => restore(todo.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                              <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => deletePermanently(todo.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </>
           )}
           {preTrashView === "reminders" && (
