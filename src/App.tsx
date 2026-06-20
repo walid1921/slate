@@ -819,10 +819,11 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
   const overdue = countdown?.overdue ?? false;
-  const cardBorder = overdue ? "1px solid rgba(239,68,68,0.45)" : "1px solid rgba(59,130,246,0.35)";
-  const cardBg = overdue ? "rgba(239,68,68,0.07)" : "rgba(59,130,246,0.07)";
-  const headerBorder = overdue ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(59,130,246,0.15)";
-  const accentColor = overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
+  const done = todo?.status === 'done';
+  const cardBorder = done ? "1px solid rgba(16,185,129,0.45)" : overdue ? "1px solid rgba(239,68,68,0.45)" : "1px solid rgba(59,130,246,0.35)";
+  const cardBg = done ? "rgba(16,185,129,0.07)" : overdue ? "rgba(239,68,68,0.07)" : "rgba(59,130,246,0.07)";
+  const headerBorder = done ? "1px solid rgba(16,185,129,0.2)" : overdue ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(59,130,246,0.15)";
+  const accentColor = done ? "rgba(52,211,153,0.9)" : overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
 
   return (
     <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: cardBorder, background: cardBg }}>
