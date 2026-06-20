@@ -322,7 +322,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 
 function ColorPalette({ current, onChange }: { current: string; onChange: (c: string) => void }) {
   return (
-    <div className="flex flex-wrap gap-1 p-1.5 rounded-lg" style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+    <div className="grid grid-cols-3 gap-1 p-1.5 rounded-lg" style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
       {PRESET_COLORS.map(c => (
         <button
           key={c}
