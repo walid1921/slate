@@ -141,7 +141,7 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
     if (r && _setGlobalTooltip) _setGlobalTooltip({ label, x: r.left + r.width / 2, y: side === "top" ? r.top - 5 : r.bottom + 5, side });
   };
   return (
-    <div ref={ref} className="inline-flex" onMouseEnter={show} onMouseLeave={() => _setGlobalTooltip?.(null)}>
+    <div ref={ref} className="inline-flex" onMouseEnter={show} onPointerEnter={show} onMouseLeave={() => _setGlobalTooltip?.(null)} onPointerLeave={() => _setGlobalTooltip?.(null)}>
       {children}
     </div>
   );
@@ -999,7 +999,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
-          <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between">
+          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer">
             {/* Meta row: category + status */}
             <div className="flex items-center justify-between">
               {category && (
@@ -1054,7 +1054,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 )}
               </div>
             </div>
-          </button>
+          </div>
         );
       })() : (
         <div className="px-3 py-4 text-[11px] text-t5 text-center">Select a task to focus on</div>
