@@ -147,11 +147,16 @@ export const useTodoStore = create<State>((set, get) => ({
   },
 
   load: async () => {
-    const db = await getDb();
-    const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
-    );
-    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
+    try {
+      const db = await getDb();
+      const rows = await db.select<Todo[]>(
+        "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      );
+      set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
+    } catch (e) {
+      console.error("load todos failed:", e);
+      set({ loading: false });
+    }
   },
 
   checkDueTodos: async () => {
