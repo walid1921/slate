@@ -6,11 +6,12 @@ interface Props {
   subtitle: string;
   showDate: boolean;
   initialCategoryId?: number;
+  disableCategory?: boolean;
   onConfirm: (datetime: string, categoryId: number) => void;
   onCancel: () => void;
 }
 
-export default function DateTimeModal({ title, subtitle, showDate, initialCategoryId = 1, onConfirm, onCancel }: Props) {
+export default function DateTimeModal({ title, subtitle, showDate, initialCategoryId = 1, disableCategory = false, onConfirm, onCancel }: Props) {
   const categories = useTodoStore(s => s.categories);
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -76,14 +77,15 @@ export default function DateTimeModal({ title, subtitle, showDate, initialCatego
               <div ref={catDropRef} className="relative">
                 <button
                   type="button"
+                  disabled={disableCategory}
                   onMouseDown={e => e.stopPropagation()}
-                  onClick={() => setCatDropOpen(o => !o)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:opacity-90"
-                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)` }}
+                  onClick={() => !disableCategory && setCatDropOpen(o => !o)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left"
+                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)`, opacity: disableCategory ? 0.6 : 1, cursor: disableCategory ? "default" : "pointer" }}
                 >
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${active?.color},0.85)` }} />
                   <span style={{ color: `rgba(${active?.color},0.95)` }}>{active?.name}</span>
-                  <svg className="ml-auto text-t5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  {!disableCategory && <svg className="ml-auto text-t5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>}
                 </button>
                 {catDropOpen && (
                   <div className="absolute left-0 right-0 top-full mt-1 rounded-lg py-1 overflow-y-auto" style={{ zIndex: 200, maxHeight: 200, scrollbarWidth: "none", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>

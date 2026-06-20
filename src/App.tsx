@@ -198,6 +198,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           title="Set deadline"
           subtitle={todo.text}
           showDate={true}
+          initialCategoryId={todo.category_id}
+          disableCategory={true}
           onCancel={() => setShowDeadlinePicker(false)}
           onConfirm={(iso) => {
             const [datePart, timePart] = iso.split("T");
