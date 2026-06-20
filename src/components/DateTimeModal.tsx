@@ -53,7 +53,7 @@ export default function DateTimeModal({ title, subtitle, showDate, initialCatego
       style={{ background: "rgba(0,0,0,0.35)", zIndex: 20, borderRadius: 12 }}
       onKeyDown={(e) => { e.stopPropagation(); handleKey(e); }}
     >
-      <div className="dropdown rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ width: 320, border: "1px solid var(--c-border)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 320, border: "1px solid var(--c-border)", overflow: "visible" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(59,130,246,0.15)" }}>
@@ -86,8 +86,7 @@ export default function DateTimeModal({ title, subtitle, showDate, initialCatego
                   <svg className="ml-auto text-t5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 {catDropOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg overflow-hidden py-1"
-                    style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                  <div className="absolute left-0 right-0 top-full mt-1 rounded-lg overflow-hidden py-1" style={{ zIndex: 200, background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
                     {categories.map(cat => (
                       <button
                         key={cat.id}

@@ -217,7 +217,7 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ width: 320, border: "1px solid var(--c-border)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 320, border: "1px solid var(--c-border)", overflow: "visible" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "rgba(59,130,246,0.15)" }}>
@@ -255,8 +255,7 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
                   <ChevronDown size={11} className="ml-auto text-t5" />
                 </button>
                 {catDropOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg overflow-hidden py-1"
-                    style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                  <div className="absolute left-0 right-0 top-full mt-1 rounded-lg overflow-hidden py-1" style={{ zIndex: 200, background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
                     {categories.map(cat => (
                       <button
                         key={cat.id}
