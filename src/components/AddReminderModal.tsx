@@ -11,10 +11,10 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
   const { add } = useReminderStore();
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
-  const defaultTime = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+  const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const [date, setDate] = useState(`${defaultTime.getFullYear()}-${pad(defaultTime.getMonth()+1)}-${pad(defaultTime.getDate())}`);
-  const [time, setTime] = useState(`${pad(defaultTime.getHours())}:${pad(defaultTime.getMinutes())}`);
+  const [date, setDate] = useState(`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`);
+  const [time, setTime] = useState(`${pad(now.getHours())}:${pad(now.getMinutes())}`);
   const textRef = useRef<HTMLInputElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
 
