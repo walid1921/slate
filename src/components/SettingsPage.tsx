@@ -421,7 +421,12 @@ function DataTab() {
       const reminders = await db.select("SELECT * FROM reminders");
       const notes = await db.select("SELECT * FROM notes");
       const taskSessions = await db.select("SELECT * FROM task_sessions");
-      const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions }, null, 2);
+      const taskCategories = await db.select("SELECT * FROM task_categories");
+      const ihkEntries = await db.select("SELECT * FROM ihk_entries");
+      const ihkModules = await db.select("SELECT * FROM ihk_modules");
+      const ihkWeeks = await db.select("SELECT * FROM ihk_weeks");
+      const activity = await db.select("SELECT * FROM activity");
+      const payload = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions, taskCategories, ihkEntries, ihkModules, ihkWeeks, activity }, null, 2);
       const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
       const filePath = await join(dir, `slate-${today}.json`);
@@ -450,18 +455,36 @@ function DataTab() {
         const backupReminders = await db.select("SELECT * FROM reminders");
         const backupNotes = await db.select("SELECT * FROM notes");
         const backupTaskSessions = await db.select("SELECT * FROM task_sessions");
-        const backupPayload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions }, null, 2);
+        const backupTaskCategories = await db.select("SELECT * FROM task_categories");
+        const backupIhkEntries = await db.select("SELECT * FROM ihk_entries");
+        const backupIhkModules = await db.select("SELECT * FROM ihk_modules");
+        const backupIhkWeeks = await db.select("SELECT * FROM ihk_weeks");
+        const backupActivity = await db.select("SELECT * FROM activity");
+        const backupPayload = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions, taskCategories: backupTaskCategories, ihkEntries: backupIhkEntries, ihkModules: backupIhkModules, ihkWeeks: backupIhkWeeks, activity: backupActivity }, null, 2);
         const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
         const dir = await appDataDir();
         await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
       }
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
-      if (data.version !== 1 || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
+      if (![1, 2].includes(data.version) || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
       await db.execute("DELETE FROM todos");
       await db.execute("DELETE FROM reminders");
       await db.execute("DELETE FROM notes");
       await db.execute("DELETE FROM task_sessions");
+      await db.execute("DELETE FROM task_categories");
+      await db.execute("DELETE FROM ihk_entries");
+      await db.execute("DELETE FROM ihk_modules");
+      await db.execute("DELETE FROM ihk_weeks");
+      await db.execute("DELETE FROM activity");
+      // Restore General category first (always required)
+      await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, position) VALUES (1, 'General', '99,102,241', 0)`);
+      for (const c of (data.taskCategories ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO task_categories (id, name, color, position, created_at) VALUES (?,?,?,?,?)",
+          [c.id, c.name, c.color, c.position, c.created_at]
+        );
+      }
       for (const t of data.todos) {
         await db.execute(
           "INSERT INTO todos (id, text, done, priority, due_date, due_time, deadline_notified, description, position, created_at, deleted_at, category_id, status, show_created_at, show_timer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -484,6 +507,30 @@ function DataTab() {
         await db.execute(
           "INSERT INTO task_sessions (id, task_id, started_at, ended_at) VALUES (?,?,?,?)",
           [s.id, s.task_id, s.started_at, s.ended_at ?? null]
+        );
+      }
+      for (const e of (data.ihkEntries ?? [])) {
+        await db.execute(
+          "INSERT INTO ihk_entries (id, text, category, date, position, created_at) VALUES (?,?,?,?,?,?)",
+          [e.id, e.text, e.category, e.date, e.position, e.created_at]
+        );
+      }
+      for (const m of (data.ihkModules ?? [])) {
+        await db.execute(
+          "INSERT INTO ihk_modules (id, name, type, created_at) VALUES (?,?,?,?)",
+          [m.id, m.name, m.type, m.created_at]
+        );
+      }
+      for (const w of (data.ihkWeeks ?? [])) {
+        await db.execute(
+          "INSERT INTO ihk_weeks (week_key, sent) VALUES (?,?)",
+          [w.week_key, w.sent]
+        );
+      }
+      for (const a of (data.activity ?? [])) {
+        await db.execute(
+          "INSERT INTO activity (id, date, created_at) VALUES (?,?,?)",
+          [a.id, a.date, a.created_at]
         );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
