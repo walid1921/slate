@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getDb } from "./db";
+import { logActivity } from "./activity";
 
 export interface TaskSession {
   id: number;
@@ -42,6 +43,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       "INSERT INTO task_sessions (task_id, started_at) VALUES (?, ?)",
       [taskId, nowIso()]
     );
+    logActivity();
     await get().load();
   },
 
