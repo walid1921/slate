@@ -149,6 +149,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
+  const [logExpanded, setLogExpanded] = useState(false);
 
   useEffect(() => { setTitle(todo.text); setDesc(todo.description); }, [todo.id]);
 
@@ -247,23 +248,32 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       </div>
       {/* Sessions log — only when done */}
       {todo.status === 'done' && taskSessions.length > 0 && (
-        <div className="flex flex-col gap-1.5 px-4 py-3 border-b border-s shrink-0">
-          <span className="text-[11px] text-t4 mb-0.5">Time log</span>
-          {taskSessions.map((s) => {
-            const start = new Date(s.started_at);
-            const end = s.ended_at ? new Date(s.ended_at) : null;
-            const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-            return (
-              <div key={s.id} className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-t3">{fmt(start)} → {end ? fmt(end) : "running"}</span>
-                <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
-              </div>
-            );
-          })}
-          <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-            <span className="text-[10px] text-t4">Total</span>
-            <span className="text-[10px] text-t2 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
-          </div>
+        <div className="flex flex-col px-4 py-3 border-b border-s shrink-0">
+          <button onClick={() => setLogExpanded(v => !v)} className="flex items-center justify-between w-full group">
+            <span className="text-[11px] text-t4">Time log</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-t3 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
+              {logExpanded
+                ? <ChevronDown size={11} className="text-t5" />
+                : <ChevronRight size={11} className="text-t5" />
+              }
+            </div>
+          </button>
+          {logExpanded && (
+            <div className="flex flex-col gap-1.5 mt-2">
+              {taskSessions.map((s) => {
+                const start = new Date(s.started_at);
+                const end = s.ended_at ? new Date(s.ended_at) : null;
+                const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <div key={s.id} className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-t3">{fmt(start)} → {end ? fmt(end) : "running"}</span>
+                    <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       {/* Description */}
