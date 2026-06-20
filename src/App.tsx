@@ -112,20 +112,37 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { updateText, setPriority, setDescription } = useTodoStore();
+  const { updateText, setPriority, setDescription, setDeadline } = useTodoStore();
   const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
 
   useEffect(() => { setTitle(todo.text); setDesc(todo.description); }, [todo.id]);
 
   const saveTitle = () => { if (title.trim() && title.trim() !== todo.text) updateText(todo.id, title.trim()); };
   const saveDesc = () => { if (desc !== todo.description) setDescription(todo.id, desc); };
 
+  const now = useNow(todo.due_date, todo.due_time);
+  const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
+
   const PRIORITY_LABELS: Record<Priority, string> = { none: "None", low: "Low", medium: "Medium", high: "High" };
   const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {showDeadlinePicker && (
+        <DateTimeModal
+          title="Set deadline"
+          subtitle={todo.text}
+          showDate={true}
+          onCancel={() => setShowDeadlinePicker(false)}
+          onConfirm={(iso) => {
+            const [datePart, timePart] = iso.split("T");
+            setDeadline(todo.id, datePart, timePart?.slice(0, 5) ?? null);
+            setShowDeadlinePicker(false);
+          }}
+        />
+      )}
       {/* Title */}
       <div className="px-4 pt-4 pb-2 border-b border-s shrink-0">
         <input
@@ -151,6 +168,24 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             </button>
           ))}
         </div>
+      </div>
+      {/* Deadline row */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
+        <span className="text-[11px] text-t4 w-16 shrink-0">Deadline</span>
+        <button
+          onClick={() => setShowDeadlinePicker(true)}
+          className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-2 py-0.5 hover:bg-s2"
+          style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
+        >
+          <CalendarDays size={11} />
+          {todo.due_date
+            ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
+            : <span>Set deadline</span>
+          }
+        </button>
+        {todo.due_date && (
+          <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors ml-auto"><X size={10} /></button>
+        )}
       </div>
       {/* Description */}
       <div className="flex flex-col flex-1 overflow-hidden px-4 py-3">
