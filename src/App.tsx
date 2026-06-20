@@ -288,15 +288,12 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
-        {todos.length > 0 && (
-          <button
-            onClick={() => onClearColumn(col.id)}
-            title={`Clear ${col.label}`}
-            className="ml-auto text-t6 hover:text-red-400 transition-colors"
-          >
-            <Trash2 size={11} />
-          </button>
-        )}
+        <div className="ml-auto flex items-center gap-1.5">
+          <button onClick={() => onAddInline(col.id)} title="Add task" className="text-t5 hover:text-t2 transition-colors"><Plus size={12} /></button>
+          {todos.length > 0 && (
+            <button onClick={() => onClearColumn(col.id)} title={`Clear ${col.label}`} className="text-t6 hover:text-red-400 transition-colors"><Trash2 size={11} /></button>
+          )}
+        </div>
       </div>
       {/* Cards */}
       <div
@@ -309,12 +306,6 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
             <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
           ))}
         </SortableContext>
-        <button
-          onClick={() => onAddInline(col.id)}
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] text-t5 hover:text-t3 hover:bg-s1 transition-colors mt-auto shrink-0"
-        >
-          <Plus size={10} /> Add task
-        </button>
       </div>
     </div>
   );
