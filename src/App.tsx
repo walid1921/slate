@@ -830,7 +830,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         <div className="relative" ref={dropRef}>
           <button onClick={() => setDropOpen(v => !v)}
             className="flex items-center gap-1 text-[10px] text-t4 hover:text-t2 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
-            <span className="max-w-[100px] truncate">{todo ? todo.text : "Pick a task"}</span>
+            <span className="max-w-[60px] truncate">{todo ? todo.text : "Pick a task"}</span>
             <ChevronDown size={9} />
           </button>
           {dropOpen && (
