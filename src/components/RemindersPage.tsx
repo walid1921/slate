@@ -210,7 +210,7 @@ export default function RemindersPage({ onDeleteRequest, onConfirm }: { onDelete
 
   return (
     <div className="view-animate flex flex-col flex-1 overflow-hidden">
-      {addOpen && <AddReminderModal onClose={() => setAddOpen(false)} onSaved={() => setAddOpen(false)} />}
+      {addOpen && <AddReminderModal onClose={() => setAddOpen(false)} onSaved={() => { setAddOpen(false); load(); }} />}
       <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
         <div className="flex-1 overflow-hidden">
           <FilterBar page="reminders" filter={filter} sort={sort} onFilter={setFilter} onSort={setSort} onRefresh={handleRefresh} />
