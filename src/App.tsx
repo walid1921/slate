@@ -438,27 +438,22 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
                 <div key={g.label} className="flex flex-col gap-2 rounded-lg px-3 py-2" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
                   <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
                   {g.rows.map(row => (
-                    <div key={row.id} className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-t5">{row.isRunning ? "Running" : `Session ${g.rows.indexOf(row) + 1}`}</span>
-                        <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
-                          className="text-t5 hover:text-red-400 transition-colors"><Trash2 size={10} /></button>
+                    <div key={row.id} className="flex items-center gap-2">
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
+                        <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
+                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
+                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex flex-col gap-1 flex-1">
-                          <span className="text-[9px] text-t5 uppercase tracking-wide">Start</span>
-                          <input type="datetime-local" value={row.start} onChange={e => update(row.id, "start", e.target.value)}
-                            className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none"
-                            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
-                        </div>
-                        <div className="flex flex-col gap-1 flex-1">
-                          <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
-                          <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
-                            disabled={row.isRunning}
-                            className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
-                            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
-                        </div>
+                      <div className="flex flex-col gap-1 flex-1">
+                        <span className="text-[9px] text-t5 uppercase tracking-wide">End</span>
+                        <input type="datetime-local" value={row.end} onChange={e => update(row.id, "end", e.target.value)}
+                          disabled={row.isRunning}
+                          className="w-full px-2 py-1 rounded-lg text-[11px] text-t1 outline-none disabled:opacity-40"
+                          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }} />
                       </div>
+                      <button onClick={() => deleteSession(row.id).then(() => setRows(r => r.filter(r2 => r2.id !== row.id)))}
+                        className="text-t5 hover:text-red-400 transition-colors mt-4 shrink-0"><Trash2 size={10} /></button>
                     </div>
                   ))}
                 </div>
