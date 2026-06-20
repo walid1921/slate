@@ -388,7 +388,7 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
   const [showModules, setShowModules] = useState(false);
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
-  const [openWeek, setOpenWeek] = useState<string | null>(currentKey);
+  const [openWeek, setOpenWeek] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
 
