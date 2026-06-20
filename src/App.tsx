@@ -444,6 +444,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
 function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggle: () => void; onEdit: (text: string) => void; onDelete: () => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(sub.text);
+  const [hovered, setHovered] = useState(false);
 
   useEffect(() => { if (!editing) setVal(sub.text); }, [sub.text, editing]);
 
@@ -455,7 +456,11 @@ function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggl
   };
 
   return (
-    <div className="group/sub flex items-center gap-2 py-0.5 min-h-[22px]">
+    <div
+      className="flex items-center gap-2 py-0.5 min-h-[22px]"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <button
         onClick={onToggle}
         className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
@@ -481,7 +486,11 @@ function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggl
           {sub.text}
         </span>
       )}
-      <button onClick={onDelete} className="opacity-0 group-hover/sub:opacity-100 transition-opacity text-t5 hover:text-red-400 shrink-0">
+      <button
+        onClick={onDelete}
+        className="transition-opacity text-t5 hover:text-red-400 shrink-0"
+        style={{ opacity: hovered ? 1 : 0 }}
+      >
         <X size={9} />
       </button>
     </div>
