@@ -251,38 +251,68 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         </div>
       </div>
 
-      {/* Timer + Created — one compact row */}
-      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-s shrink-0">
-        {/* Timer controls */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <Timer size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider shrink-0">Timer</span>
-          <span className="text-[11px] text-t3 font-mono min-w-[32px]">
-            {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
-          </span>
-          <div className="flex items-center gap-1">
-            {activeSession ? (
-              <>
-                <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
-                <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
-                {todo.status !== 'done' && (
-                  <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+      {/* Timer + Time Log — same row, divided */}
+      <div className="flex flex-col border-t border-s shrink-0">
+        <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          {/* Timer half */}
+          <div className="flex flex-col justify-between px-3 py-2 gap-1.5 border-r border-s">
+            <div className="flex items-center gap-1.5">
+              <Timer size={10} className="text-t5 shrink-0" />
+              <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[11px] text-t3 font-mono min-w-[32px]">
+                {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+              </span>
+              <div className="flex items-center gap-1">
+                {activeSession ? (
+                  <>
+                    <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
+                    <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                    {todo.status !== 'done' && (
+                      <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-            <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
-              className="ml-1 p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
-              title={todo.show_timer ? "Hide from card" : "Show on card"}>
-              {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
-            </button>
+                <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
+                  className="ml-0.5 p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+                  {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
+                </button>
+              </div>
+            </div>
           </div>
+          {/* Time log half */}
+          {taskSessions.length > 0 ? (
+            <button onClick={() => setLogExpanded(v => !v)} className="flex flex-col justify-between px-3 py-2 gap-1.5 text-left hover:bg-s1 transition-colors">
+              <div className="flex items-center gap-1.5">
+                <Timer size={10} className="text-t5 shrink-0" />
+                <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
+                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }}
+                  className="p-0.5 rounded text-t5 hover:text-t2 transition-colors ml-auto">
+                  <Pencil size={9} />
+                </button>
+                {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+              </div>
+            </button>
+          ) : (
+            <div className="flex flex-col justify-between px-3 py-2 gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Timer size={10} className="text-t5 shrink-0" />
+                <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+              </div>
+              <span className="text-[11px] text-t5">No sessions</span>
+            </div>
+          )}
         </div>
-        {/* Created date */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Created date row */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-s">
           <Clock size={10} className="text-t5 shrink-0" />
           <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
           {todo.show_created_at
@@ -290,78 +320,56 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             : <span className="text-[11px] text-t5">—</span>
           }
           <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
-            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2"
-            title={todo.show_created_at ? "Hide" : "Show"}>
+            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2 ml-1">
             {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
           </button>
         </div>
-      </div>
-      {/* Sessions log — only when done */}
-      {taskSessions.length > 0 && (
-        <div className="flex flex-col px-4 py-3 border-b border-s shrink-0">
-          <button onClick={() => setLogExpanded(v => !v)} className="flex items-center justify-between w-full group">
-            <div className="flex items-center gap-1.5">
-              <Timer size={10} className="text-t5 shrink-0" />
-              <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-t3 font-medium">{fmtDuration(totalDurationMs(taskSessions))}</span>
-              <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }}
-                className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
-                <Pencil size={9} />
-              </button>
-              {logExpanded
-                ? <ChevronDown size={11} className="text-t5" />
-                : <ChevronRight size={11} className="text-t5" />
-              }
-            </div>
-          </button>
-          {logExpanded && (() => {
-            const DAY_COLORS = [
-              { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.4)", text: "rgba(96,165,250,0.9)", bar: "rgba(59,130,246,0.5)" },
-              { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.4)", text: "rgba(192,132,252,0.9)", bar: "rgba(168,85,247,0.5)" },
-              { bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.4)", text: "rgba(52,211,153,0.9)", bar: "rgba(16,185,129,0.5)" },
-              { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.4)", text: "rgba(251,191,36,0.9)", bar: "rgba(245,158,11,0.5)" },
-              { bg: "rgba(236,72,153,0.08)", border: "rgba(236,72,153,0.4)", text: "rgba(244,114,182,0.9)", bar: "rgba(236,72,153,0.5)" },
-            ];
-            const fmtTime = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-            const dayKey = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
-            const groups: { label: string; sessions: typeof taskSessions }[] = [];
-            for (const s of taskSessions) {
-              const label = dayKey(new Date(s.started_at));
-              const g = groups.find(g => g.label === label);
-              if (g) g.sessions.push(s); else groups.push({ label, sessions: [s] });
-            }
-            return (
-              <div className="flex flex-col gap-2 mt-2 overflow-y-auto pr-3" style={{ maxHeight: 180, scrollbarGutter: "stable" }}>
-                {groups.map((g, i) => {
-                  const c = DAY_COLORS[i % DAY_COLORS.length];
-                  return (
-                    <div key={g.label} className="rounded-lg px-2 py-1.5" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
-                        <span className="text-[9px]" style={{ color: c.text }}>{fmtDuration(totalDurationMs(g.sessions))}</span>
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        {g.sessions.map(s => {
-                          const start = new Date(s.started_at);
-                          const end = s.ended_at ? new Date(s.ended_at) : null;
-                          return (
-                            <div key={s.id} className="flex items-center justify-between gap-2 pl-2" style={{ borderLeft: `2px solid ${c.bar}` }}>
-                              <span className="text-[10px] text-t3">{fmtTime(start)} → {end ? fmtTime(end) : "running"}</span>
-                              <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+        {/* Expanded log — full width below the row */}
+        {logExpanded && taskSessions.length > 0 && (() => {
+          const DAY_COLORS = [
+            { bg: "rgba(59,130,246,0.08)", border: "rgba(59,130,246,0.4)", text: "rgba(96,165,250,0.9)", bar: "rgba(59,130,246,0.5)" },
+            { bg: "rgba(168,85,247,0.08)", border: "rgba(168,85,247,0.4)", text: "rgba(192,132,252,0.9)", bar: "rgba(168,85,247,0.5)" },
+            { bg: "rgba(16,185,129,0.08)", border: "rgba(16,185,129,0.4)", text: "rgba(52,211,153,0.9)", bar: "rgba(16,185,129,0.5)" },
+            { bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.4)", text: "rgba(251,191,36,0.9)", bar: "rgba(245,158,11,0.5)" },
+            { bg: "rgba(236,72,153,0.08)", border: "rgba(236,72,153,0.4)", text: "rgba(244,114,182,0.9)", bar: "rgba(236,72,153,0.5)" },
+          ];
+          const fmtTime = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+          const dayKey = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+          const groups: { label: string; sessions: typeof taskSessions }[] = [];
+          for (const s of taskSessions) {
+            const label = dayKey(new Date(s.started_at));
+            const g = groups.find(g => g.label === label);
+            if (g) g.sessions.push(s); else groups.push({ label, sessions: [s] });
+          }
+          return (
+            <div className="flex flex-col gap-2 px-4 py-3 border-t border-s overflow-y-auto" style={{ maxHeight: 180, scrollbarGutter: "stable" }}>
+              {groups.map((g, i) => {
+                const c = DAY_COLORS[i % DAY_COLORS.length];
+                return (
+                  <div key={g.label} className="rounded-lg px-2 py-1.5" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: c.text }}>{g.label}</span>
+                      <span className="text-[9px]" style={{ color: c.text }}>{fmtDuration(totalDurationMs(g.sessions))}</span>
                     </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+                    <div className="flex flex-col gap-1">
+                      {g.sessions.map(s => {
+                        const start = new Date(s.started_at);
+                        const end = s.ended_at ? new Date(s.ended_at) : null;
+                        return (
+                          <div key={s.id} className="flex items-center justify-between gap-2 pl-2" style={{ borderLeft: `2px solid ${c.bar}` }}>
+                            <span className="text-[10px] text-t3">{fmtTime(start)} → {end ? fmtTime(end) : "running"}</span>
+                            <span className="text-[10px] text-t5 shrink-0">{fmtDuration(sessionDurationMs(s))}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
       {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
       {/* Description */}
       <div className="flex flex-col px-4 py-3">
