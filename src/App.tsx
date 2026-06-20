@@ -1345,7 +1345,7 @@ export default function App() {
 
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => { const n = useNotesStore.getState().notes.find(n => n.id === id); askConfirm("Delete note?", `"${n?.title ?? "This note"}" will be permanently deleted.`, () => useNotesStore.getState().remove(id)); }} />}
-      {view === "ihk" && <IHKPage />}
+      {view === "ihk" && <IHKPage onConfirm={askConfirm} />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}

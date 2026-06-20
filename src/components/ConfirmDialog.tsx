@@ -10,8 +10,8 @@ interface Props {
 export default function ConfirmDialog({ title, message, onConfirm, onCancel, confirmLabel = "Delete", confirmClassName = "text-red-400 bg-red-500/20 hover:bg-red-500/30" }: Props) {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.35)", zIndex: 20, borderRadius: 12 }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.45)", zIndex: 100 }}
       onKeyDown={(e) => {
         e.stopPropagation();
         if (e.key === "Enter") onConfirm();

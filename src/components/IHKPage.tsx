@@ -199,9 +199,8 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
   );
 }
 
-function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDelete: () => void; onUpdate: (text: string) => Promise<void> }) {
+function SortableEntryRow({ entry, onDelete, onUpdate, onConfirm }: { entry: IHKEntry; onDelete: () => void; onUpdate: (text: string) => Promise<void>; onConfirm: (title: string, msg: string, fn: () => void) => void }) {
   const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [val, setVal] = useState(entry.text);
   const ref = useRef<HTMLInputElement>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id });
@@ -236,24 +235,14 @@ function SortableEntryRow({ entry, onDelete, onUpdate }: { entry: IHKEntry; onDe
         <span onDoubleClick={() => setEditing(true)} className="flex-1 text-[12px] text-t2 leading-relaxed">{entry.text}</span>
       )}
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {confirmDelete ? (
-          <>
-            <span className="text-[10px] text-red-400 mr-0.5">Delete?</span>
-            <button onClick={onDelete} className="w-5 h-5 flex items-center justify-center rounded text-red-400 hover:text-red-300 transition-colors" title="Confirm"><Check size={10} /></button>
-            <button onClick={() => setConfirmDelete(false)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors" title="Cancel"><X size={10} /></button>
-          </>
-        ) : (
-          <>
-            <button onClick={() => setEditing(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors"><Pencil size={10} /></button>
-            <button onClick={() => setConfirmDelete(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 transition-colors"><X size={10} /></button>
-          </>
-        )}
+        <button onClick={() => setEditing(true)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-t2 transition-colors"><Pencil size={10} /></button>
+        <button onClick={() => onConfirm("Delete entry?", "This IHK entry will be permanently deleted.", onDelete)} className="w-5 h-5 flex items-center justify-center rounded text-t4 hover:text-red-400 transition-colors"><X size={10} /></button>
       </div>
     </div>
   );
 }
 
-function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle, onToggleSent, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom }: {
+function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle, onToggleSent, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom, onConfirm }: {
   year: number; kw: number; entries: IHKEntry[]; isCurrentWeek: boolean;
   expanded: boolean; sent: boolean;
   onToggle: () => void; onToggleSent: () => void;
@@ -263,6 +252,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   onReorder: (orderedIds: number[]) => Promise<void>;
   pastWeeks?: { key: string; year: number; kw: number }[];
   onFillFrom?: (key: string) => void;
+  onConfirm: (title: string, msg: string, fn: () => void) => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const { start } = getWeekRange(year, kw);
@@ -327,6 +317,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
                         <SortableEntryRow key={entry.id} entry={entry}
                           onDelete={() => onDelete(entry.id)}
                           onUpdate={(text) => onUpdate(entry.id, text)}
+                          onConfirm={onConfirm}
                         />
                       ))}
                     </SortableContext>
@@ -392,7 +383,7 @@ function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAd
   );
 }
 
-export default function IHKPage() {
+export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg: string, fn: () => void) => void }) {
   const { entries, load, add, update, remove, reorder, sentWeeks, toggleSent, modules, addModule, removeModule } = useIHKStore();
   const [showModules, setShowModules] = useState(false);
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
@@ -462,6 +453,7 @@ export default function IHKPage() {
                 onAdd={add} onDelete={remove} onUpdate={update} onReorder={reorder}
                 pastWeeks={pastWeeks}
                 onFillFrom={handleFillFrom}
+                onConfirm={onConfirm}
               />
             ))}
           </div>
