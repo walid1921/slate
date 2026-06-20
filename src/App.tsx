@@ -190,6 +190,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [logExpanded, setLogExpanded] = useState(false);
   const [editingLog, setEditingLog] = useState(false);
+  const descTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!activeSession) { setElapsed(0); return; }
@@ -201,7 +202,17 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
 
   useEffect(() => { setDesc(todo.description); }, [todo.id]);
 
-  const saveDesc = () => { if (desc !== todo.description) setDescription(todo.id, desc); };
+  useEffect(() => {
+    if (desc === todo.description) return;
+    if (descTimer.current) clearTimeout(descTimer.current);
+    descTimer.current = setTimeout(() => setDescription(todo.id, desc), 400);
+    return () => { if (descTimer.current) clearTimeout(descTimer.current); };
+  }, [desc]);
+
+  const saveDesc = () => {
+    if (descTimer.current) clearTimeout(descTimer.current);
+    if (desc !== todo.description) setDescription(todo.id, desc);
+  };
 
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
