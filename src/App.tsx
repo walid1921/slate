@@ -153,17 +153,11 @@ function TipBtn({ label, side = "top", className, style, onClick, onMouseDown, c
   onMouseDown?: React.MouseEventHandler<HTMLButtonElement>;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const show = () => {
-    const r = ref.current?.getBoundingClientRect();
-    if (r && _setGlobalTooltip) _setGlobalTooltip({ label, x: r.left + r.width / 2, y: side === "top" ? r.top - 5 : r.bottom + 5, side });
-  };
   return (
-    <button ref={ref} className={className} style={style} onClick={onClick} onMouseDown={onMouseDown}
-      onMouseEnter={show} onPointerEnter={show}
-      onMouseLeave={() => _setGlobalTooltip?.(null)} onPointerLeave={() => _setGlobalTooltip?.(null)}>
-      {children}
-    </button>
+    <div className="group/tip relative inline-flex">
+      <button className={className} style={style} onClick={onClick} onMouseDown={onMouseDown}>{children}</button>
+      <span className={`pointer-events-none absolute left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[999999] ${side === "top" ? "bottom-full mb-1" : "top-full mt-1"}`} style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>{label}</span>
+    </div>
   );
 }
 
@@ -241,7 +235,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
             : <span className="text-[11px] text-t5">—</span>
           }
-          <TipBtn label={todo.show_created_at ? "Hide" : "Show"} onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+          <TipBtn label={todo.show_created_at ? "Hide" : "Show"} side="bottom" onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
             {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
           </TipBtn>
         </div>
@@ -255,7 +249,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         </div>
         <div className="flex gap-1.5">
           {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-            <TipBtn key={p} label={p === "none" ? "None" : p.charAt(0).toUpperCase() + p.slice(1)} onClick={() => setPriority(todo.id, p)}
+            <TipBtn key={p} label={p === "none" ? "None" : p.charAt(0).toUpperCase() + p.slice(1)} side="bottom" onClick={() => setPriority(todo.id, p)}
               className="rounded-full transition-all"
               style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 0 } : {}}
             >
@@ -298,7 +292,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
                 <Timer size={10} className="text-t5 shrink-0" />
                 <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
               </div>
-              <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+              <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} side="bottom" onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
                 {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
               </TipBtn>
             </div>
