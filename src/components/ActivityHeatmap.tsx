@@ -76,7 +76,7 @@ export default function ActivityHeatmap() {
   const todayCount = data[todayKey] ?? 0;
 
   return (
-    <div className="rounded-xl p-4 flex flex-col gap-3 select-none h-full justify-between" style={{ background: `rgba(${ACCENT},0.06)`, border: `1px solid rgba(${ACCENT},0.2)`, minWidth: "max-content" }}>
+    <div className="rounded-xl p-4 flex flex-col gap-3 select-none h-full justify-between" style={{ background: `rgba(${ACCENT},0.06)`, border: `1px solid rgba(${ACCENT},0.2)` }}>
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -119,6 +119,7 @@ export default function ActivityHeatmap() {
       </div>
 
       {/* Grid */}
+      <div className="flex justify-center">
       <div className="relative">
         <div className="relative h-4" style={{ width: grid.length * STEP - GAP }}>
           {monthLabels.map(({ label, x }) => (
@@ -144,9 +145,10 @@ export default function ActivityHeatmap() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-1.5 justify-end">
+      <div className="flex items-center gap-1.5 justify-center">
         <span className="text-[9px] text-t5">Less</span>
         {[0, 2, 5, 10, 15].map(v => (
           <div key={v} className="rounded-[2px]" style={{ width: CELL, height: CELL, background: getColor(v), border: "1px solid rgba(255,255,255,0.04)" }} />

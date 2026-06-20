@@ -1735,7 +1735,7 @@ export default function App() {
 
             {/* Activity heatmap + focus */}
             <div className="flex gap-3 items-stretch" style={{ minHeight: 230 }}>
-              <div className="flex-1 min-w-0 overflow-x-auto h-full"><ActivityHeatmap /></div>
+              <div className="flex-1 min-w-0 h-full"><ActivityHeatmap /></div>
               <div className="shrink-0 flex flex-col" style={{ width: "calc(25% - 9px)" }}><FocusCard onOpenTask={(id) => setSelectedTodoId(id)} /></div>
             </div>
 
