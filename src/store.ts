@@ -28,6 +28,7 @@ export interface Todo {
   description: string;
   category_id: number;
   status: TodoStatus;
+  show_created_at: boolean;
 }
 
 export const PRESET_COLORS = [
@@ -75,6 +76,7 @@ interface State {
   setDeadline: (id: number, due_date: string | null, due_time: string | null) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
   setDescription: (id: number, description: string) => Promise<void>;
+  setShowCreatedAt: (id: number, show: boolean) => Promise<void>;
   setStatus: (id: number, status: TodoStatus) => Promise<void>;
 }
 
@@ -145,9 +147,9 @@ export const useTodoStore = create<State>((set, get) => ({
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
-    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
+    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
   },
 
   checkDueTodos: async () => {
@@ -281,6 +283,12 @@ export const useTodoStore = create<State>((set, get) => ({
     await db.execute("UPDATE todos SET description = ? WHERE id = ?", [description, id]);
     logActivity();
     set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, description } : t) }));
+  },
+
+  setShowCreatedAt: async (id, show) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET show_created_at = ? WHERE id = ?", [show ? 1 : 0, id]);
+    set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, show_created_at: show } : t) }));
   },
 
   reorder: async (ids) => {

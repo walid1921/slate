@@ -140,7 +140,7 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { updateText, setPriority, setDescription, setDeadline } = useTodoStore();
+  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt } = useTodoStore();
   const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
@@ -214,6 +214,20 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         {todo.due_date && (
           <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors ml-auto"><X size={10} /></button>
         )}
+      </div>
+      {/* Created at row */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
+        <span className="text-[11px] text-t4 w-16 shrink-0">Created</span>
+        {todo.show_created_at
+          ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+          : <span className="text-[11px] text-t5">Hidden</span>
+        }
+        <button
+          onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
+          className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
+        >
+          {todo.show_created_at ? "Hide" : "Show"}
+        </button>
       </div>
       {/* Description */}
       <div className="flex flex-col flex-1 overflow-hidden px-4 py-3">
