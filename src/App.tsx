@@ -419,53 +419,72 @@ function ColorPalette({ current, onChange }: { current: string; onChange: (c: st
   );
 }
 
-function SortableCategoryChip({ cat, editingId, editingVal, editRef, colorPickId, setColorPickId, setEditingId, setEditingVal, commitRename, onRecolor, onRemove }: {
-  cat: TaskCategory; editingId: number | null; editingVal: string; editRef: React.RefObject<HTMLInputElement | null>;
-  colorPickId: number | null; setColorPickId: (id: number | null) => void;
-  setEditingId: (id: number | null) => void; setEditingVal: (v: string) => void;
-  commitRename: () => void; onRecolor: (id: number, color: string) => Promise<void>; onRemove: (id: number, name: string) => void;
+function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
+  cat: TaskCategory;
+  onRename: (id: number, name: string) => Promise<void>;
+  onRecolor: (id: number, color: string) => Promise<void>;
+  onRemove: (id: number, name: string) => void;
+  onClose: () => void;
 }) {
+  const [name, setName] = useState(cat.name);
+  const [color, setColor] = useState(cat.color);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+
+  const save = async () => {
+    if (name.trim() && name.trim() !== cat.name) await onRename(cat.id, name.trim());
+    if (color !== cat.color) await onRecolor(cat.id, color);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 240, border: "1px solid var(--c-border)" }}>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
+          <span className="text-[13px] font-semibold text-t1">Edit category</span>
+          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
+        </div>
+        <input
+          ref={inputRef}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
+          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          placeholder="Category name…"
+        />
+        <div>
+          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+          <ColorPalette current={color} onChange={setColor} />
+        </div>
+        <div className="flex items-center gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          {cat.id !== 1 && (
+            <button onClick={() => { onRemove(cat.id, cat.name); onClose(); }} className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors flex items-center gap-1"><Trash2 size={11} /> Delete</button>
+          )}
+          <div className="flex gap-2 ml-auto">
+            <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+            <button onClick={save} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SortableCategoryChip({ cat, onEdit }: { cat: TaskCategory; onEdit: (cat: TaskCategory) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className="relative flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] cursor-grab active:cursor-grabbing"
+      className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] cursor-grab active:cursor-grabbing select-none"
       style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)`, transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      onPointerUp={() => { if (!isDragging) onEdit(cat); }}
     >
-      <button
-        className="w-2 h-2 rounded-full shrink-0 transition-transform hover:scale-125"
-        style={{ background: `rgb(${cat.color})` }}
-        onPointerDown={e => e.stopPropagation()}
-        onClick={() => setColorPickId(colorPickId === cat.id ? null : cat.id)}
-      />
-      {colorPickId === cat.id && (
-        <div className="absolute left-0 top-full mt-1 z-50">
-          <ColorPalette current={cat.color} onChange={async c => { await onRecolor(cat.id, c); setColorPickId(null); }} />
-        </div>
-      )}
-      {editingId === cat.id ? (
-        <input
-          ref={editRef}
-          value={editingVal}
-          onChange={e => setEditingVal(e.target.value)}
-          onBlur={commitRename}
-          onPointerDown={e => e.stopPropagation()}
-          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }}
-          className="bg-transparent outline-none w-24 text-[11px]"
-          style={{ color: `rgba(${cat.color},0.9)` }}
-        />
-      ) : (
-        <span
-          className="cursor-text"
-          onPointerDown={e => e.stopPropagation()}
-          onDoubleClick={() => { if (cat.id !== 1) { setEditingId(cat.id); setEditingVal(cat.name); } }}
-        >{cat.name}</span>
-      )}
-      {cat.id !== 1 && (
-        <button onPointerDown={e => e.stopPropagation()} onClick={() => onRemove(cat.id, cat.name)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
-      )}
+      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgb(${cat.color})` }} />
+      {cat.name}
     </div>
   );
 }
@@ -482,21 +501,17 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
   const [newColorOpen, setNewColorOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingVal, setEditingVal] = useState("");
-  const [colorPickId, setColorPickId] = useState<number | null>(null);
+  const [editingCat, setEditingCat] = useState<TaskCategory | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const editRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const catSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
   useEffect(() => {
-    if (colorPickId === null && !newColorOpen) return;
-    const close = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) { setColorPickId(null); setNewColorOpen(false); } };
+    if (!newColorOpen) return;
+    const close = (e: MouseEvent) => { if (panelRef.current && !panelRef.current.contains(e.target as Node)) setNewColorOpen(false); };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, [colorPickId, newColorOpen]);
-  useEffect(() => { if (editingId !== null) setTimeout(() => editRef.current?.select(), 10); }, [editingId]);
+  }, [newColorOpen]);
 
   const submit = async () => {
     const n = newName.trim();
@@ -506,14 +521,17 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
     setNewColor(PRESET_COLORS[0]);
   };
 
-  const commitRename = async () => {
-    if (editingId === null) return;
-    await onRename(editingId, editingVal);
-    setEditingId(null);
-  };
-
   return (
     <div ref={panelRef} className="px-4 py-3 flex flex-col gap-3 shrink-0" style={{ background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+      {editingCat && (
+        <CategoryEditModal
+          cat={editingCat}
+          onRename={onRename}
+          onRecolor={onRecolor}
+          onRemove={onRemove}
+          onClose={() => setEditingCat(null)}
+        />
+      )}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Categories</span>
         <button onClick={onClose} className="text-t5 hover:text-t3 transition-colors"><X size={11} /></button>
@@ -536,20 +554,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
         <SortableContext items={categories.map(c => c.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-wrap gap-1.5">
             {categories.map(cat => (
-              <SortableCategoryChip
-                key={cat.id}
-                cat={cat}
-                editingId={editingId}
-                editingVal={editingVal}
-                editRef={editRef}
-                colorPickId={colorPickId}
-                setColorPickId={setColorPickId}
-                setEditingId={setEditingId}
-                setEditingVal={setEditingVal}
-                commitRename={commitRename}
-                onRecolor={onRecolor}
-                onRemove={onRemove}
-              />
+              <SortableCategoryChip key={cat.id} cat={cat} onEdit={setEditingCat} />
             ))}
           </div>
         </SortableContext>
