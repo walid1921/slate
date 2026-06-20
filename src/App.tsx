@@ -818,13 +818,19 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
+  const overdue = countdown?.overdue ?? false;
+  const cardBorder = overdue ? "1px solid rgba(239,68,68,0.45)" : "1px solid rgba(59,130,246,0.35)";
+  const cardBg = overdue ? "rgba(239,68,68,0.07)" : "rgba(59,130,246,0.07)";
+  const headerBorder = overdue ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(59,130,246,0.15)";
+  const accentColor = overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
+
   return (
-    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: "1px solid rgba(59,130,246,0.35)", background: "rgba(59,130,246,0.07)" }}>
+    <div className="rounded-xl flex flex-col gap-0 overflow-hidden h-full" style={{ border: cardBorder, background: cardBg }}>
       {/* Header */}
-      <div className="relative flex items-center justify-between px-3 py-2" ref={dropRef} style={{ borderBottom: "1px solid rgba(59,130,246,0.15)" }}>
+      <div className="relative flex items-center justify-between px-3 py-2" ref={dropRef} style={{ borderBottom: headerBorder }}>
         <div className="flex items-center gap-1.5">
-          <Zap size={11} style={{ color: "rgba(96,165,250,0.9)" }} className="shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(96,165,250,0.9)" }}>Clockify</span>
+          <Zap size={11} style={{ color: accentColor }} className="shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accentColor }}>Clockify</span>
         </div>
         {/* Task picker */}
         <button onClick={() => setDropOpen(v => !v)}
