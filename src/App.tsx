@@ -1308,7 +1308,7 @@ export default function App() {
 
           {/* FilterBar */}
           {/* Kanban board */}
-          <div className="flex flex-row gap-3 flex-1 overflow-hidden p-3">
+          <div className="flex flex-row gap-3 flex-1 overflow-x-auto overflow-y-visible p-3">
             {loading ? (
               <div className="flex-1 flex items-center justify-center text-t5 text-sm select-none">Loading…</div>
             ) : (
