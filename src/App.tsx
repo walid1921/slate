@@ -322,21 +322,32 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
   );
 }
 
-function CategoryManagerPanel({ categories, onAdd, onRemove, onClose }: {
+function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onClose }: {
   categories: TaskCategory[];
   onAdd: (name: string) => Promise<void>;
   onRemove: (id: number, name: string) => void;
+  onRename: (id: number, name: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingVal, setEditingVal] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+  useEffect(() => { if (editingId !== null) setTimeout(() => editRef.current?.select(), 10); }, [editingId]);
 
   const submit = async () => {
     const n = newName.trim();
     if (!n) return;
     await onAdd(n);
     setNewName("");
+  };
+
+  const commitRename = async () => {
+    if (editingId === null) return;
+    await onRename(editingId, editingVal);
+    setEditingId(null);
   };
 
   return (
@@ -349,7 +360,23 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onClose }: {
         {categories.map(cat => (
           <div key={cat.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
             style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)` }}>
-            {cat.name}
+            {editingId === cat.id ? (
+              <input
+                ref={editRef}
+                value={editingVal}
+                onChange={e => setEditingVal(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") commitRename(); if (e.key === "Escape") setEditingId(null); }}
+                className="bg-transparent outline-none w-24 text-[11px]"
+                style={{ color: `rgba(${cat.color},0.9)` }}
+              />
+            ) : (
+              <span
+                className="cursor-text"
+                onDoubleClick={() => { if (cat.id !== 1) { setEditingId(cat.id); setEditingVal(cat.name); } }}
+                title={cat.id !== 1 ? "Double-click to rename" : undefined}
+              >{cat.name}</span>
+            )}
             {cat.id !== 1 && (
               <button onClick={() => onRemove(cat.id, cat.name)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
             )}
@@ -473,7 +500,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -1083,6 +1110,7 @@ export default function App() {
               categories={categories}
               onAdd={addCategory}
               onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
+              onRename={updateCategoryName}
               onClose={() => setShowCategoryManager(false)}
             />
           )}
