@@ -473,7 +473,7 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor
             <button
               className="w-2 h-2 rounded-full shrink-0 transition-transform hover:scale-125"
               style={{ background: `rgb(${cat.color})` }}
-              onClick={() => cat.id !== 1 && setColorPickId(colorPickId === cat.id ? null : cat.id)}
+              onClick={() => setColorPickId(colorPickId === cat.id ? null : cat.id)}
             />
             {colorPickId === cat.id && (
               <div className="absolute left-0 top-full mt-1 z-50">
