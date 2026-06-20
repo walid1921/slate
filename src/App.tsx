@@ -1173,7 +1173,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (
-          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer">
+          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-4 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer">
             {/* Meta row: category + status */}
             <div className="flex items-center justify-between">
               {category && (
@@ -1191,6 +1191,11 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 <span className={`text-[10px] ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
               )}
             </div>
+
+            {/* Subtask progress bar */}
+            {todo.subtasks.length > 0 && todo.show_subtask_bar && (
+              <SubtaskProgressBar subtasks={todo.subtasks} showCount />
+            )}
 
             {/* Timer row */}
             <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
@@ -1730,7 +1735,7 @@ export default function App() {
 
             {/* Activity heatmap + focus */}
             <div className="flex gap-3 items-stretch">
-              <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
+              <div className="flex-1 min-w-0 overflow-x-auto h-full"><ActivityHeatmap /></div>
               <div className="shrink-0 flex flex-col" style={{ width: "calc(25% - 9px)" }}><FocusCard onOpenTask={(id) => setSelectedTodoId(id)} /></div>
             </div>
 
