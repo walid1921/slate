@@ -435,7 +435,7 @@ function TimeLogEditModal({ sessions, onClose }: { sessions: import("./timerStor
   };
   return (
     <div className="absolute inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12 }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 400, maxHeight: "70vh", border: "1px solid var(--c-border)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 520, maxHeight: "70vh", border: "1px solid var(--c-border)" }}>
         <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
           <span className="text-[13px] font-semibold text-t1">Edit Time Log</span>
           <button onClick={onClose} className="text-t4 hover:text-t1 transition-colors"><X size={13} /></button>
