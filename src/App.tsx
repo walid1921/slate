@@ -277,10 +277,11 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1, lockedCat
             </svg>
           </div>
             <div className="flex-1 flex items-center gap-2">
-            <span className="text-[14px] font-semibold text-t1">{withDeadline ? "New Task with Deadline" : "New Task"}</span>
+            <span className="text-[14px] font-semibold text-t1">New Task</span>
+            {withDeadline && <span className="text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ background: "rgba(59,130,246,0.12)", color: "rgba(59,130,246,0.9)", border: "1px solid rgba(59,130,246,0.25)" }}>with deadline</span>}
             {initialStatus && (() => {
               const col = KANBAN_COLS.find(c => c.id === initialStatus);
-              return col ? <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: `rgba(${col.color},0.12)`, color: `rgba(${col.color},0.9)`, border: `1px solid rgba(${col.color},0.25)` }}>{col.label}</span> : null;
+              return col ? <span className="text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ background: `rgba(${col.color},0.12)`, color: `rgba(${col.color},0.9)`, border: `1px solid rgba(${col.color},0.25)` }}>{col.label}</span> : null;
             })()}
           </div>
         </div>
