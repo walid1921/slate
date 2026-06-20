@@ -30,7 +30,7 @@ export interface Todo {
   status: TodoStatus;
 }
 
-const PRESET_COLORS = [
+export const PRESET_COLORS = [
   "59,130,246", "99,102,241", "168,85,247", "236,72,153",
   "239,68,68",  "245,158,11", "16,185,129", "20,184,166",
 ];
@@ -53,9 +53,10 @@ interface State {
   setQuery: (q: string) => void;
   load: () => Promise<void>;
   loadCategories: () => Promise<void>;
-  addCategory: (name: string) => Promise<void>;
+  addCategory: (name: string, color?: string) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
   updateCategoryName: (id: number, name: string) => Promise<void>;
+  updateCategoryColor: (id: number, color: string) => Promise<void>;
   checkDueTodos: () => Promise<void>;
   loadTrash: () => Promise<void>;
   add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null, category_id?: number) => Promise<void>;
@@ -91,12 +92,18 @@ export const useTodoStore = create<State>((set, get) => ({
     set({ categories: rows });
   },
 
-  addCategory: async (name) => {
+  addCategory: async (name, color?) => {
     const db = await getDb();
     const existing = get().categories;
-    const color = PRESET_COLORS[existing.length % PRESET_COLORS.length];
+    const resolvedColor = color ?? PRESET_COLORS[existing.length % PRESET_COLORS.length];
     const pos = existing.length;
-    await db.execute("INSERT OR IGNORE INTO task_categories (name, color, position) VALUES (?, ?, ?)", [name.trim(), color, pos]);
+    await db.execute("INSERT OR IGNORE INTO task_categories (name, color, position) VALUES (?, ?, ?)", [name.trim(), resolvedColor, pos]);
+    await get().loadCategories();
+  },
+
+  updateCategoryColor: async (id, color) => {
+    const db = await getDb();
+    await db.execute("UPDATE task_categories SET color = ? WHERE id = ?", [color, id]);
     await get().loadCategories();
   },
 

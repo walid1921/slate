@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus } from "./store";
+import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, PRESET_COLORS } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
@@ -322,16 +322,35 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
   );
 }
 
-function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onClose }: {
+function ColorPalette({ current, onChange }: { current: string; onChange: (c: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1 p-1.5 rounded-lg" style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+      {PRESET_COLORS.map(c => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          className="w-4 h-4 rounded-full transition-transform hover:scale-110"
+          style={{ background: `rgb(${c})`, outline: c === current ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onRecolor, onClose }: {
   categories: TaskCategory[];
-  onAdd: (name: string) => Promise<void>;
+  onAdd: (name: string, color: string) => Promise<void>;
   onRemove: (id: number, name: string) => void;
   onRename: (id: number, name: string) => Promise<void>;
+  onRecolor: (id: number, color: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState(PRESET_COLORS[0]);
+  const [newColorOpen, setNewColorOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingVal, setEditingVal] = useState("");
+  const [colorPickId, setColorPickId] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const editRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
@@ -340,8 +359,9 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onClose }
   const submit = async () => {
     const n = newName.trim();
     if (!n) return;
-    await onAdd(n);
+    await onAdd(n, newColor);
     setNewName("");
+    setNewColor(PRESET_COLORS[0]);
   };
 
   const commitRename = async () => {
@@ -358,8 +378,19 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onClose }
       </div>
       <div className="flex flex-wrap gap-1.5">
         {categories.map(cat => (
-          <div key={cat.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
+          <div key={cat.id} className="relative flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
             style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)` }}>
+            {/* Color dot — click to pick */}
+            <button
+              className="w-2 h-2 rounded-full shrink-0 transition-transform hover:scale-125"
+              style={{ background: `rgb(${cat.color})` }}
+              onClick={() => cat.id !== 1 && setColorPickId(colorPickId === cat.id ? null : cat.id)}
+            />
+            {colorPickId === cat.id && (
+              <div className="absolute left-0 top-full mt-1 z-50">
+                <ColorPalette current={cat.color} onChange={async c => { await onRecolor(cat.id, c); setColorPickId(null); }} />
+              </div>
+            )}
             {editingId === cat.id ? (
               <input
                 ref={editRef}
@@ -384,6 +415,19 @@ function CategoryManagerPanel({ categories, onAdd, onRemove, onRename, onClose }
         ))}
       </div>
       <div className="flex items-center gap-2">
+        {/* Color picker for new category */}
+        <div className="relative">
+          <button
+            className="w-5 h-5 rounded-full shrink-0 border-2 transition-transform hover:scale-110"
+            style={{ background: `rgb(${newColor})`, borderColor: `rgba(${newColor},0.5)` }}
+            onClick={() => setNewColorOpen(o => !o)}
+          />
+          {newColorOpen && (
+            <div className="absolute left-0 bottom-full mb-1 z-50">
+              <ColorPalette current={newColor} onChange={c => { setNewColor(c); setNewColorOpen(false); }} />
+            </div>
+          )}
+        </div>
         <input
           ref={inputRef}
           value={newName}
@@ -500,7 +544,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -1111,6 +1155,7 @@ export default function App() {
               onAdd={addCategory}
               onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
               onRename={updateCategoryName}
+              onRecolor={updateCategoryColor}
               onClose={() => setShowCategoryManager(false)}
             />
           )}
