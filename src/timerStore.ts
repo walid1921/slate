@@ -62,6 +62,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
       [nowIso(), taskId]
     );
+    logActivity();
     await get().load();
     await setStatus(taskId, "done");
   },
