@@ -1172,30 +1172,6 @@ export default function App() {
           }} />}
 
           {/* Category context menu */}
-          {catContextMenu && (
-            <div
-              className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
-              style={{ top: catContextMenu.y, left: catContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
-              onMouseLeave={() => setCatContextMenu(null)}
-            >
-              <button
-                className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
-                onClick={() => { setCatEditModal(catContextMenu.cat); setCatContextMenu(null); }}
-              >
-                <Pencil size={11} className="text-t4" /> Edit
-              </button>
-              <button
-                className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
-                onClick={() => {
-                  const { cat } = catContextMenu;
-                  setCatContextMenu(null);
-                  askConfirm("Delete category?", `"${cat.name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(cat.id));
-                }}
-              >
-                <Trash2 size={11} /> Delete
-              </button>
-            </div>
-          )}
           {/* Add category modal */}
           {showAddCategoryModal && (
             <AddCategoryModal
@@ -1226,7 +1202,7 @@ export default function App() {
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategoryId(cat.id)}
-                    onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left / textScale, y: r.bottom / textScale + 1 }); }}
+                    onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left, y: r.bottom + 1 }); }}
                     className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
                     style={activeCategoryId === cat.id
                       ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
@@ -1651,6 +1627,32 @@ export default function App() {
       )}
 
     </div>
+
+    {/* Context menus rendered outside scaled container so fixed coords are viewport-relative */}
+    {catContextMenu && (
+      <div
+        className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+        style={{ top: catContextMenu.y, left: catContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
+        onMouseLeave={() => setCatContextMenu(null)}
+      >
+        <button
+          className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+          onClick={() => { setCatEditModal(catContextMenu.cat); setCatContextMenu(null); }}
+        >
+          <Pencil size={11} className="text-t4" /> Edit
+        </button>
+        <button
+          className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
+          onClick={() => {
+            const { cat } = catContextMenu;
+            setCatContextMenu(null);
+            askConfirm("Delete category?", `"${cat.name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(cat.id));
+          }}
+        >
+          <Trash2 size={11} /> Delete
+        </button>
+      </div>
+    )}
     </div>
   );
 }
