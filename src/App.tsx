@@ -53,6 +53,7 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -420,6 +421,36 @@ function ColorPalette({ current, onChange }: { current: string; onChange: (c: st
   );
 }
 
+function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick, onContextMenu }: {
+  cat: TaskCategory; isActive: boolean; pendingCount: number; hasOverdue: boolean;
+  onClick: () => void; onContextMenu: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+  return (
+    <button
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+      onContextMenu={onContextMenu}
+      className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 select-none"
+      style={{
+        color: isActive ? `rgba(${cat.color},1)` : `rgba(${cat.color},0.5)`,
+        borderBottom: isActive ? `2px solid rgba(${cat.color},0.8)` : "2px solid transparent",
+        marginBottom: -1,
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        cursor: isDragging ? "grabbing" : "pointer",
+      }}
+    >
+      {cat.name}
+      <span className="text-[10px] opacity-60">{pendingCount}</span>
+      {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
+    </button>
+  );
+}
+
 function AddCategoryModal({ onAdd, onClose }: {
   onAdd: (name: string, color: string) => Promise<void>;
   onClose: () => void;
@@ -625,7 +656,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -1191,30 +1222,45 @@ export default function App() {
           )}
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
-              {categories.map(cat => {
-                const nowMs = Date.now();
-                const hasOverdue = todos.some(t =>
-                  t.category_id === cat.id && !t.done && t.due_date &&
-                  buildDueDate(t.due_date, t.due_time).getTime() < nowMs
-                );
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveCategoryId(cat.id)}
-                    onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left, y: r.bottom + 1 }); }}
-                    className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
-                    style={activeCategoryId === cat.id
-                      ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
-                      : { color: `rgba(${cat.color},0.5)`, borderBottom: "2px solid transparent", marginBottom: -1 }}
-                  >
-                    {cat.name}
-                    <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
-                    {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
-                  </button>
-                );
-              })}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event: DragEndEvent) => {
+                const { active, over } = event;
+                if (!over || active.id === over.id) return;
+                const oldIdx = categories.findIndex(c => c.id === active.id);
+                const newIdx = categories.findIndex(c => c.id === over.id);
+                if (oldIdx === -1 || newIdx === -1) return;
+                const reordered = [...categories];
+                reordered.splice(oldIdx, 1);
+                reordered.splice(newIdx, 0, categories[oldIdx]);
+                reorderCategories(reordered.map(c => c.id));
+              }}
+            >
+              <SortableContext items={categories.map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
+                  {categories.map(cat => {
+                    const nowMs = Date.now();
+                    const pendingCount = todos.filter(t => t.category_id === cat.id && !t.done).length;
+                    const hasOverdue = todos.some(t =>
+                      t.category_id === cat.id && !t.done && t.due_date &&
+                      buildDueDate(t.due_date, t.due_time).getTime() < nowMs
+                    );
+                    return (
+                      <SortableCategoryTab
+                        key={cat.id}
+                        cat={cat}
+                        isActive={activeCategoryId === cat.id}
+                        pendingCount={pendingCount}
+                        hasOverdue={hasOverdue}
+                        onClick={() => setActiveCategoryId(cat.id)}
+                        onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left, y: r.bottom + 1 }); }}
+                      />
+                    );
+                  })}
+                </div>
+              </SortableContext>
+            </DndContext>
             {/* Add category */}
             <Tooltip label="Add category">
               <button
