@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   GripVertical,
   Check,
-  Pencil,
   X,
   Plus,
   RotateCcw,
@@ -22,7 +21,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { useTodoStore, Priority, Todo, TaskCategory } from "./store";
+import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
@@ -36,7 +35,7 @@ import { useIHKStore } from "./ihkStore";
 import ConfirmDialog from "./components/ConfirmDialog";
 import ActivityHeatmap from "./components/ActivityHeatmap";
 import { logActivity, loadAllActivityDates } from "./activity";
-import FilterBar, { TodoFilter, TodoSort } from "./components/FilterBar";
+import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
@@ -49,78 +48,17 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
   useSortable,
-  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 
-const PRIORITY_DOT: Record<Priority, string> = {
-  none: "bg-t5",
-  low: "bg-blue-400",
-  medium: "bg-yellow-400",
-  high: "bg-red-400",
-};
 
-function buildDueDate(dueDate: string, dueTime: string | null): Date {
-  if (dueTime) return new Date(`${dueDate}T${dueTime}`);
-  // no time: treat as end of day so countdown shows days until midnight
-  return new Date(`${dueDate}T23:59:59`);
-}
-
-function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { label: string; overdue: boolean } {
-  const target = buildDueDate(dueDate, dueTime);
-  const diffMs = target.getTime() - now.getTime();
-  const overdue = diffMs < 0;
-  const abs = Math.abs(diffMs);
-
-  const totalSecs = Math.floor(abs / 1000);
-  const secs = totalSecs % 60;
-  const mins = Math.floor(totalSecs / 60) % 60;
-  const hours = Math.floor(totalSecs / 3600) % 24;
-  const days = Math.floor(totalSecs / 86400);
-  const months = Math.floor(days / 30);
-
-  if (overdue) {
-    return { label: "overdue", overdue: true };
-  }
-
-  let label: string;
-  if (months >= 2) {
-    label = `${months}mo`;
-  } else if (days >= 2) {
-    label = `${days}d`;
-  } else if (days === 1) {
-    label = "tomorrow";
-  } else if (hours > 0) {
-    label = `${hours}h ${mins}m`;
-  } else if (mins > 0) {
-    label = `${mins}m ${secs}s`;
-  } else {
-    label = totalSecs <= 0 ? "now" : `${secs}s`;
-  }
-
-  return { label, overdue };
-}
-
-function useNow(dueDate: string | null, dueTime: string | null): Date {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    if (!dueDate) return;
-    const target = buildDueDate(dueDate, dueTime);
-    const diffMs = target.getTime() - Date.now();
-    const absDiff = Math.abs(diffMs);
-    // tick every second if within 1 hour, else every minute
-    const interval = absDiff < 3600_000 ? 1000 : 60_000;
-    const id = setInterval(() => setNow(new Date()), interval);
-    return () => clearInterval(id);
-  }, [dueDate, dueTime]);
-  return now;
-}
 
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
@@ -292,191 +230,80 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
   );
 }
 
-function EmptyTaskDetail() {
+
+
+const KANBAN_COLS: { id: TodoStatus; label: string; color: string }[] = [
+  { id: 'todo',        label: 'To Do',       color: '99,102,241'  },
+  { id: 'in_progress', label: 'In Progress', color: '245,158,11'  },
+  { id: 'done',        label: 'Done',        color: '16,185,129'  },
+];
+
+const PRIORITY_DOT: Record<Priority, string> = { none: "var(--c-text-5)", low: "rgb(96,165,250)", medium: "rgb(250,204,21)", high: "rgb(248,113,113)" };
+
+function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void; onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
   return (
-    <div className="flex flex-col items-center justify-center h-full text-t5 text-[12px] select-none gap-1">
-      <span>Select a task to view details</span>
+    <div
+      ref={setNodeRef}
+      className="group rounded-lg p-2.5 flex flex-col gap-1.5 cursor-pointer hover:opacity-90 transition-opacity select-none"
+      style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      onClick={onOpen}
+    >
+      <div className="flex items-start gap-1.5">
+        <div {...attributes} {...listeners} className="mt-0.5 text-t6 hover:text-t4 shrink-0 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>
+          <GripVertical size={10} />
+        </div>
+        <span className="flex-1 text-[12px] text-t1 leading-snug">{todo.text}</span>
+        <button onMouseDown={e => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-100 text-t5 hover:text-red-400 transition-all shrink-0">
+          <X size={10} />
+        </button>
+      </div>
+      <div className="flex items-center gap-1.5 pl-4">
+        {todo.priority !== 'none' && (
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_DOT[todo.priority] }} />
+        )}
+        {todo.due_date && (
+          <span className="text-[10px] text-t5">{todo.due_date}</span>
+        )}
+      </div>
     </div>
   );
 }
 
-function TodoRow({
-  todo,
-  focused,
-  onFocus,
-  onDeleteRequest,
-  onSelect,
-}: {
-  todo: Todo;
-  focused: boolean;
-  onFocus: () => void;
-  onDeleteRequest: () => void;
-  onSelect?: () => void;
+function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline }: {
+  col: typeof KANBAN_COLS[number];
+  todos: Todo[];
+  onOpen: (id: number) => void;
+  onDelete: (id: number) => void;
+  onAddInline: (status: TodoStatus) => void;
 }) {
-  const { toggle, setPriority, updateText, setDeadline } = useTodoStore();
-  const [showMeta, setShowMeta] = useState(false);
-  const [editingText, setEditingText] = useState(false);
-  const [editVal, setEditVal] = useState(todo.text);
-  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
-  const textRef = useRef<HTMLInputElement>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menu) return;
-    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(null); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menu]);
-
-  useEffect(() => {
-    if (editingText) {
-      setEditVal(todo.text);
-      setTimeout(() => { textRef.current?.select(); }, 10);
-    }
-  }, [editingText]);
-
-  const commitText = () => {
-    const trimmed = editVal.trim();
-    if (trimmed && trimmed !== todo.text) updateText(todo.id, trimmed);
-    setEditingText(false);
-  };
-
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: todo.id });
-
-  const now = useNow(todo.due_date, todo.due_time);
-  const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
-
-
-
+  const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
-    <div
-      ref={setNodeRef}
-      tabIndex={-1}
-      onFocus={onFocus}
-      onMouseEnter={() => setShowMeta(true)}
-      onMouseLeave={() => setShowMeta(false)}
-      style={{
-        minHeight: 52,
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 50 : "auto",
-        background: focused ? "var(--c-surface-2)" : undefined,
-        borderLeft: focused ? "2px solid rgba(59,130,246,0.6)" : "2px solid transparent",
-      }}
-      onContextMenu={(e) => { e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }); }}
-      className={`group relative flex items-center gap-3 px-5 cursor-default transition-colors border-b border-s ${focused ? "" : "hover:bg-s1"}`}
-    >
-      {menu && (
-        <div ref={menuRef} className="dropdown fixed z-50 rounded-lg shadow-xl py-1 min-w-[170px]" style={{ left: menu.x, top: menu.y }}>
-          <button onClick={() => { setEditingText(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
-            <Pencil size={12} className="text-t4" /><span>Edit task</span>
-          </button>
-          <div className="flex items-center gap-2 px-3 py-1.5">
-            {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-              <div key={p} className="group/dot relative">
-                <button
-                  onClick={() => { setPriority(todo.id, p); setMenu(null); }}
-                  className="rounded-full transition-opacity hover:opacity-80"
-                >
-                  <span
-                    className={`block w-3 h-3 rounded-full ${PRIORITY_DOT[p]}`}
-                    style={todo.priority === p ? { outline: "1px solid rgba(255,255,255,0.7)", outlineOffset: "1px" } : {}}
-                  />
-                </button>
-                <span className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/dot:opacity-100 transition-opacity duration-150 capitalize" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>
-                  {p === "none" ? "No priority" : p}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
-          <button onClick={() => { setShowDeadlinePicker(true); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-t1 hover:bg-s2 transition-colors">
-            <CalendarDays size={12} className="text-t4" /><span>{todo.due_date ? "Edit deadline" : "Set deadline"}</span>
-          </button>
-          <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
-          <button onClick={() => { onDeleteRequest(); setMenu(null); }} className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-red-400 hover:bg-s2 transition-colors">
-            <X size={12} /><span>Delete</span>
-          </button>
-        </div>
-      )}
-      {showDeadlinePicker && (
-        <DateTimeModal
-          title="Set deadline"
-          subtitle={todo.text}
-          showDate={true}
-          onCancel={() => setShowDeadlinePicker(false)}
-          onConfirm={(iso) => {
-            const [datePart, timePart] = iso.split("T");
-            setDeadline(todo.id, datePart, timePart?.slice(0, 5) ?? null);
-            setShowDeadlinePicker(false);
-          }}
-
-        />
-      )}
-      {/* Drag handle */}
+    <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-hidden" style={{ background: "var(--c-surface-0)", border: "1px solid var(--c-border)" }}>
+      {/* Column header */}
+      <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
+        <span className="text-[10px] text-t5 ml-auto">{todos.length}</span>
+      </div>
+      {/* Cards */}
       <div
-        {...attributes}
-        {...listeners}
-        className={`shrink-0 cursor-grab active:cursor-grabbing text-t5 hover:text-t2 transition-opacity ${
-          showMeta || focused ? "opacity-100" : "opacity-0"
-        }`}
+        ref={setNodeRef}
+        className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto"
+        style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.04)` : undefined, transition: "background 0.15s", scrollbarWidth: "none" }}
       >
-        <GripVertical size={12} />
+        <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
+          {todos.map(t => (
+            <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
+          ))}
+        </SortableContext>
+        <button
+          onClick={() => onAddInline(col.id)}
+          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] text-t5 hover:text-t3 hover:bg-s1 transition-colors mt-auto shrink-0"
+        >
+          <Plus size={10} /> Add task
+        </button>
       </div>
-
-      {/* Checkbox */}
-      <button
-        onClick={() => toggle(todo.id)}
-        className="mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors"
-        style={todo.done ? { background: "rgba(59,130,246,0.75)", borderColor: "transparent" } : { borderColor: "var(--c-border)" }}
-      >
-        {todo.done && (
-          <Check size={8} stroke="white" />
-        )}
-      </button>
-
-      {/* Text + meta */}
-      <div className="flex-1 min-w-0 py-3" onClick={() => { if (!editingText) onSelect?.(); }}>
-        {editingText ? (
-          <input
-            ref={textRef}
-            value={editVal}
-            onChange={(e) => setEditVal(e.target.value)}
-            onBlur={commitText}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); commitText(); }
-              if (e.key === "Escape") { setEditingText(false); }
-              e.stopPropagation();
-            }}
-            className="w-full text-[14px] leading-snug text-t1 bg-transparent outline-none border-b" style={{ borderColor: "var(--c-border)" }}
-          />
-        ) : (
-          <span
-            onDoubleClick={() => !todo.done && setEditingText(true)}
-            className={`text-[14px] leading-snug block truncate transition-colors ${
-              todo.done ? "line-through text-t4" : "text-t1"
-            }`}
-          >
-            {todo.text}
-          </span>
-        )}
-
-        {/* Due date / priority row */}
-        <div className="flex items-center gap-2 mt-0.5">
-          {countdown && (
-            <span className={`text-xs ${countdown.overdue && !todo.done ? "text-red-400" : "text-t4"}`}>
-              {countdown.label}
-            </span>
-          )}
-          {todo.priority !== "none" && (
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${todo.done ? "bg-t6" : PRIORITY_DOT[todo.priority]}`} />
-          )}
-        </div>
-      </div>
-
     </div>
   );
 }
@@ -632,7 +459,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
+  const { todos, trash, categories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -658,11 +485,12 @@ export default function App() {
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
-  const [todoSort, setTodoSort] = useState<TodoSort>("manual");
+  const [todoFilter] = useState<TodoFilter>("all");
+  const [todoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number>(1);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [pendingKanbanStatus, setPendingKanbanStatus] = useState<TodoStatus | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
@@ -792,18 +620,6 @@ export default function App() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-      const oldIndex = todos.findIndex((t) => t.id === active.id);
-      const newIndex = todos.findIndex((t) => t.id === over.id);
-      const newOrder = arrayMove(todos, oldIndex, newIndex);
-      useTodoStore.getState().reorder(newOrder.map((t) => t.id));
-    },
-    [todos]
   );
 
   const handleKeyDown = useCallback(
@@ -1171,7 +987,15 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
-          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} categoryId={activeCategoryId} onClose={() => setAddTaskOpen(false)} />}
+          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} categoryId={activeCategoryId} onClose={async () => {
+            setAddTaskOpen(false);
+            if (pendingKanbanStatus && pendingKanbanStatus !== 'todo') {
+              // apply status to most recently added task in this category
+              const latest = useTodoStore.getState().todos.find(t => t.category_id === activeCategoryId && t.status === 'todo');
+              if (latest) await setStatus(latest.id, pendingKanbanStatus);
+            }
+            setPendingKanbanStatus(null);
+          }} />}
 
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
@@ -1244,42 +1068,59 @@ export default function App() {
           )}
 
           {/* FilterBar */}
-          <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-            <div className="flex-1 overflow-hidden">
-              <FilterBar
-                page="todos"
-                filter={todoFilter}
-                sort={todoSort}
-                onFilter={setTodoFilter}
-                onSort={setTodoSort}
-                onRefresh={async () => { await load(); }}
-              />
-            </div>
+          {/* Kanban board */}
+          <div className="flex flex-row gap-3 flex-1 overflow-hidden p-3">
+            {loading ? (
+              <div className="flex-1 flex items-center justify-center text-t5 text-sm select-none">Loading…</div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event: DragEndEvent) => {
+                  const { active, over } = event;
+                  if (!over) return;
+                  const activeId = active.id as number;
+                  const overId = over.id;
+                  // dropped on a column
+                  const col = KANBAN_COLS.find(c => c.id === overId);
+                  if (col) { setStatus(activeId, col.id); return; }
+                  // dropped on another card — move to same column
+                  const overTodo = todos.find(t => t.id === overId);
+                  const activeTodo = todos.find(t => t.id === activeId);
+                  if (overTodo && activeTodo && overTodo.status !== activeTodo.status) {
+                    setStatus(activeId, overTodo.status);
+                  }
+                }}
+              >
+                {KANBAN_COLS.map(col => (
+                  <KanbanColumn
+                    key={col.id}
+                    col={col}
+                    todos={todos.filter(t => t.category_id === activeCategoryId && t.status === col.id)}
+                    onOpen={id => setSelectedTodoId(id)}
+                    onDelete={id => askConfirm("Delete task?", `This task will be moved to trash.`, () => useTodoStore.getState().remove(id))}
+                    onAddInline={status => {
+                      setAddTaskOpen("quick");
+                      // store pending status to apply after add
+                      setPendingKanbanStatus(status);
+                    }}
+                  />
+                ))}
+              </DndContext>
+            )}
           </div>
-          {/* Split panel */}
-          <div className="flex flex-row flex-1 overflow-hidden">
-            {/* Left: list */}
-            <div className="flex flex-col overflow-hidden border-r border-s" style={{ width: 300 }}>
-              <div className="overflow-y-auto flex-1 py-1.5">
-                {loading ? (
-                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">Loading…</div>
-                ) : filtered.length === 0 ? (
-                  <div className="px-5 py-10 text-center text-t5 text-sm select-none">No tasks yet</div>
-                ) : (
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                    <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                      {filtered.map((todo, i) => (
-                        <TodoRow key={todo.id} todo={todo} focused={focusedIdx === i} onFocus={() => setFocusedIdx(i)} onDeleteRequest={() => askConfirm("Delete task?", `"${todo.text}" will be moved to trash.`, () => useTodoStore.getState().remove(todo.id))} onSelect={() => setSelectedTodoId(todo.id)} />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
+        </div>
+      )}
+
+      {/* Task detail modal */}
+      {selectedTodo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, height: 480, border: "1px solid var(--c-border)" }}>
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+              <span className="text-[13px] font-semibold text-t2">Task</span>
+              <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors"><X size={13} /></button>
             </div>
-            {/* Right: task detail */}
-            <div className="flex flex-col flex-1 overflow-hidden">
-              {selectedTodo ? <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} /> : <EmptyTaskDetail />}
-            </div>
+            <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} />
           </div>
         </div>
       )}

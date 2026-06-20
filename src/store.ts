@@ -12,6 +12,8 @@ export interface TaskCategory {
   position: number;
 }
 
+export type TodoStatus = 'todo' | 'in_progress' | 'done';
+
 export interface Todo {
   id: number;
   text: string;
@@ -25,6 +27,7 @@ export interface Todo {
   deleted_at?: string | null;
   description: string;
   category_id: number;
+  status: TodoStatus;
 }
 
 const PRESET_COLORS = [
@@ -58,6 +61,7 @@ interface State {
   setDeadline: (id: number, due_date: string | null, due_time: string | null) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
   setDescription: (id: number, description: string) => Promise<void>;
+  setStatus: (id: number, status: TodoStatus) => Promise<void>;
 }
 
 export const useTodoStore = create<State>((set, get) => ({
@@ -98,9 +102,9 @@ export const useTodoStore = create<State>((set, get) => ({
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
-    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified) })), loading: false });
+    set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo') })), loading: false });
   },
 
   checkDueTodos: async () => {
@@ -153,7 +157,17 @@ export const useTodoStore = create<State>((set, get) => ({
     const todo = get().todos.find((t) => t.id === id);
     if (!todo) return;
     const db = await getDb();
-    await db.execute("UPDATE todos SET done = ? WHERE id = ?", [todo.done ? 0 : 1, id]);
+    const newDone = !todo.done;
+    const newStatus = newDone ? 'done' : 'todo';
+    await db.execute("UPDATE todos SET done = ?, status = ? WHERE id = ?", [newDone ? 1 : 0, newStatus, id]);
+    logActivity();
+    await get().load();
+  },
+
+  setStatus: async (id, status) => {
+    const db = await getDb();
+    const done = status === 'done' ? 1 : 0;
+    await db.execute("UPDATE todos SET status = ?, done = ? WHERE id = ?", [status, done, id]);
     logActivity();
     await get().load();
   },
