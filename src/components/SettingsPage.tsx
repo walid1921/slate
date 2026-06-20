@@ -402,12 +402,10 @@ function validateSlateExport(raw: string): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data))
     return "This file is not a valid Slate export";
   const d = data as Record<string, unknown>;
-  if (typeof d.version !== "number" || ![1, 2].includes(d.version))
-    return "Unrecognized format — this file was not exported by Slate";
+  if (d.version !== 2)
+    return "Unsupported export version — please re-export your data from the current version of Slate";
 
-  const v1Tables = ["todos", "reminders", "notes"];
-  const v2Tables = [...v1Tables, "taskSessions", "taskCategories", "ihkEntries", "ihkModules", "ihkWeeks", "activity"];
-  const required = d.version === 2 ? v2Tables : v1Tables;
+  const required = ["todos", "reminders", "notes", "taskSessions", "taskCategories", "ihkEntries", "ihkModules", "ihkWeeks", "activity"];
   for (const key of required) {
     if (!Array.isArray(d[key]))
       return `Invalid export — missing or invalid "${key}" section`;
