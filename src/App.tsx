@@ -375,9 +375,9 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
-    <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-hidden" style={{ background: "var(--c-surface-0)", border: `1px solid rgba(${col.color},0.25)` }}>
+    <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-visible" style={{ background: "var(--c-surface-0)", border: `1px solid rgba(${col.color},0.25)` }}>
       {/* Column header */}
-      <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)", background: `rgba(${col.color},0.07)` }}>
+      <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)", background: `rgba(${col.color},0.07)`, borderRadius: "12px 12px 0 0" }}>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${col.color},0.9)` }}>{col.label}</span>
         <span className="text-[10px] text-t5 ml-1">{todos.length}</span>
@@ -392,7 +392,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
       <div
         ref={setNodeRef}
         className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto"
-        style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none" }}
+        style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none", borderRadius: "0 0 12px 12px" }}
       >
         <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
           {todos.map(t => (
@@ -1198,7 +1198,7 @@ export default function App() {
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${activeCategoryId === cat.id ? "0.9" : "0.4"})` }} />
                     {cat.name}
                     <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
-                    {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />}
+                    {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
                   </button>
                 );
               })}
