@@ -107,8 +107,8 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
     <div className="relative group/tip">
       {children}
       <div
-        className="pointer-events-none absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] text-t1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-50"
-        style={{ [side === "bottom" ? "top" : "bottom"]: "calc(100% + 5px)", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded text-[10px] text-t1 whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150"
+        style={{ [side === "bottom" ? "top" : "bottom"]: "calc(100% + 5px)", background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 4px 12px rgba(0,0,0,0.4)", zIndex: 9999 }}
       >
         {label}
       </div>
