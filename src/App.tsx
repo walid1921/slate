@@ -840,7 +840,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
           <ChevronDown size={9} />
         </button>
         {dropOpen && (
-          <div className="dropdown absolute left-0 right-0 bottom-full mb-0.5 rounded-t-lg z-50 py-1 overflow-y-scroll" style={{ maxHeight: 400 }}>
+          <div className="dropdown absolute left-0 right-0 top-full mt-0.5 rounded-lg z-50 py-1 overflow-y-scroll" style={{ maxHeight: "50vh" }}>
             {activeTodos.length === 0
               ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
               : activeTodos.map(t => (
