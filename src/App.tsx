@@ -775,6 +775,134 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
 
 
 
+const PRIORITY_COLOR: Record<Priority, string> = { none: "var(--c-text-5)", low: "rgb(96,165,250)", medium: "rgb(251,191,36)", high: "rgb(248,113,113)" };
+
+function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
+  const { todos } = useTodoStore();
+  const { sessions, start, stop, finish } = useTimerStore();
+  const { setStatus } = useTodoStore();
+  const [focusId, setFocusId] = useState<number | null>(() => {
+    const v = localStorage.getItem("focus_task_id");
+    return v ? Number(v) : null;
+  });
+  const [dropOpen, setDropOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!dropOpen) return;
+    const h = (e: MouseEvent) => { if (dropRef.current && !dropRef.current.contains(e.target as Node)) setDropOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [dropOpen]);
+
+  const activeTodos = todos.filter(t => t.status !== 'done');
+  const todo = todos.find(t => t.id === focusId) ?? null;
+  const taskSessions = todo ? sessions.filter(s => s.task_id === todo.id) : [];
+  const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!activeSession) { setElapsed(0); return; }
+    const update = () => setElapsed(Date.now() - new Date(activeSession.started_at).getTime());
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [activeSession?.id]);
+
+  const selectTask = (id: number) => {
+    setFocusId(id);
+    localStorage.setItem("focus_task_id", String(id));
+    setDropOpen(false);
+  };
+
+  const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
+  const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
+
+  const ACCENT = "147,150,255";
+
+  return (
+    <div className="rounded-xl flex flex-col gap-0 overflow-hidden" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-1)" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <div className="flex items-center gap-1.5">
+          <Zap size={11} style={{ color: `rgba(${ACCENT},0.9)` }} className="shrink-0" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${ACCENT},0.9)` }}>Focus</span>
+        </div>
+        {/* Task picker */}
+        <div className="relative" ref={dropRef}>
+          <button onClick={() => setDropOpen(v => !v)}
+            className="flex items-center gap-1 text-[10px] text-t4 hover:text-t2 transition-colors px-1.5 py-0.5 rounded hover:bg-s2">
+            <span className="max-w-[120px] truncate">{todo ? todo.text : "Pick a task"}</span>
+            <ChevronDown size={9} />
+          </button>
+          {dropOpen && (
+            <div className="dropdown absolute right-0 top-full mt-1 rounded-lg z-50 py-1 overflow-y-auto" style={{ minWidth: 200, maxHeight: 200 }}>
+              {activeTodos.length === 0
+                ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
+                : activeTodos.map(t => (
+                  <button key={t.id} onClick={() => selectTask(t.id)}
+                    className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
+                    <span className="truncate">{t.text}</span>
+                  </button>
+                ))
+              }
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      {todo ? (
+        <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-s1 transition-colors">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[todo.priority] }} />
+              <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
+            </div>
+            {countdown && (
+              <span className={`text-[10px] shrink-0 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+            )}
+          </div>
+          {/* Timer row */}
+          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+            <span className="text-[11px] text-t3 font-mono min-w-[36px]">
+              {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+            </span>
+            {activeSession ? (
+              <>
+                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
+                  className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
+                  <Pause size={9} />
+                </button>
+                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                  className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                  <CheckCheck size={9} />
+                </button>
+              </>
+            ) : (
+              <>
+                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
+                  className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
+                  <Play size={9} />
+                </button>
+                {todo.status !== 'done' && taskSessions.length > 0 && (
+                  <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                    className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                    <CheckCheck size={9} />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </button>
+      ) : (
+        <div className="px-3 py-4 text-[11px] text-t5 text-center">Select a task to focus on</div>
+      )}
+    </div>
+  );
+}
+
 function StreakWidget() {
   const [current, setCurrent] = useState(0);
   const [longest, setLongest] = useState(0);
@@ -1344,6 +1472,9 @@ export default function App() {
               <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
               <div className="shrink-0" style={{ width: "calc(25% - 9px)" }}><StreakWidget /></div>
             </div>
+
+            {/* Focus card */}
+            <FocusCard onOpenTask={(id) => setSelectedTodoId(id)} />
 
             {/* Preview cards */}
             <div className="grid grid-cols-4 gap-3">
