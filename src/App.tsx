@@ -210,44 +210,62 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         />
       )}
 
-      {/* Priority + Deadline — weighted 2-col grid */}
-      <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 2fr" }}>
-        <div className="flex flex-col justify-between px-3 py-2 gap-1.5 border-r border-s">
-          <div className="flex items-center gap-1.5">
-            <Flag size={10} className="text-t5 shrink-0" />
-            <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
-          </div>
-          <div className="flex gap-1.5">
-            {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-              <button key={p} onClick={() => setPriority(todo.id, p)}
-                className="rounded-full transition-all"
-                style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 0 } : {}}
-              >
-                <span className={`block w-2.5 h-2.5 rounded-full ${PRIORITY_DOT_DETAIL[p]}`} style={{ opacity: todo.priority === p ? 1 : 0.3 }} />
-              </button>
-            ))}
-          </div>
+      {/* Created */}
+      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Clock size={10} className="text-t5 shrink-0" />
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
         </div>
-        <div className="flex flex-col justify-between px-3 py-2 gap-1.5">
-          <div className="flex items-center gap-1.5">
-            <CalendarDays size={10} className="text-t5 shrink-0" />
-            <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setShowDeadlinePicker(true)}
-              className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2 -ml-1.5"
-              style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
+        <div className="flex items-center gap-1.5">
+          {todo.show_created_at
+            ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
+            : <span className="text-[11px] text-t5">—</span>
+          }
+          <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
+            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+            {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Priority */}
+      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Flag size={10} className="text-t5 shrink-0" />
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
+        </div>
+        <div className="flex gap-1.5">
+          {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
+            <button key={p} onClick={() => setPriority(todo.id, p)}
+              className="rounded-full transition-all"
+              style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 0 } : {}}
             >
-              {todo.due_date
-                ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
-                : <span>Set deadline</span>
-              }
+              <span className={`block w-2.5 h-2.5 rounded-full ${PRIORITY_DOT_DETAIL[p]}`} style={{ opacity: todo.priority === p ? 1 : 0.3 }} />
             </button>
-            {todo.due_date && (
-              <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors ml-auto"><X size={10} /></button>
-            )}
-          </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Deadline */}
+      <div className="flex items-center justify-between px-3 py-2 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5">
+          <CalendarDays size={10} className="text-t5 shrink-0" />
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowDeadlinePicker(true)}
+            className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2"
+            style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
+          >
+            {todo.due_date
+              ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
+              : <span>Set deadline</span>
+            }
+          </button>
+          {todo.due_date && (
+            <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors"><X size={10} /></button>
+          )}
         </div>
       </div>
 
@@ -310,19 +328,6 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               <span className="text-[11px] text-t5">No sessions</span>
             </div>
           )}
-        </div>
-        {/* Created date row */}
-        <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-s">
-          <Clock size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
-          {todo.show_created_at
-            ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
-            : <span className="text-[11px] text-t5">—</span>
-          }
-          <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
-            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2 ml-1">
-            {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
-          </button>
         </div>
         {/* Expanded log — full width below the row */}
         {logExpanded && taskSessions.length > 0 && (() => {
