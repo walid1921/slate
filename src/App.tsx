@@ -12,6 +12,7 @@ import {
   Clock,
   FileText,
   Settings as SettingsIcon,
+  Settings,
   Trash2,
   CheckCheck,
   Zap,
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { useTodoStore, Priority, Todo } from "./store";
+import { useTodoStore, Priority, Todo, TaskCategory } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
@@ -177,7 +178,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   );
 }
 
-function AddTaskModal({ onClose, withDeadline = false }: { onClose: () => void; withDeadline?: boolean }) {
+function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClose: () => void; withDeadline?: boolean; categoryId?: number }) {
   const { add } = useTodoStore();
   const { defaultPriority } = useSettingsStore();
   const [text, setText] = useState("");
@@ -192,7 +193,7 @@ function AddTaskModal({ onClose, withDeadline = false }: { onClose: () => void; 
     if (!text.trim() || saving) return;
     setSaving(true);
     try {
-      await add(text.trim(), defaultPriority, withDeadline ? date : null, withDeadline ? time : null);
+      await add(text.trim(), defaultPriority, withDeadline ? date : null, withDeadline ? time : null, categoryId);
       onClose();
     } catch {
       setSaving(false);
@@ -431,6 +432,58 @@ function TodoRow({
   );
 }
 
+function CategoryManagerPanel({ categories, onAdd, onRemove, onClose }: {
+  categories: TaskCategory[];
+  onAdd: (name: string) => Promise<void>;
+  onRemove: (id: number) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [newName, setNewName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 50); }, []);
+
+  const submit = async () => {
+    const n = newName.trim();
+    if (!n) return;
+    await onAdd(n);
+    setNewName("");
+  };
+
+  return (
+    <div className="px-4 py-3 flex flex-col gap-3 shrink-0" style={{ background: "var(--c-surface-1)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-t3 uppercase tracking-wider">Categories</span>
+        <button onClick={onClose} className="text-t5 hover:text-t3 transition-colors"><X size={11} /></button>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {categories.map(cat => (
+          <div key={cat.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]"
+            style={{ background: `rgba(${cat.color},0.12)`, border: `1px solid rgba(${cat.color},0.3)`, color: `rgba(${cat.color},0.9)` }}>
+            {cat.name}
+            {cat.id !== 1 && (
+              <button onClick={() => onRemove(cat.id)} className="ml-0.5 hover:opacity-70 transition-opacity"><X size={9} /></button>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          ref={inputRef}
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); submit(); } e.stopPropagation(); }}
+          placeholder="New category name…"
+          className="flex-1 px-2 py-1 rounded text-[12px] text-t1 outline-none"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+        />
+        <button onClick={submit} className="px-2 py-1 rounded text-[11px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)" }}>
+          <Plus size={11} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StreakWidget() {
   const [current, setCurrent] = useState(0);
   const [longest, setLongest] = useState(0);
@@ -530,7 +583,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, loading, load, add, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
+  const { todos, trash, categories, loading, load, add, loadCategories, addCategory, removeCategory, loadTrash, restore, deletePermanently, deleteAllPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -559,6 +612,8 @@ export default function App() {
   const [todoFilter, setTodoFilter] = useState<TodoFilter>("all");
   const [todoSort, setTodoSort] = useState<TodoSort>("manual");
   const [selectedTodoId, setSelectedTodoId] = useState<number | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<number>(1);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [inputFocused, setInputFocused] = useState(false);
 
   const askConfirm = useCallback((title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => {
@@ -570,7 +625,13 @@ export default function App() {
     { prefix: "/rm ", label: "/rm", desc: "Add a reminder" },
     { prefix: "/nt ", label: "/nt", desc: "Create a new note" },
     { prefix: "/i",   label: "/i",  desc: "Quick IHK entry" },
+    { prefix: "/t",   label: "/t",  desc: "Add task to category" },
   ];
+
+  // Category picker: /t followed by optional filter, no space yet
+  const showCategoryPicker = inputVal.length >= 2 && inputVal.startsWith("/t") && !inputVal.startsWith("/tm") && !inputVal.slice(2).includes(" ");
+  const categoryQuery = inputVal.slice(2).toLowerCase();
+  const filteredCategories = categories.filter(c => !categoryQuery || c.name.toLowerCase().startsWith(categoryQuery));
 
   // Module picker: /i followed by optional filter letters, no space yet
   const showModulePicker = inputVal.length >= 2 && inputVal.startsWith("/i") && !inputVal.slice(2).includes(" ");
@@ -584,7 +645,7 @@ export default function App() {
     ...ihkModules.filter(m => !moduleQuery || m.name.toLowerCase().startsWith(moduleQuery)).map(m => ({ name: m.name, rgb: "16,185,129", category: 2 as const })),
   ] : [];
 
-  const showCmdPalette = !showModulePicker && (inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal))));
+  const showCmdPalette = !showModulePicker && !showCategoryPicker && (inputVal === "/" || (inputVal.startsWith("/") && COMMANDS.some(c => c.prefix.startsWith(inputVal))));
   const filteredCmds = inputVal === "/" ? COMMANDS : COMMANDS.filter(c => c.prefix.startsWith(inputVal));
 
   // Apply theme and text size to document root
@@ -604,7 +665,7 @@ export default function App() {
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
-  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
@@ -653,6 +714,7 @@ export default function App() {
 
   const filtered = todos
     .filter((t) => {
+      if (t.category_id !== activeCategoryId) return false;
       if (todoFilter === "active") return !t.done;
       if (todoFilter === "done") return t.done;
       return true;
@@ -707,6 +769,30 @@ export default function App() {
           return;
         }
         if (e.key === "Escape") { setInputVal(""); setQuery(""); return; }
+      }
+      if (showCategoryPicker && filteredCategories.length > 0) {
+        if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCategories.length); return; }
+        if (e.key === "ArrowUp")   { e.preventDefault(); setCmdIdx(i => (i - 1 + filteredCategories.length) % filteredCategories.length); return; }
+        if (e.key === "Tab" || e.key === "Enter") {
+          e.preventDefault();
+          const c = filteredCategories[cmdIdx] ?? filteredCategories[0];
+          if (c) { const v = `/t ${c.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); }
+          return;
+        }
+        if (e.key === "Escape") { setInputVal(""); setQuery(""); return; }
+      }
+      // /t CategoryName text → save as task in that category
+      if (e.key === "Enter" && inputVal.startsWith("/t ")) {
+        const rest = inputVal.slice(3).trim();
+        const catMatch = categories.find(c => rest.toLowerCase().startsWith(c.name.toLowerCase() + " "));
+        if (catMatch) {
+          const text = rest.slice(catMatch.name.length).trim();
+          if (text) {
+            add(text, defaultPriority, null, null, catMatch.id);
+            setInputVal(""); setQuery("");
+            return;
+          }
+        }
       }
       if (showCmdPalette && filteredCmds.length > 0) {
         if (e.key === "ArrowDown") { e.preventDefault(); setCmdIdx(i => (i + 1) % filteredCmds.length); return; }
@@ -907,6 +993,23 @@ export default function App() {
               })}
             </div>
           )}
+          {showCategoryPicker && (
+            <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--c-border-subtle)" }}>
+              {filteredCategories.length === 0 ? (
+                <div className="px-5 py-2 text-[12px] text-t5">No match — add categories in the Tasks page</div>
+              ) : filteredCategories.map((cat, i) => (
+                <button key={cat.id}
+                  onMouseDown={e => { e.preventDefault(); const v = `/t ${cat.name} `; setInputVal(v); setQuery(v); setCmdIdx(0); inputRef.current?.focus(); }}
+                  className={`w-full flex items-center gap-3 px-5 py-2 text-left transition-colors ${i === cmdIdx ? "" : "hover:bg-s1"}`}
+                  style={i === cmdIdx ? { background: "var(--c-surface-2)" } : {}}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${cat.color},0.8)` }} />
+                  <span className="text-[13px] font-medium text-t1">{cat.name}</span>
+                  {i === cmdIdx && <span className="ml-auto text-[10px] text-t5">Tab or ↵</span>}
+                </button>
+              ))}
+            </div>
+          )}
           {showCmdPalette && filteredCmds.length > 0 && (
             <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--c-border-subtle)" }}>
               {filteredCmds.map((cmd, i) => (
@@ -931,6 +1034,7 @@ export default function App() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                 {[
                   { cmd: "/tm", desc: "Add task with deadline" },
+                  { cmd: "/t",  desc: "Task in category" },
                   { cmd: "/rm", desc: "Add a reminder" },
                   { cmd: "/nt", desc: "Create a new note" },
                   { cmd: "/i",  desc: "Quick IHK entry" },
@@ -1018,18 +1122,34 @@ export default function App() {
       {/* Todos view — task list */}
       {view === "todos" && (
         <div key="todos" className="view-animate flex flex-col flex-1 overflow-hidden">
-          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} onClose={() => setAddTaskOpen(false)} />}
-          <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-            <div className="flex-1 overflow-hidden">
-              <FilterBar
-                page="todos"
-                filter={todoFilter}
-                sort={todoSort}
-                onFilter={setTodoFilter}
-                onSort={setTodoSort}
-                onRefresh={async () => { await load(); }}
-              />
+          {addTaskOpen && <AddTaskModal withDeadline={addTaskOpen === "deadline"} categoryId={activeCategoryId} onClose={() => setAddTaskOpen(false)} />}
+
+          {/* Category tabs row */}
+          <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto">
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategoryId(cat.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
+                  style={activeCategoryId === cat.id
+                    ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
+                    : { color: "var(--c-text-4)", borderBottom: "2px solid transparent", marginBottom: -1 }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${cat.color},${activeCategoryId === cat.id ? "0.9" : "0.4"})` }} />
+                  {cat.name}
+                  <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
+                </button>
+              ))}
             </div>
+            {/* Manage categories */}
+            <button
+              onClick={() => setShowCategoryManager(o => !o)}
+              className="p-1.5 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors shrink-0 mr-1"
+              title="Manage categories"
+            >
+              <Settings size={11} />
+            </button>
             <div className="relative shrink-0 mr-2">
               <button
                 ref={addTaskBtnRef}
@@ -1061,6 +1181,30 @@ export default function App() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Category manager panel */}
+          {showCategoryManager && (
+            <CategoryManagerPanel
+              categories={categories}
+              onAdd={addCategory}
+              onRemove={removeCategory}
+              onClose={() => setShowCategoryManager(false)}
+            />
+          )}
+
+          {/* FilterBar */}
+          <div className="flex items-center" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+            <div className="flex-1 overflow-hidden">
+              <FilterBar
+                page="todos"
+                filter={todoFilter}
+                sort={todoSort}
+                onFilter={setTodoFilter}
+                onSort={setTodoSort}
+                onRefresh={async () => { await load(); }}
+              />
             </div>
           </div>
           {/* Split panel */}

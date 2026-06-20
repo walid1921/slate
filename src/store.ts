@@ -5,6 +5,13 @@ import { logActivity } from "./activity";
 
 export type Priority = "none" | "low" | "medium" | "high";
 
+export interface TaskCategory {
+  id: number;
+  name: string;
+  color: string;
+  position: number;
+}
+
 export interface Todo {
   id: number;
   text: string;
@@ -17,20 +24,30 @@ export interface Todo {
   created_at: string;
   deleted_at?: string | null;
   description: string;
+  category_id: number;
 }
+
+const PRESET_COLORS = [
+  "59,130,246", "99,102,241", "168,85,247", "236,72,153",
+  "239,68,68",  "245,158,11", "16,185,129", "20,184,166",
+];
 
 interface State {
   todos: Todo[];
   trash: Todo[];
+  categories: TaskCategory[];
   query: string;
   loading: boolean;
   hasUnread: boolean;
   clearUnread: () => void;
   setQuery: (q: string) => void;
   load: () => Promise<void>;
+  loadCategories: () => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  removeCategory: (id: number) => Promise<void>;
   checkDueTodos: () => Promise<void>;
   loadTrash: () => Promise<void>;
-  add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null) => Promise<void>;
+  add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null, category_id?: number) => Promise<void>;
   toggle: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
@@ -46,6 +63,7 @@ interface State {
 export const useTodoStore = create<State>((set, get) => ({
   todos: [],
   trash: [],
+  categories: [],
   query: "",
   loading: true,
   hasUnread: false,
@@ -53,10 +71,34 @@ export const useTodoStore = create<State>((set, get) => ({
 
   setQuery: (query) => set({ query }),
 
+  loadCategories: async () => {
+    const db = await getDb();
+    const rows = await db.select<TaskCategory[]>("SELECT id, name, color, position FROM task_categories ORDER BY position ASC, id ASC");
+    set({ categories: rows });
+  },
+
+  addCategory: async (name) => {
+    const db = await getDb();
+    const existing = get().categories;
+    const color = PRESET_COLORS[existing.length % PRESET_COLORS.length];
+    const pos = existing.length;
+    await db.execute("INSERT OR IGNORE INTO task_categories (name, color, position) VALUES (?, ?, ?)", [name.trim(), color, pos]);
+    await get().loadCategories();
+  },
+
+  removeCategory: async (id) => {
+    if (id === 1) return; // General is permanent
+    const db = await getDb();
+    await db.execute("UPDATE todos SET category_id = 1 WHERE category_id = ?", [id]);
+    await db.execute("DELETE FROM task_categories WHERE id = ?", [id]);
+    await get().loadCategories();
+    await get().load();
+  },
+
   load: async () => {
     const db = await getDb();
     const rows = await db.select<Todo[]>(
-      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+      "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
     );
     set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified) })), loading: false });
   },
@@ -94,14 +136,14 @@ export const useTodoStore = create<State>((set, get) => ({
     set({ trash: rows.map((r) => ({ ...r, done: Boolean(r.done) })) });
   },
 
-  add: async (text, priority = "none", due_date = null, due_time = null) => {
+  add: async (text, priority = "none", due_date = null, due_time = null, category_id = 1) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     const db = await getDb();
     await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
     await db.execute(
-      "INSERT INTO todos (text, priority, due_date, due_time, position) VALUES (?, ?, ?, ?, 0)",
-      [trimmed, priority, due_date, due_time]
+      "INSERT INTO todos (text, priority, due_date, due_time, position, category_id) VALUES (?, ?, ?, ?, 0, ?)",
+      [trimmed, priority, due_date, due_time, category_id]
     );
     logActivity();
     await get().load();

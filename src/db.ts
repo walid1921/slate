@@ -27,6 +27,19 @@ export async function getDb(): Promise<Database> {
   await _db.execute(`ALTER TABLE todos ADD COLUMN description TEXT NOT NULL DEFAULT ''`).catch(() => {});
 
   await _db.execute(`
+    CREATE TABLE IF NOT EXISTS task_categories (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL UNIQUE,
+      color      TEXT    NOT NULL DEFAULT '99,102,241',
+      position   INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  // Seed the always-present General category
+  await _db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, position) VALUES (1, 'General', '99,102,241', 0)`);
+  await _db.execute(`ALTER TABLE todos ADD COLUMN category_id INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+
+  await _db.execute(`
     CREATE TABLE IF NOT EXISTS reminders (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       text       TEXT    NOT NULL,
