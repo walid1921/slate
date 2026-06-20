@@ -288,14 +288,14 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               <div className="flex items-center gap-1">
                 {activeSession ? (
                   <>
-                    <Tooltip content="Pause"><button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button></Tooltip>
-                    <Tooltip content="Mark done"><button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button></Tooltip>
+                    <Tooltip label="Pause"><button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button></Tooltip>
+                    <Tooltip label="Mark done"><button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button></Tooltip>
                   </>
                 ) : (
                   <>
-                    <Tooltip content="Start timer"><button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button></Tooltip>
+                    <Tooltip label="Start timer"><button onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button></Tooltip>
                     {todo.status !== 'done' && (
-                      <Tooltip content="Mark done"><button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button></Tooltip>
+                      <Tooltip label="Mark done"><button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button></Tooltip>
                     )}
                   </>
                 )}
@@ -669,12 +669,12 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           </span>
           {activeSession ? (
             <>
-              <Tooltip content="Pause"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
+              <Tooltip label="Pause"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
                 className="p-1 rounded text-t3 hover:text-t1 transition-colors"
                 style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
                 <Pause size={9} />
               </button></Tooltip>
-              <Tooltip content="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+              <Tooltip label="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
                 className="p-1 rounded transition-colors"
                 style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
                 <CheckCheck size={9} />
@@ -682,13 +682,13 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
             </>
           ) : (
             <>
-              <Tooltip content="Start timer"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
+              <Tooltip label="Start timer"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
                 className="p-1 rounded transition-colors"
                 style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
                 <Play size={9} />
               </button></Tooltip>
               {todo.status !== 'done' && (
-                <Tooltip content="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                <Tooltip label="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
                   className="p-1 rounded transition-colors"
                   style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
                   <CheckCheck size={9} />
@@ -1029,23 +1029,23 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
               <div className="flex items-center gap-1.5 ml-auto">
                 {activeSession ? (
                   <>
-                    <Tooltip content="Pause"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
+                    <Tooltip label="Pause"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
                       className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
                       <Pause size={9} />
                     </button></Tooltip>
-                    <Tooltip content="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                    <Tooltip label="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
                       className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
                       <CheckCheck size={9} />
                     </button></Tooltip>
                   </>
                 ) : (
                   <>
-                    <Tooltip content="Start timer"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
+                    <Tooltip label="Start timer"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
                       className="p-1 rounded transition-colors" style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", color: "rgba(96,165,250,0.9)" }}>
                       <Play size={9} />
                     </button></Tooltip>
                     {todo.status !== 'done' && taskSessions.length > 0 && (
-                      <Tooltip content="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                      <Tooltip label="Mark done"><button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
                         className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
                         <CheckCheck size={9} />
                       </button></Tooltip>
