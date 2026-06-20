@@ -407,13 +407,13 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 
 function ColorPalette({ current, onChange }: { current: string; onChange: (c: string) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-1 p-1.5 rounded-lg" style={{ width: 72, background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
+    <div className="grid grid-cols-6 gap-2">
       {PRESET_COLORS.map(c => (
         <button
           key={c}
           onClick={() => onChange(c)}
-          className="w-4 h-4 rounded-full transition-transform hover:scale-110"
-          style={{ background: `rgb(${c})`, outline: c === current ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
+          className="w-6 h-6 rounded-full transition-transform hover:scale-110 shrink-0"
+          style={{ background: `rgb(${c})`, outline: c === current ? `2px solid rgb(${c})` : "none", outlineOffset: 2, border: c === "255,255,255" ? "1px solid rgba(255,255,255,0.2)" : "none" }}
         />
       ))}
     </div>
@@ -437,7 +437,7 @@ function AddCategoryModal({ onAdd, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 240, border: "1px solid var(--c-border)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }}>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
           <span className="text-[13px] font-semibold text-t1">New category</span>
@@ -485,7 +485,7 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 240, border: "1px solid var(--c-border)" }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }}>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
           <span className="text-[13px] font-semibold text-t1">Edit category</span>
@@ -504,14 +504,20 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
           <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
           <ColorPalette current={color} onChange={setColor} />
         </div>
-        <div className="flex items-center gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          {cat.id !== 1 && (
-            <button onClick={() => { onRemove(cat.id, cat.name); onClose(); }} className="text-[11px] text-red-400/70 hover:text-red-400 transition-colors flex items-center gap-1"><Trash2 size={11} /> Delete</button>
-          )}
-          <div className="flex gap-2 ml-auto">
-            <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-            <button onClick={save} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
+        <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+            <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
           </div>
+          {cat.id !== 1 && (
+            <button
+              onClick={() => { onRemove(cat.id, cat.name); onClose(); }}
+              className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <Trash2 size={12} /> Delete category
+            </button>
+          )}
         </div>
       </div>
     </div>
