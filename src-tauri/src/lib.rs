@@ -51,7 +51,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
 
 fn show_window(window: &WebviewWindow) {
-    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 860.0, height: 780.0 }));
+    let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 860.0, height: 680.0 }));
     let _ = window.show();
     let _ = window.set_focus();
     let _ = window.emit("window-shown", ());
