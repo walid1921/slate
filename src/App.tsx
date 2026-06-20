@@ -13,6 +13,7 @@ import {
   FileText,
   Settings as SettingsIcon,
   Settings,
+  ChevronDown,
   Trash2,
   CheckCheck,
   Zap,
@@ -184,12 +185,21 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState(categoryId);
+  const [catDropOpen, setCatDropOpen] = useState(false);
+  const catDropRef = useRef<HTMLDivElement>(null);
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const [date, setDate] = useState(`${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`);
   const [time, setTime] = useState(`${pad(today.getHours())}:${pad(today.getMinutes())}`);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+
+  useEffect(() => {
+    if (!catDropOpen) return;
+    const close = (e: MouseEvent) => { if (catDropRef.current && !catDropRef.current.contains(e.target as Node)) setCatDropOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [catDropOpen]);
   const handleSave = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
@@ -230,19 +240,40 @@ function AddTaskModal({ onClose, withDeadline = false, categoryId = 1 }: { onClo
           />
           {/* Category selector */}
           {(() => {
-            const active = categories.find(c => c.id === selectedCategoryId);
+            const active = categories.find(c => c.id === selectedCategoryId) ?? categories[0];
             return (
-              <select
-                value={selectedCategoryId}
-                onChange={e => setSelectedCategoryId(Number(e.target.value))}
-                onKeyDown={e => e.stopPropagation()}
-                className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none appearance-none"
-                style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.5)`, color: `rgba(${active?.color ?? "99,102,241"},0.95)` }}
-              >
-                {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <div ref={catDropRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setCatDropOpen(o => !o)}
+                  onKeyDown={e => e.stopPropagation()}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] text-left transition-colors hover:opacity-90"
+                  style={{ background: "var(--c-surface-2)", border: `1px solid rgba(${active?.color ?? "99,102,241"},0.4)` }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${active?.color},0.85)` }} />
+                  <span style={{ color: `rgba(${active?.color},0.95)` }}>{active?.name}</span>
+                  <ChevronDown size={11} className="ml-auto text-t5" />
+                </button>
+                {catDropOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg overflow-hidden py-1"
+                    style={{ background: "rgba(20,20,24,0.97)", border: "1px solid var(--c-border)", boxShadow: "0 8px 24px rgba(0,0,0,0.45)" }}>
+                    {categories.map(cat => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => { setSelectedCategoryId(cat.id); setCatDropOpen(false); }}
+                        onKeyDown={e => e.stopPropagation()}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-left transition-colors hover:bg-s2"
+                        style={cat.id === selectedCategoryId ? { background: `rgba(${cat.color},0.1)` } : {}}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${cat.color},0.85)` }} />
+                        <span style={{ color: cat.id === selectedCategoryId ? `rgba(${cat.color},0.95)` : "var(--c-text-2)" }}>{cat.name}</span>
+                        {cat.id === selectedCategoryId && <Check size={11} className="ml-auto" style={{ color: `rgba(${cat.color},0.8)` }} />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })()}
           {withDeadline && (
