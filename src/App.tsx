@@ -270,10 +270,10 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       </div>
 
       {/* Timer + Time Log — same row, divided */}
-      <div className="flex flex-col border-t border-s shrink-0">
+      <div className="flex flex-col border-t border-b border-s shrink-0">
         <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
           {/* Timer half */}
-          <div className="flex flex-col justify-between px-3 py-2 gap-1.5 border-r border-s">
+          <div className="flex flex-col justify-between px-3 py-2 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
             <div className="flex items-center gap-1.5">
               <Timer size={10} className="text-t5 shrink-0" />
               <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
