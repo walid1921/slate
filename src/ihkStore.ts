@@ -101,7 +101,6 @@ export const useIHKStore = create<IHKState>((set, get) => ({
   remove: async (id) => {
     const db = await getDb();
     await db.execute("DELETE FROM ihk_entries WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ entries: s.entries.filter((e) => e.id !== id) }));
   },
 
@@ -112,6 +111,7 @@ export const useIHKStore = create<IHKState>((set, get) => ({
       "INSERT INTO ihk_weeks (week_key, sent) VALUES (?, ?) ON CONFLICT(week_key) DO UPDATE SET sent = excluded.sent",
       [weekKey, isSent ? 0 : 1]
     );
+    if (!isSent) logActivity();
     set(s => {
       const next = new Set(s.sentWeeks);
       isSent ? next.delete(weekKey) : next.add(weekKey);

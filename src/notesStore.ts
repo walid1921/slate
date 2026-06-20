@@ -67,14 +67,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   remove: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE notes SET deleted_at = datetime('now') WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ notes: s.notes.filter((n) => n.id !== id) }));
   },
 
   restore: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE notes SET deleted_at = NULL WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((n) => n.id !== id) }));
     await get().load();
   },
@@ -82,14 +80,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   deletePermanently: async (id) => {
     const db = await getDb();
     await db.execute("DELETE FROM notes WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((n) => n.id !== id) }));
   },
 
   deleteAllPermanently: async () => {
     const db = await getDb();
     await db.execute("DELETE FROM notes WHERE deleted_at IS NOT NULL");
-    logActivity();
     set({ trash: [] });
   },
 }));

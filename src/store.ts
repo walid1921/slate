@@ -231,14 +231,12 @@ export const useTodoStore = create<State>((set, get) => ({
   remove: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE todos SET deleted_at = datetime('now') WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ todos: s.todos.filter((t) => t.id !== id) }));
   },
 
   restore: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE todos SET deleted_at = NULL WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((t) => t.id !== id) }));
     await get().load();
   },
@@ -246,14 +244,12 @@ export const useTodoStore = create<State>((set, get) => ({
   deletePermanently: async (id) => {
     const db = await getDb();
     await db.execute("DELETE FROM todos WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((t) => t.id !== id) }));
   },
 
   deleteAllPermanently: async () => {
     const db = await getDb();
     await db.execute("DELETE FROM todos WHERE deleted_at IS NOT NULL");
-    logActivity();
     set({ trash: [] });
   },
 
@@ -283,6 +279,7 @@ export const useTodoStore = create<State>((set, get) => ({
   setDescription: async (id, description) => {
     const db = await getDb();
     await db.execute("UPDATE todos SET description = ? WHERE id = ?", [description, id]);
+    logActivity();
     set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, description } : t) }));
   },
 

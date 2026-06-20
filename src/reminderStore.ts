@@ -74,7 +74,6 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   remove: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET deleted_at = datetime('now') WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({
       reminders: s.reminders.filter((r) => r.id !== id),
       pendingAlert: s.pendingAlert?.id === id ? null : s.pendingAlert,
@@ -91,7 +90,6 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   restore: async (id) => {
     const db = await getDb();
     await db.execute("UPDATE reminders SET deleted_at = NULL WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
     await get().load();
   },
@@ -99,14 +97,12 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   deletePermanently: async (id) => {
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE id = ?", [id]);
-    logActivity();
     set((s) => ({ trash: s.trash.filter((r) => r.id !== id) }));
   },
 
   deleteAllPermanently: async () => {
     const db = await getDb();
     await db.execute("DELETE FROM reminders WHERE deleted_at IS NOT NULL");
-    logActivity();
     set({ trash: [] });
   },
 
@@ -115,6 +111,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     const r = get().reminders.find((r) => r.id === id);
     if (r) await notify("Slate Reminder", r.text);
     await db.execute("UPDATE reminders SET notified = 1 WHERE id = ?", [id]);
+    logActivity();
     set((s) => ({
       reminders: s.reminders.map((r) => r.id === id ? { ...r, notified: true } : r),
       hasUnread: true,
