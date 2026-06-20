@@ -778,7 +778,7 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
 const PRIORITY_COLOR: Record<Priority, string> = { none: "var(--c-text-5)", low: "rgb(96,165,250)", medium: "rgb(251,191,36)", high: "rgb(248,113,113)" };
 
 function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
-  const { todos } = useTodoStore();
+  const { todos, categories } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const { setStatus } = useTodoStore();
   const [focusId, setFocusId] = useState<number | null>(() => {
@@ -849,50 +849,77 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
       </div>
 
       {/* Body */}
-      {todo ? (
-        <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-s1 transition-colors">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[todo.priority] }} />
-              <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
+      {todo ? (() => {
+        const category = categories.find(c => c.id === todo.category_id);
+        const descPreview = todo.description?.trim().split("\n")[0] ?? "";
+        const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
+        const statusStyle = todo.status === 'in_progress'
+          ? { background: "rgba(59,130,246,0.15)", color: "rgba(96,165,250,0.9)", border: "1px solid rgba(59,130,246,0.3)" }
+          : { background: "rgba(156,163,175,0.1)", color: "var(--c-text-4)", border: "1px solid var(--c-border-subtle)" };
+        return (
+          <button onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-2.5 flex flex-col gap-2 hover:bg-white/3 transition-colors flex-1">
+            {/* Name row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full shrink-0 mt-0.5" style={{ background: PRIORITY_COLOR[todo.priority] }} />
+                <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
+              </div>
+              {countdown && (
+                <span className={`text-[10px] shrink-0 mt-0.5 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+              )}
             </div>
-            {countdown && (
-              <span className={`text-[10px] shrink-0 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
+            {/* Meta row: status + category */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={statusStyle}>{statusLabel}</span>
+              {category && (
+                <span className="text-[9px] text-t5 px-1.5 py-0.5 rounded-full" style={{ background: `rgba(${category.color},0.12)`, color: `rgba(${category.color},0.8)`, border: `1px solid rgba(${category.color},0.2)` }}>
+                  {category.name}
+                </span>
+              )}
+            </div>
+            {/* Description preview */}
+            {descPreview && (
+              <p className="text-[10px] text-t5 truncate leading-tight">{descPreview}</p>
             )}
-          </div>
-          {/* Timer row */}
-          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-            <span className="text-[11px] text-t3 font-mono min-w-[36px]">
-              {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
-            </span>
-            {activeSession ? (
-              <>
-                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
-                  className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
-                  <Pause size={9} />
-                </button>
-                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
-                  className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
-                  <CheckCheck size={9} />
-                </button>
-              </>
-            ) : (
-              <>
-                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
-                  className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}>
-                  <Play size={9} />
-                </button>
-                {todo.status !== 'done' && taskSessions.length > 0 && (
-                  <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
-                    className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
-                    <CheckCheck size={9} />
-                  </button>
+            {/* Timer row */}
+            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+              <span className="text-[11px] text-t3 font-mono min-w-[36px]">
+                {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+              </span>
+              {taskSessions.length > 0 && (
+                <span className="text-[9px] text-t5">{taskSessions.filter(s => s.ended_at).length} session{taskSessions.filter(s => s.ended_at).length !== 1 ? "s" : ""}</span>
+              )}
+              <div className="flex items-center gap-1.5 ml-auto">
+                {activeSession ? (
+                  <>
+                    <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}
+                      className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}>
+                      <Pause size={9} />
+                    </button>
+                    <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                      className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                      <CheckCheck size={9} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}
+                      className="p-1 rounded transition-colors" style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", color: "rgba(96,165,250,0.9)" }}>
+                      <Play size={9} />
+                    </button>
+                    {todo.status !== 'done' && taskSessions.length > 0 && (
+                      <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}
+                        className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}>
+                        <CheckCheck size={9} />
+                      </button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </div>
-        </button>
-      ) : (
+              </div>
+            </div>
+          </button>
+        );
+      })() : (
         <div className="px-3 py-4 text-[11px] text-t5 text-center">Select a task to focus on</div>
       )}
     </div>
