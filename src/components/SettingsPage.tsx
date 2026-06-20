@@ -13,7 +13,7 @@ import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore"
 import { useTodoStore } from "../store";
 import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
-import { useToastStore } from "../toastStore";
+import { useToastStore, showErrorToast } from "../toastStore";
 
 const guideSections = [
   {
@@ -392,6 +392,37 @@ function DataPreview() {
   );
 }
 
+function validateSlateExport(raw: string): string | null {
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return "Not a valid JSON file — please select a Slate export (.json)";
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data))
+    return "This file is not a valid Slate export";
+  const d = data as Record<string, unknown>;
+  if (typeof d.version !== "number" || ![1, 2].includes(d.version))
+    return "Unrecognized format — this file was not exported by Slate";
+  for (const key of ["todos", "reminders", "notes"]) {
+    if (!Array.isArray(d[key]))
+      return `Invalid export — missing or invalid "${key}" section`;
+  }
+  const todos = d.todos as unknown[];
+  if (todos.length > 0) {
+    const t = todos[0] as Record<string, unknown>;
+    if (t.id === undefined || t.text === undefined)
+      return "Invalid task format — this file may be from a different app";
+  }
+  const reminders = d.reminders as unknown[];
+  if (reminders.length > 0) {
+    const r = reminders[0] as Record<string, unknown>;
+    if (r.id === undefined || r.remind_at === undefined)
+      return "Invalid reminder format — this file may be from a different app";
+  }
+  return null;
+}
+
 function DataTab() {
   const loadTodos = useTodoStore((s) => s.load);
   const loadReminders = useReminderStore((s) => s.load);
@@ -434,6 +465,8 @@ function DataTab() {
       setExportedPath(filePath);
       showToast("exported");
     } catch (e) {
+      console.error("export failed:", e);
+      showErrorToast("Export failed — please try again");
     } finally {
       setExporting(false);
     }
@@ -441,7 +474,16 @@ function DataTab() {
 
   const handlePickImport = async () => {
     const path = await withDialogFocus(() => openDialog({ filters: [{ name: "JSON", extensions: ["json"] }], multiple: false }));
-    if (typeof path === "string") { setImportFile(path); setImportConfirm(true); }
+    if (typeof path !== "string") return;
+    try {
+      const raw = await readTextFile(path);
+      const error = validateSlateExport(raw);
+      if (error) { showErrorToast(error); return; }
+      setImportFile(path);
+      setImportConfirm(true);
+    } catch {
+      showErrorToast("Couldn't read the file — please try again");
+    }
   };
 
   const handleImport = async (withBackup: boolean) => {
@@ -467,7 +509,6 @@ function DataTab() {
       }
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
-      if (![1, 2].includes(data.version) || !data.todos || !data.reminders || !data.notes) throw new Error("Invalid file");
       await db.execute("DELETE FROM todos");
       await db.execute("DELETE FROM reminders");
       await db.execute("DELETE FROM notes");
@@ -535,7 +576,9 @@ function DataTab() {
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
       showToast(withBackup ? "exported-imported" : "imported");
-    } catch {
+    } catch (e) {
+      console.error("import failed:", e);
+      showErrorToast("Import failed — please check the file and try again");
     } finally {
       setImporting(false);
       setImportFile(null);
