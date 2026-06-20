@@ -1175,7 +1175,7 @@ export default function App() {
 
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto">
+            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
               {categories.map(cat => (
                 <button
                   key={cat.id}
