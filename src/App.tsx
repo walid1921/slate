@@ -1179,25 +1179,34 @@ export default function App() {
 
           {/* Category tabs row */}
           <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll">
+            <div className="flex items-center gap-1.5 flex-1 overflow-x-auto category-tabs-scroll">
               {categories.map(cat => {
+                const active = activeCategoryId === cat.id;
                 const nowMs = Date.now();
                 const hasOverdue = todos.some(t =>
                   t.category_id === cat.id && !t.done && t.due_date &&
                   buildDueDate(t.due_date, t.due_time).getTime() < nowMs
                 );
+                const count = todos.filter(t => t.category_id === cat.id && !t.done).length;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setActiveCategoryId(cat.id)}
-                    className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 transition-colors"
-                    style={activeCategoryId === cat.id
-                      ? { color: `rgba(${cat.color},1)`, borderBottom: `2px solid rgba(${cat.color},0.8)`, marginBottom: -1 }
-                      : { color: `rgba(${cat.color},0.5)`, borderBottom: "2px solid transparent", marginBottom: -1 }}
+                    className="relative flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition-all"
+                    style={active
+                      ? { color: `rgba(${cat.color},1)`, background: `rgba(${cat.color},0.15)`, border: `1px solid rgba(${cat.color},0.35)` }
+                      : { color: `rgba(${cat.color},0.55)`, background: `rgba(${cat.color},0.05)`, border: "1px solid transparent" }}
                   >
                     {cat.name}
-                    <span className="text-[10px] opacity-60">{todos.filter(t => t.category_id === cat.id && !t.done).length}</span>
-                    {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
+                    {count > 0 && (
+                      <span
+                        className="text-[9px] font-semibold px-1 py-0.5 rounded-full leading-none"
+                        style={active
+                          ? { background: `rgba(${cat.color},0.2)`, color: `rgba(${cat.color},0.9)` }
+                          : { background: "var(--c-surface-3)", color: "var(--c-text-5)" }}
+                      >{count}</span>
+                    )}
+                    {hasOverdue && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
                   </button>
                 );
               })}
