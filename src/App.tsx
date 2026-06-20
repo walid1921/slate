@@ -147,13 +147,29 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
   );
 }
 
+function TaskTitleInput({ todo }: { todo: Todo }) {
+  const { updateText } = useTodoStore();
+  const [title, setTitle] = useState(todo.text);
+  useEffect(() => { setTitle(todo.text); }, [todo.id, todo.text]);
+  const save = () => { if (title.trim() && title.trim() !== todo.text) updateText(todo.id, title.trim()); };
+  return (
+    <input
+      value={title}
+      onChange={e => setTitle(e.target.value)}
+      onBlur={save}
+      onKeyDown={e => { if (e.key === "Enter") { save(); e.currentTarget.blur(); } }}
+      className="flex-1 text-[13px] font-semibold text-t1 bg-transparent outline-none min-w-0"
+      placeholder="Task title"
+    />
+  );
+}
+
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus } = useTodoStore();
+  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
   const [elapsed, setElapsed] = useState(0);
-  const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [logExpanded, setLogExpanded] = useState(false);
@@ -166,9 +182,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
     return () => clearInterval(id);
   }, [activeSession?.id]);
 
-  useEffect(() => { setTitle(todo.text); setDesc(todo.description); }, [todo.id]);
+  useEffect(() => { setDesc(todo.description); }, [todo.id]);
 
-  const saveTitle = () => { if (title.trim() && title.trim() !== todo.text) updateText(todo.id, title.trim()); };
   const saveDesc = () => { if (desc !== todo.description) setDescription(todo.id, desc); };
 
   const now = useNow(todo.due_date, todo.due_time);
@@ -191,18 +206,6 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           }}
         />
       )}
-
-      {/* Title */}
-      <div className="px-5 pt-5 pb-3 shrink-0">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={saveTitle}
-          onKeyDown={(e) => { if (e.key === "Enter") { saveTitle(); e.currentTarget.blur(); } }}
-          className="w-full text-[16px] font-semibold text-t1 bg-transparent outline-none"
-          placeholder="Task title"
-        />
-      </div>
 
       {/* Priority + Deadline — weighted 2-col grid */}
       <div className="grid border-t border-s shrink-0" style={{ gridTemplateColumns: "1fr 2fr" }}>
@@ -1599,9 +1602,9 @@ export default function App() {
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
           <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, maxHeight: "80vh", border: "1px solid var(--c-border)" }}>
-            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-              <span className="text-[13px] font-semibold text-t2">Task</span>
-              <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors"><X size={13} /></button>
+            <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+              <TaskTitleInput todo={selectedTodo} />
+              <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
             </div>
             <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} />
           </div>
