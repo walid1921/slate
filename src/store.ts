@@ -37,6 +37,7 @@ export interface Todo {
   status: TodoStatus;
   show_created_at: boolean;
   show_timer: boolean;
+  show_subtask_bar: boolean;
   subtasks: SubTask[];
 }
 
@@ -87,6 +88,7 @@ interface State {
   setDescription: (id: number, description: string) => Promise<void>;
   setShowCreatedAt: (id: number, show: boolean) => Promise<void>;
   setShowTimer: (id: number, show: boolean) => Promise<void>;
+  setShowSubtaskBar: (id: number, show: boolean) => Promise<void>;
   setStatus: (id: number, status: TodoStatus) => Promise<void>;
   setSubtasks: (id: number, subtasks: SubTask[]) => Promise<void>;
 }
@@ -159,9 +161,9 @@ export const useTodoStore = create<State>((set, get) => ({
     try {
       const db = await getDb();
       const rows = await db.select<Todo[]>(
-        "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer, subtasks FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+        "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer, show_subtask_bar, subtasks FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
       );
-      set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo'), subtasks: (() => { try { return JSON.parse((r.subtasks as unknown as string) || '[]'); } catch { return []; } })() })), loading: false });
+      set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), show_subtask_bar: Boolean(r.show_subtask_bar), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo'), subtasks: (() => { try { return JSON.parse((r.subtasks as unknown as string) || '[]'); } catch { return []; } })() })), loading: false });
     } catch (e) {
       console.error("load todos failed:", e);
       showErrorToast("Failed to load tasks");
@@ -317,6 +319,12 @@ export const useTodoStore = create<State>((set, get) => ({
     const db = await getDb();
     await db.execute("UPDATE todos SET show_timer = ? WHERE id = ?", [show ? 1 : 0, id]);
     set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, show_timer: show } : t) }));
+  },
+
+  setShowSubtaskBar: async (id, show) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET show_subtask_bar = ? WHERE id = ?", [show ? 1 : 0, id]);
+    set((s) => ({ todos: s.todos.map((t) => t.id === id ? { ...t, show_subtask_bar: show } : t) }));
   },
 
   setSubtasks: async (id, subtasks) => {

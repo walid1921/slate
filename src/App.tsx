@@ -181,7 +181,7 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus, setSubtasks } = useTodoStore();
+  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
@@ -437,6 +437,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             {todo.subtasks.length > 0 && (
               <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
             )}
+            <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setShowSubtaskBar(todo.id, !todo.show_subtask_bar); }} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+              {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
+            </TipBtn>
             {openSection === "subtasks" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
           </div>
         </button>
@@ -848,7 +851,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           )}
         </div>
       )}
-      {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} showCount className="mt-2" />}
+      {todo.subtasks.length > 0 && todo.show_subtask_bar && <SubtaskProgressBar subtasks={todo.subtasks} showCount className="mt-2" />}
       {showTimer && (
         <div className="flex items-center justify-between mt-2" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
           <span className="text-[10px] text-t3 font-mono">

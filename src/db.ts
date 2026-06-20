@@ -28,6 +28,7 @@ export async function getDb(): Promise<Database> {
   await _db.execute(`ALTER TABLE todos ADD COLUMN show_created_at INTEGER NOT NULL DEFAULT 0`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN show_timer INTEGER NOT NULL DEFAULT 0`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN subtasks TEXT NOT NULL DEFAULT '[]'`).catch(() => {});
+  await _db.execute(`ALTER TABLE todos ADD COLUMN show_subtask_bar INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS task_sessions (
