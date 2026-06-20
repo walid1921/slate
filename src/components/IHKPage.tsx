@@ -154,7 +154,7 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
                       onClick={() => { onFillFrom(w.key); setFillOpen(false); }}
                       className="w-full text-left px-3 py-1.5 text-[11px] text-t3 hover:bg-s2 hover:text-t1 transition-colors"
                     >
-                      KW {w.kw} <span className="text-t5">({fmtWeekRange(w.year, w.kw).split("–")[0].trim()})</span>
+                      {fmtWeekRange(w.year, w.kw)}
                     </button>
                   ))}
                 </div>
@@ -278,11 +278,10 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
     <div className="rounded-xl overflow-hidden shrink-0" style={{ border: "1px solid var(--c-border)", background: isCurrentWeek ? "var(--c-surface-1)" : "var(--c-surface-0)" }}>
       <button onClick={onToggle} className="w-full flex items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-s1 cursor-pointer">
         {expanded ? <ChevronDown size={12} className="text-t4 shrink-0" /> : <ChevronRight size={12} className="text-t4 shrink-0" />}
-        <span className="text-[12px] font-semibold text-t1">KW {kw}</span>
+        <span className="text-[12px] font-semibold text-t1">{fmtWeekRange(year, kw)}</span>
         {isCurrentWeek && (
           <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider" style={{ background: `rgba(${ACCENT},0.2)`, color: `rgba(${ACCENT},0.9)` }}>current</span>
         )}
-        <span className="text-[11px] text-t5 ml-1">{fmtWeekRange(year, kw)}</span>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: weekDotColor(entries, sent) }} />
         <span className="ml-auto text-[10px] text-t5">{entries.length} {entries.length === 1 ? "entry" : "entries"}</span>
         {expanded && (
