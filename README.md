@@ -37,6 +37,16 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ---
 
+## Data & Recovery
+
+Slate's SQLite database **persists across builds and reinstalls** — it lives at `~/Library/Application Support/slate-db/` and is never wiped automatically.
+
+- **After importing data or if the app shows a loading spinner on launch:** re-import your JSON backup from **Settings → Data → Import**. The app now recovers gracefully from load errors and won't get stuck.
+- **To start with a completely fresh database:** quit Slate, delete `~/Library/Application Support/slate-db/`, then relaunch. The app will create a new empty database on next start.
+- **To back up your data:** use **Settings → Data → Export** — this produces a single JSON file containing all tasks, categories, reminders, notes, time logs, and IHK entries.
+
+---
+
 ## Features
 
 ### Home Dashboard
