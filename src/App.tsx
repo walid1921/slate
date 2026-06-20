@@ -20,6 +20,7 @@ import {
   Pencil,
   Play,
   Pause,
+  ChevronRight,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -143,13 +144,23 @@ function Tooltip({ label, children, side = "bottom" }: { label: string; children
 }
 
 function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
-  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer } = useTodoStore();
-  const { sessions } = useTimerStore();
+  const { updateText, setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setStatus } = useTodoStore();
+  const { sessions, start, stop, finish } = useTimerStore();
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
+  const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
+  const [elapsed, setElapsed] = useState(0);
   const [title, setTitle] = useState(todo.text);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [logExpanded, setLogExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!activeSession) { setElapsed(0); return; }
+    const update = () => setElapsed(Date.now() - new Date(activeSession.started_at).getTime());
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [activeSession?.id]);
 
   useEffect(() => { setTitle(todo.text); setDesc(todo.description); }, [todo.id]);
 
@@ -235,17 +246,36 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           {todo.show_created_at ? "Hide" : "Show"}
         </button>
       </div>
-      {/* Timer toggle row */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
-        <span className="text-[11px] text-t4 w-16 shrink-0">Timer</span>
-        <span className="text-[11px] text-t5">{todo.show_timer ? "Visible on card" : "Hidden"}</span>
-        <button
-          onClick={() => setShowTimer(todo.id, !todo.show_timer)}
-          className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
-        >
-          {todo.show_timer ? "Hide" : "Show"}
-        </button>
-      </div>
+      {/* Timer row */}
+      {todo.status !== 'done' && (
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-s shrink-0">
+          <span className="text-[11px] text-t4 w-16 shrink-0">Timer</span>
+          <span className="text-[10px] text-t3 font-mono">
+            {activeSession ? fmtDuration(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
+          </span>
+          <div className="flex items-center gap-1 ml-1">
+            {activeSession ? (
+              <>
+                <button onClick={() => stop(todo.id)} className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }}><Pause size={9} /></button>
+                <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => start(todo.id)} className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }}><Play size={9} /></button>
+                {taskSessions.length > 0 && (
+                  <button onClick={() => finish(todo.id, setStatus)} className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }}><CheckCheck size={9} /></button>
+                )}
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => setShowTimer(todo.id, !todo.show_timer)}
+            className="ml-auto text-[10px] text-t5 hover:text-t2 transition-colors px-2 py-0.5 rounded hover:bg-s2"
+          >
+            {todo.show_timer ? "Hide" : "Show"}
+          </button>
+        </div>
+      )}
       {/* Sessions log — only when done */}
       {todo.status === 'done' && taskSessions.length > 0 && (
         <div className="flex flex-col px-4 py-3 border-b border-s shrink-0">
