@@ -235,10 +235,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             ? <span className="text-[11px] text-t3">{new Date(todo.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
             : <span className="text-[11px] text-t5">—</span>
           }
-          <button onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)}
-            className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+          <TipBtn label={todo.show_created_at ? "Hide" : "Show"} onClick={() => setShowCreatedAt(todo.id, !todo.show_created_at)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
             {todo.show_created_at ? <EyeOff size={9} /> : <Eye size={9} />}
-          </button>
+          </TipBtn>
         </div>
       </div>
 
@@ -250,12 +249,12 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         </div>
         <div className="flex gap-1.5">
           {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
-            <button key={p} onClick={() => setPriority(todo.id, p)}
+            <TipBtn key={p} label={p === "none" ? "None" : p.charAt(0).toUpperCase() + p.slice(1)} onClick={() => setPriority(todo.id, p)}
               className="rounded-full transition-all"
               style={todo.priority === p ? { outline: `0.5px solid var(--c-text-3)`, outlineOffset: 0 } : {}}
             >
               <span className={`block w-2.5 h-2.5 rounded-full ${PRIORITY_DOT_DETAIL[p]}`} style={{ opacity: todo.priority === p ? 1 : 0.3 }} />
-            </button>
+            </TipBtn>
           ))}
         </div>
       </div>
@@ -293,10 +292,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
                 <Timer size={10} className="text-t5 shrink-0" />
                 <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
               </div>
-              <button onClick={() => setShowTimer(todo.id, !todo.show_timer)}
-                className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+              <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
                 {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
-              </button>
+              </TipBtn>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -326,10 +324,9 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
-                <button onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }}
-                  className="p-0.5 rounded text-t5 hover:text-t2 transition-colors ml-auto">
+                <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors ml-auto">
                   <Pencil size={9} />
-                </button>
+                </TipBtn>
                 {logExpanded ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
               </div>
             </button>
