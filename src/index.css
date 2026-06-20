@@ -44,23 +44,23 @@
   --c-root-border: rgba(0,0,0,0.10);
 }
 
-/* Semantic text utilities */
-.text-t1 { color: var(--c-text-1); }
-.text-t2 { color: var(--c-text-2); }
-.text-t3 { color: var(--c-text-3); }
-.text-t4 { color: var(--c-text-4); }
-.text-t5 { color: var(--c-text-5); }
-.text-t6 { color: var(--c-text-6); }
-.bg-t5 { background-color: var(--c-text-5); }
-.bg-t6 { background-color: var(--c-text-6); }
-.hover\:text-t1:hover { color: var(--c-text-1); }
-.hover\:text-t2:hover { color: var(--c-text-2); }
-.hover\:text-t3:hover { color: var(--c-text-3); }
-
-/* Hover backgrounds */
-.hover\:bg-s1:hover { background: var(--c-surface-1); }
-.hover\:bg-s2:hover { background: var(--c-surface-2); }
-.hover\:bg-s3:hover { background: var(--c-surface-3); }
+/* Semantic text/bg utilities — inside @layer utilities so Tailwind hover: classes win */
+@layer utilities {
+  .text-t1 { color: var(--c-text-1); }
+  .text-t2 { color: var(--c-text-2); }
+  .text-t3 { color: var(--c-text-3); }
+  .text-t4 { color: var(--c-text-4); }
+  .text-t5 { color: var(--c-text-5); }
+  .text-t6 { color: var(--c-text-6); }
+  .bg-t5 { background-color: var(--c-text-5); }
+  .bg-t6 { background-color: var(--c-text-6); }
+  .hover\:text-t1:hover { color: var(--c-text-1); }
+  .hover\:text-t2:hover { color: var(--c-text-2); }
+  .hover\:text-t3:hover { color: var(--c-text-3); }
+  .hover\:bg-s1:hover { background: var(--c-surface-1); }
+  .hover\:bg-s2:hover { background: var(--c-surface-2); }
+  .hover\:bg-s3:hover { background: var(--c-surface-3); }
+}
 
 /* Frosted-glass dropdown / modal */
 .dropdown {
