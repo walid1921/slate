@@ -282,7 +282,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   return (
-    <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-hidden" style={{ background: "var(--c-surface-0)", border: "1px solid var(--c-border)" }}>
+    <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-hidden" style={{ background: "var(--c-surface-0)", border: `1px solid rgba(${col.color},0.25)` }}>
       {/* Column header */}
       <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)", background: `rgba(${col.color},0.07)` }}>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${col.color},0.8)` }} />
