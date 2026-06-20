@@ -60,6 +60,43 @@ import { CSS } from "@dnd-kit/utilities";
 
 
 
+function buildDueDate(dueDate: string, dueTime: string | null): Date {
+  return dueTime ? new Date(`${dueDate}T${dueTime}`) : new Date(`${dueDate}T23:59:59`);
+}
+
+function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { label: string; overdue: boolean } {
+  const target = buildDueDate(dueDate, dueTime);
+  const diffMs = target.getTime() - now.getTime();
+  const overdue = diffMs < 0;
+  const abs = Math.abs(diffMs);
+  const totalSecs = Math.floor(abs / 1000);
+  const days = Math.floor(totalSecs / 86400);
+  const months = Math.floor(days / 30);
+  if (overdue) return { label: "overdue", overdue: true };
+  if (months >= 2) return { label: `${months}mo`, overdue: false };
+  if (days >= 2) return { label: `${days}d`, overdue: false };
+  if (days === 1) return { label: "tomorrow", overdue: false };
+  const hours = Math.floor(totalSecs / 3600) % 24;
+  const mins = Math.floor(totalSecs / 60) % 60;
+  const secs = totalSecs % 60;
+  if (hours > 0) return { label: `${hours}h ${mins}m`, overdue: false };
+  if (mins > 0) return { label: `${mins}m ${secs}s`, overdue: false };
+  return { label: totalSecs <= 0 ? "now" : `${secs}s`, overdue: false };
+}
+
+function useNow(dueDate: string | null, dueTime: string | null): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!dueDate) return;
+    const target = buildDueDate(dueDate, dueTime);
+    const absDiff = Math.abs(target.getTime() - Date.now());
+    const interval = absDiff < 3_600_000 ? 1000 : 60_000;
+    const id = setInterval(() => setNow(new Date()), interval);
+    return () => clearInterval(id);
+  }, [dueDate, dueTime]);
+  return now;
+}
+
 function Tooltip({ label, children, side = "bottom" }: { label: string; children: React.ReactNode; side?: "top" | "bottom" }) {
   return (
     <div className="relative group/tip">
@@ -261,6 +298,8 @@ const PRIORITY_DOT: Record<Priority, string> = { none: "var(--c-text-5)", low: "
 
 function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void; onDelete: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
+  const now = useNow(todo.due_date, todo.due_time);
+  const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
   return (
     <div
       ref={setNodeRef}
@@ -279,8 +318,8 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
           <X size={10} />
         </button>
       </div>
-      {todo.due_date && (
-        <span className="text-[10px] text-t5 pl-3">{todo.due_date}</span>
+      {countdown && (
+        <span className={`text-[10px] pl-3 ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
       )}
     </div>
   );
