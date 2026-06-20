@@ -208,7 +208,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       )}
 
       {/* Priority + Deadline — weighted 2-col grid */}
-      <div className="grid border-t border-s shrink-0" style={{ gridTemplateColumns: "1fr 2fr" }}>
+      <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 2fr" }}>
         <div className="flex flex-col gap-2 px-4 py-3 border-r border-s">
           <div className="flex items-center gap-1.5">
             <Flag size={10} className="text-t5 shrink-0" />
