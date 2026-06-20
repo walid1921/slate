@@ -162,7 +162,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-y-auto">
       {showDeadlinePicker && (
         <DateTimeModal
           title="Set deadline"
@@ -267,14 +267,15 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
         </div>
       )}
       {/* Description */}
-      <div className="flex flex-col flex-1 overflow-hidden px-4 py-3">
+      <div className="flex flex-col px-4 py-3">
         <span className="text-[11px] text-t4 mb-2 shrink-0">Notes</span>
         <textarea
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
           onBlur={saveDesc}
           placeholder="Add notes…"
-          className="flex-1 bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
+          className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed"
+          style={{ minHeight: "80px" }}
         />
       </div>
     </div>
