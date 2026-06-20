@@ -619,7 +619,7 @@ function StreakWidget() {
   const FLAME = "251,146,60";
 
   return (
-    <div className="rounded-xl p-3 flex flex-col gap-3 select-none" style={{ background: `rgba(${FLAME},0.06)`, border: `1px solid rgba(${FLAME},0.2)` }}>
+    <div className="rounded-xl p-3 flex flex-col gap-3 select-none h-full justify-center" style={{ background: `rgba(${FLAME},0.06)`, border: `1px solid rgba(${FLAME},0.2)` }}>
       <div className="flex items-center gap-1.5">
         <svg width="11" height="11" viewBox="0 0 24 24" fill={`rgba(${FLAME},0.9)`} stroke="none"><path d="M12 2C9 7 6 8.5 6 13a6 6 0 0012 0c0-4.5-3-6-6-11zm0 17a4 4 0 01-2.83-6.83C10 13 11 14.5 12 15c1-0.5 2-2 2.83-2.83A4 4 0 0112 19z"/></svg>
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${FLAME},0.9)` }}>Streak</span>
@@ -1136,7 +1136,7 @@ export default function App() {
             {/* Activity heatmap + streak */}
             <div className="flex gap-3 items-stretch">
               <div className="flex-1 min-w-0 overflow-x-auto"><ActivityHeatmap /></div>
-              <div className="shrink-0 w-28"><StreakWidget /></div>
+              <div className="shrink-0" style={{ width: "calc(25% - 9px)" }}><StreakWidget /></div>
             </div>
 
             {/* Preview cards */}
