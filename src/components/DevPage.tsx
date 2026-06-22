@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import {
   Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
-  Zap, Layers, Plus, X, RotateCcw, Check, CheckCheck,
+  Zap, Layers, Plus, X, RotateCcw, Check, CheckCheck, Send,
 } from "lucide-react";
 import { useDevStore, DevItem, DevPriority } from "../devStore";
-import { PRESET_COLORS } from "../store";
+import { PRESET_COLORS, useTodoStore } from "../store";
 
 const PRIORITY_COLOR: Record<DevPriority, string> = {
   none: "transparent",
@@ -37,6 +37,7 @@ export default function DevPage() {
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [addingCat, setAddingCat] = useState(false);
+  const [showSend, setShowSend] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -122,6 +123,15 @@ export default function DevPage() {
               style={{ width: `${pct}%`, background: pct === 100 ? "rgba(16,185,129,0.8)" : "rgba(99,102,241,0.65)" }}
             />
           </div>
+          {activeCat && (
+            <button
+              onClick={() => setShowSend(true)}
+              className="text-t6 hover:text-sky-400 transition-colors"
+              title="Send to Tasks"
+            >
+              <Send size={10} />
+            </button>
+          )}
           {catDone > 0 && activeCat && (
             <button
               onClick={() => resetCategory(activeCat.id)}
@@ -192,6 +202,17 @@ export default function DevPage() {
           <AddCategoryModal
             onAdd={(name, color, icon) => { addCategory(name, color, icon); setAddingCat(false); }}
             onClose={() => setAddingCat(false)}
+          />
+        </div>
+      )}
+
+      {/* Send to tasks modal */}
+      {showSend && activeCat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setShowSend(false); }}>
+          <SendToTasksModal
+            items={catItems.filter(i => !i.done)}
+            devCategoryName={activeCat.name}
+            onClose={() => setShowSend(false)}
           />
         </div>
       )}
@@ -281,6 +302,132 @@ function AddItemRow({ rgb, onAdd }: { rgb: string; onAdd: (t: string) => void })
         className="flex-1 bg-transparent text-[12px] text-t2 outline-none"
         style={{ caretColor: `rgba(${rgb},0.8)` }}
       />
+    </div>
+  );
+}
+
+function SendToTasksModal({ items, devCategoryName, onClose }: {
+  items: DevItem[];
+  devCategoryName: string;
+  onClose: () => void;
+}) {
+  const { categories: taskCats, add, addCategory } = useTodoStore();
+  const [selected, setSelected] = useState(new Set(items.map(i => i.id)));
+  const [taskCatId, setTaskCatId] = useState(taskCats[0]?.id ?? 1);
+  const [creatingCat, setCreatingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState(devCategoryName);
+  const [loading, setLoading] = useState(false);
+
+  const toggle = (id: number) => setSelected(s => {
+    const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+
+  const handleSend = async () => {
+    setLoading(true);
+    let catId = taskCatId;
+    if (creatingCat && newCatName.trim()) {
+      await addCategory(newCatName.trim());
+      const created = useTodoStore.getState().categories.find(c => c.name === newCatName.trim());
+      if (created) catId = created.id;
+    }
+    for (const item of items.filter(i => selected.has(i.id))) {
+      await add(item.text, item.priority as any, null, null, catId);
+    }
+    setLoading(false);
+    onClose();
+  };
+
+  const count = selected.size;
+
+  return (
+    <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 300, border: "1px solid var(--c-border)" }}>
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-t3 uppercase tracking-wider font-semibold">Send to Tasks</span>
+        <button onClick={onClose} className="text-t5 hover:text-t3"><X size={12} /></button>
+      </div>
+
+      {/* Items */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between mb-0.5">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Pending items</span>
+          <div className="flex gap-2">
+            <button onClick={() => setSelected(new Set(items.map(i => i.id)))} className="text-[9px] text-t5 hover:text-t3 transition-colors">all</button>
+            <button onClick={() => setSelected(new Set())} className="text-[9px] text-t5 hover:text-t3 transition-colors">none</button>
+          </div>
+        </div>
+        {items.length === 0 ? (
+          <p className="text-[11px] text-t5 py-2">All items are already done.</p>
+        ) : (
+          <div className="flex flex-col overflow-y-auto" style={{ maxHeight: 160, scrollbarWidth: "none" }}>
+            {items.map(item => (
+              <label key={item.id} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-s1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selected.has(item.id)}
+                  onChange={() => toggle(item.id)}
+                  className="accent-sky-400"
+                />
+                <span className="text-[11px] text-t2 truncate">{item.text}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Category picker */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] text-t5 uppercase tracking-wider">Destination category</span>
+        {!creatingCat ? (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {taskCats.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setTaskCatId(cat.id)}
+                className="px-2 py-0.5 rounded text-[10px] transition-colors"
+                style={taskCatId === cat.id
+                  ? { background: `rgba(${cat.color},0.15)`, color: `rgba(${cat.color},0.9)`, border: `1px solid rgba(${cat.color},0.3)` }
+                  : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)" }
+                }
+              >
+                {cat.name}
+              </button>
+            ))}
+            <button
+              onClick={() => setCreatingCat(true)}
+              className="px-2 py-0.5 rounded text-[10px] text-t5 hover:text-t3 transition-colors"
+              style={{ border: "1px dashed var(--c-border)" }}
+            >
+              + New
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <input
+              autoFocus
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Escape") setCreatingCat(false); }}
+              placeholder="Category name…"
+              className="flex-1 bg-transparent text-[12px] text-t2 outline-none border-b pb-0.5"
+              style={{ borderColor: "var(--c-border)" }}
+            />
+            <button onClick={() => setCreatingCat(false)} className="text-t5 hover:text-t3 text-[10px] transition-colors">↩</button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-1">
+        <button onClick={onClose} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
+        <button
+          onClick={handleSend}
+          disabled={count === 0 || loading || (creatingCat && !newCatName.trim())}
+          className="flex items-center gap-1.5 text-[11px] px-3 py-1 rounded transition-colors disabled:opacity-40"
+          style={{ background: "rgba(14,165,233,0.12)", border: "1px solid rgba(14,165,233,0.3)", color: "rgba(14,165,233,0.9)" }}
+        >
+          <Send size={9} />
+          <span>Send {count > 0 ? count : ""} item{count !== 1 ? "s" : ""}</span>
+        </button>
+      </div>
     </div>
   );
 }
