@@ -2085,7 +2085,7 @@ export default function App() {
                       if (cats) sectionEntries.push({ label: sec.name, key: `sec-${sec.id}`, cats });
                     }
                     for (const [sid, cats] of bySectionId) {
-                      if (sid !== -1 && !devSections.find(s => s.id === sid))
+                      if (sid !== -1 && !devSections.find(s => s.id === sid) && !devTrashedSections.find(s => s.id === sid))
                         sectionEntries.push({ label: "Deleted Page", key: `sec-del-${sid}`, cats });
                     }
                     const orphanCats = bySectionId.get(-1);
