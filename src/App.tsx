@@ -1199,35 +1199,85 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
 
       {/* Body */}
       {todo ? (() => {
-        const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
+        const statusLabel = todo.status === 'in_progress' ? 'In Progress' : todo.status === 'done' ? 'Done' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
+        const PRIORITY_LABEL: Record<Priority, string> = { none: "", low: "Low", medium: "Med", high: "High" };
+        const PRIORITY_BG: Record<Priority, string> = {
+          none: "transparent", low: "rgba(96,165,250,0.12)",
+          medium: "rgba(251,191,36,0.12)", high: "rgba(248,113,113,0.12)",
+        };
+        const createdLabel = (() => {
+          const d = new Date(todo.created_at);
+          return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        })();
         return (
-          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 py-5 flex flex-col hover:bg-white/3 transition-colors flex-1 justify-between cursor-pointer" style={{ gap: 12 }}>
-            {/* Meta row: category + status */}
-            <div className="flex items-center justify-between">
+          <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 pt-3 pb-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 cursor-pointer" style={{ gap: 8 }}>
+            {/* Meta: priority badge + category + status */}
+            <div className="flex items-center gap-1.5">
+              {todo.priority !== "none" && (
+                <span
+                  className="flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+                  style={{ background: PRIORITY_BG[todo.priority], color: PRIORITY_COLOR[todo.priority] }}
+                >
+                  <span className="w-1 h-1 rounded-full" style={{ background: PRIORITY_COLOR[todo.priority] }} />
+                  {PRIORITY_LABEL[todo.priority]}
+                </span>
+              )}
               {category && (
-                <span className="text-[9px] font-medium" style={{ color: catColor }}>{category.name}</span>
+                <span className="text-[9px] font-medium flex-1 truncate" style={{ color: catColor }}>{category.name}</span>
               )}
-              <span className="text-[9px] font-medium text-t5">{statusLabel}</span>
-            </div>
-            {/* Name row */}
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[todo.priority] }} />
-                <span className="text-[13px] font-medium text-t1 truncate">{todo.text}</span>
-              </div>
-              {countdown && (
-                <span className={`text-[10px] ${countdown.overdue ? "text-red-400" : "text-t5"}`}>{countdown.label}</span>
-              )}
+              <span
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
+                style={{
+                  background: todo.status === 'in_progress' ? "rgba(59,130,246,0.12)" : todo.status === 'done' ? "rgba(16,185,129,0.12)" : "var(--c-surface-2)",
+                  color: todo.status === 'in_progress' ? "rgba(96,165,250,0.9)" : todo.status === 'done' ? "rgba(52,211,153,0.9)" : "var(--c-text-5)",
+                }}
+              >{statusLabel}</span>
             </div>
 
-            {/* Subtask progress bar */}
-            {todo.subtasks.length > 0 && todo.show_subtask_bar && (
+            {/* Subtask progress bar (always shown when subtasks exist) */}
+            {todo.subtasks.length > 0 && (
               <SubtaskProgressBar subtasks={todo.subtasks} showCount />
             )}
 
+            {/* Description */}
+            {todo.description?.trim() ? (
+              <p
+                className="text-[10px] leading-[1.5]"
+                style={{
+                  color: "var(--c-text-4)",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                }}
+              >
+                {todo.description}
+              </p>
+            ) : (
+              <p className="text-[10px] italic" style={{ color: "var(--c-text-6)" }}>No description</p>
+            )}
+
+            {/* Dates */}
+            <div className="flex items-center gap-3 mt-auto">
+              <span className="flex items-center gap-1 text-[9px]" style={{ color: "var(--c-text-5)" }}>
+                <CalendarDays size={9} />
+                {createdLabel}
+              </span>
+              {countdown && (
+                <span className={`flex items-center gap-1 text-[9px] ml-auto ${countdown.overdue ? "text-red-400" : "text-t5"}`}>
+                  <Timer size={9} />
+                  {countdown.label}
+                </span>
+              )}
+            </div>
+
             {/* Timer row */}
-            <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+            <div
+              className="flex items-center gap-2 pt-2"
+              style={{ borderTop: headerBorder }}
+              onClick={e => e.stopPropagation()}
+            >
               <span className="text-[11px] text-t3 font-mono min-w-[36px]">
                 {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
               </span>
