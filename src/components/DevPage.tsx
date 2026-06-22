@@ -361,8 +361,8 @@ function DevItemRow({ item, onClick, onDelete }: {
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, cursor: "grab" }}
-      className="flex items-center gap-2.5 px-5 py-2 hover:bg-s1 transition-colors active:cursor-grabbing select-none"
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, cursor: isDragging ? "grabbing" : "pointer" }}
+      className="flex items-center gap-2.5 px-5 py-2 hover:bg-s1 transition-colors select-none"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={() => { if (!dragStarted.current) onClick(); dragStarted.current = false; }}
