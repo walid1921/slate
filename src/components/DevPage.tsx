@@ -62,7 +62,7 @@ export default function DevPage() {
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
       {/* Category tab bar */}
-      <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+      <div className="flex items-center gap-0 px-2 pt-1 shrink-0">
       <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
         {categories.map(cat => {
           const isActive = activeCatId === cat.id;
@@ -72,11 +72,10 @@ export default function DevPage() {
             <button
               key={cat.id}
               onClick={() => setActiveCatId(cat.id)}
-              className="relative flex items-center gap-1.5 px-3 py-2 text-[12px] shrink-0 select-none transition-colors"
+              className="relative flex items-center gap-1.5 px-3 py-2 text-[12px] shrink-0 select-none transition-colors rounded-t"
               style={{
                 color: isActive ? `rgba(${cat.color},1)` : `rgba(${cat.color},0.45)`,
-                borderBottom: isActive ? `2px solid rgba(${cat.color},0.8)` : "2px solid transparent",
-                marginBottom: -1,
+                background: isActive ? `rgba(${cat.color},0.08)` : "transparent",
               }}
             >
               <CategoryIcon icon={cat.icon} size={11} />
@@ -93,7 +92,6 @@ export default function DevPage() {
         <button
           onClick={() => setAddingCat(true)}
           className="flex items-center gap-1 px-3 py-2 text-t5 hover:text-t3 transition-colors shrink-0"
-          style={{ borderBottom: "2px solid transparent", marginBottom: -1 }}
         >
           <Plus size={11} />
         </button>
