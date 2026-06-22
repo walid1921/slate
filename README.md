@@ -54,7 +54,7 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 - Slash commands: `/tm`, `/t`, `/rm`, `/nt`, `/i` (see Slash Commands below)
 - Activity heatmap — shows today's action count; darker squares = more activity that day
 - Counted actions: opening the app, adding/editing tasks (text, priority, deadline, description, status), adding/rescheduling/sending reminders, creating/editing notes, adding/editing IHK entries, marking a week as sent, starting or extending a task timer
-- **Clockify card** — focus widget beside the heatmap; pick one task to track, shows priority dot, category, status, deadline countdown, and elapsed/total time with Play / Pause / Done controls; card turns red when overdue, green when done
+- **Clockify card** — focus widget beside the heatmap; header shows category icon + task name with a dropdown to switch tasks; search icon expands to a full-width filter bar; card body shows priority badge, subtask progress bar, 3-line description, created date, and deadline; Play / Pause / Done controls with per-session time logging; card turns red when overdue, green when done
 - Preview cards for Tasks, Reminders, Notes, and IHK records
 
 ### Tasks (Kanban Board)
@@ -66,7 +66,7 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 - Priority levels: none / low / medium / high — colour-coded dot inline with the task name
 - **Timer:** each task can have a timer — show/hide the timer controls on the card via the Eye icon in the detail panel; start, pause, finish, or extend sessions; all sessions are logged with start/end times and shown as a collapsible time log in the detail panel; total time and session count are tracked
 - Creation date can be shown/hidden per task via the Eye icon in the detail panel
-- **Categories:** create, rename, recolour, reorder by dragging tabs, or delete — right-click any tab for a context menu
+- **Categories:** create, rename, recolour, change icon, reorder by dragging tabs, or delete — right-click any tab for a context menu; each category has a searchable icon picker with 85+ Lucide icons
 - Add tasks or clear columns directly from each column header
 - Red dot on a category tab = one or more overdue tasks in that category
 
@@ -90,9 +90,18 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 - Mark weeks as submitted; fill a week from a previous one
 - Module management: add company, school, or custom modules
 
+### Dev Checklist
+- Pre-loaded checklist covering 11 areas: Design, Frontend, Backend, Database, Security, DevOps, Testing, Performance, Accessibility, E-Commerce, and SEO — 114 items in total
+- Organised into **pages** (top bar) and **categories** per page — each with a custom name, colour, and icon
+- Tick items off, edit text and description, set priority, drag to reorder
+- Filter items by priority: All / Low / Medium / High
+- **Send to Tasks** — copies the active category to the Tasks page as a new category, preserving the icon
+- **Reset (↺)** — wipes all custom content and restores the full default checklist
+- Deleted dev items are recoverable from the Deleted view, grouped by page and category
+
 ### Trash
-- Soft-delete for tasks, reminders, and notes — everything lands here first
-- Tasks grouped by category — expand to review before deleting permanently
+- Soft-delete for tasks, reminders, notes, and dev items — everything lands here first
+- Tasks grouped by category; dev items grouped by page and category — expand to review before deleting permanently
 - Restore individual items or permanently delete a whole group
 
 ### Settings
@@ -100,7 +109,7 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 - **Text size** — Small, Normal, Large
 - **Window mode** — Default or Compact
 - **Autostart** — Launch Slate at login
-- **Data** — Export / import all data as JSON; open data folder in Finder
+- **Data** — Export / import all data as JSON (tasks, categories, reminders, notes, time logs, IHK entries, dev checklist); open data folder in Finder
 - **Guide** — Full in-app reference for all commands and shortcuts
 - **Privacy** — Summary of all data and permission decisions
 
@@ -174,18 +183,22 @@ npm run tauri build
 src/
 ├── App.tsx                  # Main layout, views, kanban board, slash commands
 ├── store.ts                 # Todo + category store (Zustand + SQLite)
+├── devStore.ts              # Dev checklist store (items, categories, sections)
 ├── reminderStore.ts         # Reminder store + notification checker
 ├── notesStore.ts            # Notes store
 ├── settingsStore.ts         # Persisted settings (localStorage)
 ├── notifications.ts         # macOS notification permission + send
 ├── activity.ts              # Activity logging for heatmap
 ├── timerStore.ts            # Task session timer store (start/stop/finish, session log)
-├── db.ts                    # SQLite init & migrations
+├── db.ts                    # SQLite init, migrations & dev seed data
 └── components/
     ├── ActivityHeatmap.tsx      # GitHub-style activity heatmap
+    ├── CategoryModal.tsx        # Shared add/edit category modal (name, color, icon)
     ├── ConfirmDialog.tsx        # Reusable delete confirmation dialog
     ├── DateTimeModal.tsx        # Due date / reminder time picker
+    ├── DevPage.tsx              # Dev checklist — pages, categories, items, reset
     ├── FilterBar.tsx            # Filter + sort bar
+    ├── IconPicker.tsx           # Searchable icon picker + IconDisplay (85+ Lucide icons)
     ├── IHKPage.tsx              # IHK training log (weeks, modules, entries)
     ├── NotesPage.tsx            # Notes split-pane editor
     ├── ReminderAlert.tsx        # Triggers the notification overlay window
