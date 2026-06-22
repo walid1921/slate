@@ -665,6 +665,7 @@ function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanen
   onBack: () => void;
 }) {
   const [openGroup, setOpenGroup] = useState<number | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<{ label: string; sub: string; onConfirm: () => void } | null>(null);
 
   const knownCatIds = new Set(categories.map(c => c.id));
   type TrashGroup = DevCategory & { items: DevItem[] };
@@ -685,7 +686,10 @@ function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanen
           <span className="text-[10px] text-t6">{trashedItems.length}</span>
         </div>
         {trashedItems.length > 0 && (
-          <button onClick={onClearAll} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
+          <button
+            onClick={() => setPendingConfirm({ label: "Delete all items permanently?", sub: "This cannot be undone.", onConfirm: onClearAll })}
+            className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors"
+          >Delete all</button>
         )}
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
@@ -705,7 +709,7 @@ function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanen
                   <span className="text-[10px] text-t6">{group.items.length}</span>
                   <ChevronDown size={10} className="text-t6 ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }} />
                   <button
-                    onClick={e => { e.stopPropagation(); group.items.forEach(i => onDeletePermanent(i.id)); }}
+                    onClick={e => { e.stopPropagation(); setPendingConfirm({ label: `Delete "${group.name}" permanently?`, sub: `${group.items.length} item${group.items.length !== 1 ? "s" : ""} will be removed.`, onConfirm: () => group.items.forEach(i => onDeletePermanent(i.id)) }); }}
                     className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
                     title="Delete group permanently"
                   >
@@ -722,7 +726,7 @@ function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanen
                       <button onClick={() => onRestore(item.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400">
                         <RotateCcw size={11} />
                       </button>
-                      <button onClick={() => onDeletePermanent(item.id)} title="Delete forever" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400">
+                      <button onClick={() => setPendingConfirm({ label: "Delete permanently?", sub: `"${item.text}"`, onConfirm: () => onDeletePermanent(item.id) })} title="Delete forever" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400">
                         <X size={10} />
                       </button>
                     </div>
@@ -733,6 +737,23 @@ function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanen
           })
         )}
       </div>
+
+      {pendingConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setPendingConfirm(null); }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 280, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
+            <span className="text-[12px] text-t2">{pendingConfirm.label}</span>
+            <span className="text-[11px] text-t4 truncate">{pendingConfirm.sub}</span>
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setPendingConfirm(null)} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
+              <button
+                onClick={() => { pendingConfirm.onConfirm(); setPendingConfirm(null); }}
+                className="text-[11px] px-3 py-1 rounded transition-colors"
+                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "rgb(248,113,113)" }}
+              >Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
