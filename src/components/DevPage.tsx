@@ -180,6 +180,7 @@ const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "termina
 export default function DevPage() {
   const { items, categories, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory } = useDevStore();
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
+  const [filterPriority, setFilterPriority] = useState<DevPriority | "all">("all");
   const [addingCat, setAddingCat] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
@@ -203,8 +204,11 @@ export default function DevPage() {
     if (categories.length > 0 && activeCatId === null) setActiveCatId(categories[0].id);
   }, [categories.length]);
 
+  useEffect(() => { setFilterPriority("all"); }, [activeCatId]);
+
   const activeCat = categories.find(c => c.id === activeCatId) ?? null;
   const catItems = activeCat ? items.filter(i => i.category_id === activeCat.id) : [];
+  const filteredItems = filterPriority === "all" ? catItems : catItems.filter(i => i.priority === filterPriority);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 view-animate">
@@ -265,11 +269,37 @@ export default function DevPage() {
         </div>
       </div>
 
+      {/* Priority filter strip */}
+      <div className="flex items-center gap-1.5 px-4 py-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <button
+          onClick={() => setFilterPriority("all")}
+          className="text-[10px] px-2 py-0.5 rounded transition-all"
+          style={filterPriority === "all"
+            ? { background: "var(--c-surface-3)", color: "var(--c-text-2)", border: "1px solid var(--c-border)" }
+            : { color: "var(--c-text-5)", border: "1px solid transparent" }}
+        >All</button>
+        {(["low", "medium", "high"] as DevPriority[]).map(p => (
+          <button
+            key={p}
+            onClick={() => setFilterPriority(prev => prev === p ? "all" : p)}
+            className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded capitalize transition-all"
+            style={{
+              color: filterPriority === p ? PRIORITY_COLOR[p] : "var(--c-text-5)",
+              background: filterPriority === p ? PRIORITY_BG[p] : "transparent",
+              border: `1px solid ${filterPriority === p ? PRIORITY_COLOR[p].replace("rgb(", "rgba(").replace(")", ",0.3)") : "transparent"}`,
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[p], opacity: filterPriority === p ? 1 : 0.4 }} />
+            {p}
+          </button>
+        ))}
+      </div>
+
       {/* Items list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={catItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext items={filteredItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
           <div className="flex-1 min-h-0 overflow-y-auto pt-3" style={{ scrollbarWidth: "none" }}>
-            {catItems.map(item => (
+            {filteredItems.map(item => (
               <DevItemRow
                 key={item.id}
                 item={item}
@@ -277,8 +307,10 @@ export default function DevPage() {
                 onDelete={() => setPendingDelete(item)}
               />
             ))}
-            {catItems.length === 0 && activeCat && (
-              <p className="px-5 py-4 text-[11px] text-t6">No items yet</p>
+            {filteredItems.length === 0 && activeCat && (
+              <p className="px-5 py-4 text-[11px] text-t6">
+                {filterPriority === "all" ? "No items yet" : `No ${filterPriority} priority items`}
+              </p>
             )}
           </div>
         </SortableContext>
