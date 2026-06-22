@@ -2131,7 +2131,7 @@ export default function App() {
                 : view === "settings"
                 ? "Settings"
                 : view === "dev"
-                ? (() => { const { items } = useDevStore.getState(); const d = items.filter(i => i.done).length; return `${d}/${items.length} done`; })()
+                ? (() => { const { items } = useDevStore.getState(); return `${items.length} item${items.length !== 1 ? "s" : ""}`; })()
                 : view === "todos"
                 ? `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`
                 : ""}

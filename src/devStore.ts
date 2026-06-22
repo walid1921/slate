@@ -32,6 +32,7 @@ interface DevStore {
   toggleItem: (id: number) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
   updateItemText: (id: number, text: string) => Promise<void>;
+  updateItemPriority: (id: number, priority: DevPriority) => Promise<void>;
   resetCategory: (categoryId: number) => Promise<void>;
   reorderItems: (categoryId: number, orderedIds: number[]) => Promise<void>;
   addCategory: (name: string, color: string, icon: string) => Promise<void>;
@@ -113,6 +114,16 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ items: s.items.map(i => i.id === id ? { ...i, text: trimmed } : i) }));
     } catch (e) {
       showErrorToast("Couldn't update item");
+    }
+  },
+
+  updateItemPriority: async (id, priority) => {
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_items SET priority = ? WHERE id = ?", [priority, id]);
+      set(s => ({ items: s.items.map(i => i.id === id ? { ...i, priority } : i) }));
+    } catch (e) {
+      showErrorToast("Couldn't update priority");
     }
   },
 
