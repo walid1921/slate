@@ -22,12 +22,20 @@ export interface DevCategory {
   icon: string;
   position: number;
   is_preset: boolean;
+  section_id: number;
+}
+
+export interface DevSection {
+  id: number;
+  name: string;
+  position: number;
 }
 
 interface DevStore {
   items: DevItem[];
   trashedItems: DevItem[];
   categories: DevCategory[];
+  sections: DevSection[];
   loading: boolean;
   load: () => Promise<void>;
   loadTrashed: () => Promise<void>;
@@ -39,9 +47,11 @@ interface DevStore {
   updateItemDescription: (id: number, description: string) => Promise<void>;
   resetCategory: (categoryId: number) => Promise<void>;
   reorderItems: (categoryId: number, orderedIds: number[]) => Promise<void>;
-  addCategory: (name: string, color: string, icon: string) => Promise<void>;
+  addCategory: (name: string, color: string, icon: string, sectionId?: number) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
+  addSection: (name: string) => Promise<void>;
+  removeSection: (id: number) => Promise<void>;
   restoreItem: (id: number) => Promise<void>;
   permanentDeleteItem: (id: number) => Promise<void>;
   clearDevTrash: () => Promise<void>;
@@ -51,18 +61,23 @@ export const useDevStore = create<DevStore>((set, get) => ({
   items: [],
   trashedItems: [],
   categories: [],
+  sections: [],
   loading: true,
 
   load: async () => {
     try {
       const db = await getDb();
+      const sections = await db.select<DevSection[]>(
+        "SELECT id, name, position FROM dev_sections ORDER BY position ASC, id ASC"
+      );
       const cats = await db.select<DevCategory[]>(
-        "SELECT id, name, color, icon, position, is_preset FROM dev_categories ORDER BY position ASC, id ASC"
+        "SELECT id, name, color, icon, position, is_preset, section_id FROM dev_categories ORDER BY position ASC, id ASC"
       );
       const rows = await db.select<DevItem[]>(
         "SELECT id, text, done, category_id, priority, position, description, created_at FROM dev_items WHERE deleted_at IS NULL ORDER BY position ASC, id ASC"
       );
       set({
+        sections,
         categories: cats.map(c => ({ ...c, is_preset: Boolean(c.is_preset) })),
         items: rows.map(r => ({ ...r, done: Boolean(r.done), description: r.description ?? "" })),
         loading: false,
@@ -172,15 +187,15 @@ export const useDevStore = create<DevStore>((set, get) => ({
     }
   },
 
-  addCategory: async (name, color, icon) => {
+  addCategory: async (name, color, icon, sectionId = 1) => {
     const trimmed = name.trim();
     if (!trimmed) return;
     try {
       const db = await getDb();
       const pos = get().categories.length;
       await db.execute(
-        "INSERT INTO dev_categories (name, color, icon, position, is_preset) VALUES (?, ?, ?, ?, 0)",
-        [trimmed, color, icon, pos]
+        "INSERT INTO dev_categories (name, color, icon, position, is_preset, section_id) VALUES (?, ?, ?, ?, 0, ?)",
+        [trimmed, color, icon, pos, sectionId]
       );
       await get().load();
     } catch (e) {
@@ -206,6 +221,38 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, color } : c) }));
     } catch (e) {
       showErrorToast("Couldn't update color");
+    }
+  },
+
+  addSection: async (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const db = await getDb();
+      const pos = get().sections.length;
+      await db.execute(
+        "INSERT INTO dev_sections (name, position) VALUES (?, ?)",
+        [trimmed, pos]
+      );
+      await get().load();
+    } catch (e) {
+      showErrorToast("Couldn't add page");
+    }
+  },
+
+  removeSection: async (id) => {
+    if (id === 1) return;
+    try {
+      const db = await getDb();
+      await db.execute(
+        "UPDATE dev_items SET deleted_at = datetime('now') WHERE category_id IN (SELECT id FROM dev_categories WHERE section_id = ?) AND deleted_at IS NULL",
+        [id]
+      );
+      await db.execute("DELETE FROM dev_categories WHERE section_id = ?", [id]);
+      await db.execute("DELETE FROM dev_sections WHERE id = ?", [id]);
+      await get().load();
+    } catch (e) {
+      showErrorToast("Couldn't remove page");
     }
   },
 

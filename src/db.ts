@@ -153,6 +153,16 @@ export async function getDb(): Promise<Database> {
 
   await _db.execute(`ALTER TABLE dev_items ADD COLUMN description TEXT NOT NULL DEFAULT ''`).catch(() => {});
 
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS dev_sections (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL,
+      position   INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  await _db.execute(`ALTER TABLE dev_categories ADD COLUMN section_id INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+
   // Seed default categories + items once
   const devSeeded = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_seeded'`);
   if (!devSeeded.length) {
@@ -330,6 +340,14 @@ export async function getDb(): Promise<Database> {
       await _db.execute(`INSERT OR IGNORE INTO dev_items (id,text,category_id,priority,position) VALUES (?,?,?,?,?)`, [id, text, cat_id, priority, pos]);
     }
     await _db.execute(`INSERT OR IGNORE INTO meta (key,value) VALUES ('dev_content_v2','1')`);
+  }
+
+  // v3 — sections (subpages)
+  const devSectionsV1 = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_sections_v1'`);
+  if (!devSectionsV1.length) {
+    await _db.execute(`INSERT OR IGNORE INTO dev_sections (id, name, position) VALUES (1, 'General', 0)`);
+    await _db.execute(`UPDATE dev_categories SET section_id = 1`);
+    await _db.execute(`INSERT OR IGNORE INTO meta (key,value) VALUES ('dev_sections_v1','1')`);
   }
 
   return _db;

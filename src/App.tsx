@@ -2071,7 +2071,7 @@ export default function App() {
                       .map(cat => ({ ...cat, items: devTrashedItems.filter(i => i.category_id === cat.id) }))
                       .filter(g => g.items.length > 0);
                     const orphans = devTrashedItems.filter(i => !knownCatIds.has(i.category_id));
-                    if (orphans.length > 0) groups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, items: orphans });
+                    if (orphans.length > 0) groups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, section_id: 1, items: orphans });
                     return groups.map(({ id, name, color, items }) => {
                       const key = `dev-${id}`;
                       const collapsed = openTrashGroup !== key;

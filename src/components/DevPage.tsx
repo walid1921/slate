@@ -178,10 +178,13 @@ function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
 const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "terminal", "flask", "zap", "layers"] as const;
 
 export default function DevPage() {
-  const { items, categories, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory } = useDevStore();
+  const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, addSection, removeSection } = useDevStore();
+  const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [filterPriority, setFilterPriority] = useState<DevPriority | "all">("all");
   const [addingCat, setAddingCat] = useState(false);
+  const [addingSection, setAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState("");
   const [showSend, setShowSend] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevItem | null>(null);
@@ -200,12 +203,40 @@ export default function DevPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Set initial active section on first load
   useEffect(() => {
-    if (categories.length > 0 && activeCatId === null) setActiveCatId(categories[0].id);
-  }, [categories.length]);
+    if (sections.length > 0 && activeSectionId === null) setActiveSectionId(sections[0].id);
+  }, [sections.length]);
+
+  // When active section changes, reset to first category in that section
+  useEffect(() => {
+    if (activeSectionId === null) return;
+    const cats = categories.filter(c => c.section_id === activeSectionId);
+    setActiveCatId(cats[0]?.id ?? null);
+  }, [activeSectionId]);
+
+  // If active cat becomes invalid (e.g. after adding categories), pick first in section
+  useEffect(() => {
+    if (activeSectionId === null) return;
+    const cats = categories.filter(c => c.section_id === activeSectionId);
+    if (activeCatId === null && cats.length > 0) setActiveCatId(cats[0].id);
+  }, [categories.length, activeSectionId]);
 
   useEffect(() => { setFilterPriority("all"); }, [activeCatId]);
 
+  const commitSection = async () => {
+    const name = newSectionName.trim();
+    setAddingSection(false);
+    setNewSectionName("");
+    if (name) {
+      await addSection(name);
+      const fresh = useDevStore.getState().sections;
+      const newest = fresh[fresh.length - 1];
+      if (newest) setActiveSectionId(newest.id);
+    }
+  };
+
+  const sectionCategories = categories.filter(c => c.section_id === activeSectionId);
   const activeCat = categories.find(c => c.id === activeCatId) ?? null;
   const catItems = activeCat ? items.filter(i => i.category_id === activeCat.id) : [];
   const filteredItems = filterPriority === "all" ? catItems : catItems.filter(i => i.priority === filterPriority);
@@ -213,10 +244,65 @@ export default function DevPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
+      {/* Section nav bar */}
+      <div className="flex items-center gap-1 px-2 py-1.5 shrink-0 flex-wrap" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        {sections.map(section => (
+          <div key={section.id} className="group/sect relative inline-flex items-center shrink-0">
+            <button
+              onClick={() => setActiveSectionId(section.id)}
+              className="flex items-center px-2.5 py-0.5 text-[11px] rounded font-medium transition-all"
+              style={{
+                color: activeSectionId === section.id ? "var(--c-text-2)" : "var(--c-text-5)",
+                background: activeSectionId === section.id ? "var(--c-surface-3)" : "transparent",
+                border: `1px solid ${activeSectionId === section.id ? "var(--c-border)" : "transparent"}`,
+              }}
+            >
+              {section.name}
+            </button>
+            {section.id !== 1 && sections.length > 1 && (
+              <button
+                onClick={() => {
+                  removeSection(section.id);
+                  if (activeSectionId === section.id) setActiveSectionId(sections.find(s => s.id !== section.id)?.id ?? null);
+                }}
+                className="absolute -right-1.5 -top-1.5 w-3.5 h-3.5 rounded-full hidden group-hover/sect:flex items-center justify-center text-t5 hover:text-red-400 transition-colors"
+                style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)", zIndex: 1 }}
+              >
+                <X size={7} />
+              </button>
+            )}
+          </div>
+        ))}
+        {addingSection ? (
+          <input
+            autoFocus
+            value={newSectionName}
+            onChange={e => setNewSectionName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter") commitSection();
+              if (e.key === "Escape") { setAddingSection(false); setNewSectionName(""); }
+            }}
+            onBlur={() => commitSection()}
+            placeholder="Page name…"
+            className="px-2 py-0.5 text-[11px] bg-transparent text-t2 outline-none border-b"
+            style={{ borderColor: "var(--c-border)", minWidth: 80, maxWidth: 120 }}
+          />
+        ) : (
+          <Tooltip label="New page">
+            <button
+              onClick={() => setAddingSection(true)}
+              className="p-1 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors ml-0.5"
+            >
+              <Plus size={10} />
+            </button>
+          </Tooltip>
+        )}
+      </div>
+
       {/* Category tab bar — categories scroll, actions fixed right */}
       <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
         <div className="flex items-center gap-0.5 overflow-x-auto min-w-0 pl-2 pt-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
-          {categories.map(cat => {
+          {sectionCategories.map(cat => {
             const isActive = activeCatId === cat.id;
             const cTotal = items.filter(i => i.category_id === cat.id).length;
             return (
@@ -241,7 +327,7 @@ export default function DevPage() {
           {activeCat && !activeCat.is_preset && (
             <Tooltip label="Delete category">
               <button
-                onClick={() => { removeCategory(activeCat.id); setActiveCatId(categories[0]?.id ?? null); }}
+                onClick={() => { removeCategory(activeCat.id); setActiveCatId(sectionCategories.filter(c => c.id !== activeCat.id)[0]?.id ?? null); }}
                 className="p-1 rounded text-t6 hover:text-red-400 hover:bg-s1 transition-colors"
               >
                 <X size={10} />
@@ -327,7 +413,7 @@ export default function DevPage() {
       {addingCat && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setAddingCat(false); }}>
           <AddCategoryModal
-            onAdd={(name, color, icon) => { addCategory(name, color, icon); setAddingCat(false); }}
+            onAdd={(name, color, icon) => { addCategory(name, color, icon, activeSectionId ?? 1); setAddingCat(false); }}
             onClose={() => setAddingCat(false)}
           />
         </div>
