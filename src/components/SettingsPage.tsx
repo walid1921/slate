@@ -13,6 +13,7 @@ import { useSettingsStore, Theme, TextSize, WindowMode } from "../settingsStore"
 import { useTodoStore } from "../store";
 import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
+import { useDevStore } from "../devStore";
 import { useToastStore, showErrorToast } from "../toastStore";
 
 const guideSections = [
@@ -402,7 +403,7 @@ function validateSlateExport(raw: string): string | null {
   if (!data || typeof data !== "object" || Array.isArray(data))
     return "This file is not a valid Slate export";
   const d = data as Record<string, unknown>;
-  if (d.version !== 2)
+  if (d.version !== 2 && d.version !== 3)
     return "Unsupported export version — please re-export your data from the current version of Slate";
 
   const required = ["todos", "reminders", "notes", "taskSessions", "taskCategories", "ihkEntries", "ihkModules", "ihkWeeks", "activity"];
@@ -432,6 +433,7 @@ function DataTab() {
   const loadTodos = useTodoStore((s) => s.load);
   const loadReminders = useReminderStore((s) => s.load);
   const loadNotes = useNotesStore((s) => s.load);
+  const loadDev = useDevStore((s) => s.load);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importFile, setImportFile] = useState<string | null>(null);
@@ -458,11 +460,15 @@ function DataTab() {
       const notes = await db.select("SELECT * FROM notes");
       const taskSessions = await db.select("SELECT * FROM task_sessions");
       const taskCategories = await db.select("SELECT * FROM task_categories");
+      const deletedCategories = await db.select("SELECT * FROM deleted_categories");
       const ihkEntries = await db.select("SELECT * FROM ihk_entries");
       const ihkModules = await db.select("SELECT * FROM ihk_modules");
       const ihkWeeks = await db.select("SELECT * FROM ihk_weeks");
       const activity = await db.select("SELECT * FROM activity");
-      const payload = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions, taskCategories, ihkEntries, ihkModules, ihkWeeks, activity }, null, 2);
+      const devItems = await db.select("SELECT * FROM dev_items");
+      const devCategories = await db.select("SELECT * FROM dev_categories");
+      const devSections = await db.select("SELECT * FROM dev_sections");
+      const payload = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions, taskCategories, deletedCategories, ihkEntries, ihkModules, ihkWeeks, activity, devItems, devCategories, devSections }, null, 2);
       const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
       const dir = await appDataDir();
       const filePath = await join(dir, `slate-${today}.json`);
@@ -503,11 +509,15 @@ function DataTab() {
         const backupNotes = await db.select("SELECT * FROM notes");
         const backupTaskSessions = await db.select("SELECT * FROM task_sessions");
         const backupTaskCategories = await db.select("SELECT * FROM task_categories");
+        const backupDeletedCategories = await db.select("SELECT * FROM deleted_categories");
         const backupIhkEntries = await db.select("SELECT * FROM ihk_entries");
         const backupIhkModules = await db.select("SELECT * FROM ihk_modules");
         const backupIhkWeeks = await db.select("SELECT * FROM ihk_weeks");
         const backupActivity = await db.select("SELECT * FROM activity");
-        const backupPayload = JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions, taskCategories: backupTaskCategories, ihkEntries: backupIhkEntries, ihkModules: backupIhkModules, ihkWeeks: backupIhkWeeks, activity: backupActivity }, null, 2);
+        const backupDevItems = await db.select("SELECT * FROM dev_items");
+        const backupDevCategories = await db.select("SELECT * FROM dev_categories");
+        const backupDevSections = await db.select("SELECT * FROM dev_sections");
+        const backupPayload = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions, taskCategories: backupTaskCategories, deletedCategories: backupDeletedCategories, ihkEntries: backupIhkEntries, ihkModules: backupIhkModules, ihkWeeks: backupIhkWeeks, activity: backupActivity, devItems: backupDevItems, devCategories: backupDevCategories, devSections: backupDevSections }, null, 2);
         const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
         const dir = await appDataDir();
         await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
@@ -519,16 +529,26 @@ function DataTab() {
       await db.execute("DELETE FROM notes");
       await db.execute("DELETE FROM task_sessions");
       await db.execute("DELETE FROM task_categories");
+      await db.execute("DELETE FROM deleted_categories");
       await db.execute("DELETE FROM ihk_entries");
       await db.execute("DELETE FROM ihk_modules");
       await db.execute("DELETE FROM ihk_weeks");
       await db.execute("DELETE FROM activity");
-      // Restore General category first (always required)
-      await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, position) VALUES (1, 'General', '99,102,241', 0)`);
+      await db.execute("DELETE FROM dev_items");
+      await db.execute("DELETE FROM dev_categories");
+      await db.execute("DELETE FROM dev_sections");
+      // Restore General task category first (always required)
+      await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, icon, position) VALUES (1, 'General', '99,102,241', 'folder', 0)`);
       for (const c of (data.taskCategories ?? [])) {
         await db.execute(
-          "INSERT OR IGNORE INTO task_categories (id, name, color, position, created_at) VALUES (?,?,?,?,?)",
-          [c.id, c.name, c.color, c.position, c.created_at]
+          "INSERT OR IGNORE INTO task_categories (id, name, color, icon, position, created_at) VALUES (?,?,?,?,?,?)",
+          [c.id, c.name, c.color, c.icon ?? "folder", c.position, c.created_at]
+        );
+      }
+      for (const c of (data.deletedCategories ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO deleted_categories (id, name, color, icon) VALUES (?,?,?,?)",
+          [c.id, c.name, c.color, c.icon ?? "folder"]
         );
       }
       for (const t of data.todos) {
@@ -579,7 +599,32 @@ function DataTab() {
           [a.id, a.date, a.created_at]
         );
       }
-      await Promise.all([loadTodos(), loadReminders(), loadNotes()]);
+      // Dev content (version 3+ exports)
+      for (const sec of (data.devSections ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO dev_sections (id, name, position, created_at) VALUES (?,?,?,?)",
+          [sec.id, sec.name, sec.position, sec.created_at ?? new Date().toISOString()]
+        );
+      }
+      for (const c of (data.devCategories ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO dev_categories (id, name, color, icon, position, is_preset, section_id) VALUES (?,?,?,?,?,?,?)",
+          [c.id, c.name, c.color, c.icon ?? "folder", c.position, c.is_preset ? 1 : 0, c.section_id ?? 1]
+        );
+      }
+      for (const i of (data.devItems ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO dev_items (id, text, done, category_id, priority, position, description, created_at, deleted_at) VALUES (?,?,?,?,?,?,?,?,?)",
+          [i.id, i.text, i.done ? 1 : 0, i.category_id, i.priority ?? "none", i.position, i.description ?? "", i.created_at ?? new Date().toISOString(), i.deleted_at ?? null]
+        );
+      }
+      // Mark dev as seeded so the next startup doesn't overwrite the imported data
+      if ((data.devSections ?? []).length > 0) {
+        await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_seeded', '1')");
+        await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_content_v2', '1')");
+        await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v1', '1')");
+      }
+      await Promise.all([loadTodos(), loadReminders(), loadNotes(), loadDev()]);
       showToast(withBackup ? "exported-imported" : "imported");
     } catch (e) {
       console.error("import failed:", e);
