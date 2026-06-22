@@ -250,7 +250,7 @@ export default function DevPage() {
 
       {/* Section nav bar — pills scroll, + fixed right */}
       <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        <div className="flex items-center gap-1 overflow-x-auto min-w-0 pl-2 py-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
+        <div className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 pl-2 py-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
           {sections.map(section => (
             <button
               key={section.id}
@@ -296,7 +296,7 @@ export default function DevPage() {
 
       {/* Category tab bar — categories scroll, actions fixed right */}
       <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        <div className="flex items-center gap-0.5 overflow-x-auto min-w-0 pl-2 pt-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
+        <div className="flex items-center gap-0.5 overflow-x-auto min-w-0 flex-1 pl-2 pt-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
           {sectionCategories.map(cat => {
             const isActive = activeCatId === cat.id;
             const cTotal = items.filter(i => i.category_id === cat.id).length;
