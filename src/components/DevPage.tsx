@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import {
-  Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
-  Zap, Layers, Plus, X, Send, Pencil, Trash2,
-} from "lucide-react";
+import { Plus, X, Send, Pencil, Trash2 } from "lucide-react";
+import { IconDisplay, IconPicker } from "./IconPicker";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -161,22 +159,6 @@ const ITEM_DESCRIPTIONS: Record<number, string> = {
   114: "Core Web Vitals are a confirmed Google ranking signal since 2021. Monitor them in Google Search Console under Core Web Vitals. A page dropping to 'Poor' status (LCP > 4s, INP > 500ms, or CLS > 0.25) can cause a measurable drop in organic traffic within weeks.",
 };
 
-function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
-  const p = { size };
-  switch (icon) {
-    case "palette":  return <Palette {...p} />;
-    case "code-2":   return <Code2 {...p} />;
-    case "server":   return <Server {...p} />;
-    case "database": return <Database {...p} />;
-    case "shield":   return <ShieldCheck {...p} />;
-    case "terminal": return <Terminal {...p} />;
-    case "flask":    return <FlaskConical {...p} />;
-    case "zap":      return <Zap {...p} />;
-    default:         return <Layers {...p} />;
-  }
-}
-
-const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "terminal", "flask", "zap", "layers"] as const;
 
 export default function DevPage() {
   const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, addSection, removeSection, updateSectionName } = useDevStore();
@@ -314,7 +296,7 @@ export default function DevPage() {
                   marginBottom: -1,
                 }}
               >
-                <CategoryIcon icon={cat.icon} size={11} />
+                <IconDisplay name={cat.icon} size={11} />
                 <span>{cat.name}</span>
                 <span className="text-[10px] opacity-50">{cTotal}</span>
               </button>
@@ -447,6 +429,7 @@ export default function DevPage() {
           <SendToTasksModal
             items={catItems}
             devCategoryName={activeCat.name}
+            devCategoryIcon={activeCat.icon}
             onClose={() => setShowSend(false)}
           />
         </div>
@@ -649,7 +632,7 @@ function ItemDetailModal({ item, category, onClose, onUpdateText, onUpdatePriori
             className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded"
             style={{ background: `rgba(${category.color},0.12)`, color: `rgba(${category.color},0.9)` }}
           >
-            <CategoryIcon icon={category.icon} size={9} />
+            <IconDisplay name={category.icon} size={9} />
             {category.name}
           </span>
           {(["low", "medium", "high"] as DevPriority[]).map(p => (
@@ -744,9 +727,10 @@ function AddItemRow({ rgb, onAdd }: { rgb: string; onAdd: (t: string, priority: 
   );
 }
 
-function SendToTasksModal({ items, devCategoryName, onClose }: {
+function SendToTasksModal({ items, devCategoryName, devCategoryIcon, onClose }: {
   items: DevItem[];
   devCategoryName: string;
+  devCategoryIcon: string;
   onClose: () => void;
 }) {
   const { categories: taskCats, add, addCategory } = useTodoStore();
@@ -764,7 +748,7 @@ function SendToTasksModal({ items, devCategoryName, onClose }: {
     setLoading(true);
     let catId = taskCatId;
     if (creatingCat && newCatName.trim()) {
-      await addCategory(newCatName.trim());
+      await addCategory(newCatName.trim(), undefined, devCategoryIcon);
       const created = useTodoStore.getState().categories.find(c => c.name === newCatName.trim());
       if (created) catId = created.id;
     }
@@ -902,24 +886,20 @@ function DevCategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, on
           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           placeholder="Category name…"
         />
-        <div>
-          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
-          <div className="flex items-center gap-1 flex-wrap">
-            {CAT_ICONS.map(ic => (
-              <button key={ic} onClick={() => setIcon(ic)} className={`p-1.5 rounded transition-colors ${icon === ic ? "bg-s3 text-t1" : "text-t5 hover:text-t3"}`}>
-                <CategoryIcon icon={ic} size={12} />
-              </button>
-            ))}
+        <div className="flex items-center gap-3">
+          <div>
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
+            <IconPicker value={icon} onChange={setIcon} />
           </div>
-        </div>
-        <div>
-          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+          <div className="flex-1">
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
           <div className="grid grid-cols-7 gap-1.5">
             {PRESET_COLORS.slice(0, 14).map(c => (
               <button key={c} onClick={() => setColor(c)} className="w-5 h-5 rounded-full transition-transform hover:scale-110"
                 style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
               />
             ))}
+          </div>
           </div>
         </div>
         <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
@@ -1011,24 +991,20 @@ function AddCategoryModal({ onAdd, onClose }: {
         className="bg-transparent text-[13px] text-t2 outline-none border-b pb-1"
         style={{ borderColor: "var(--c-border)" }}
       />
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] text-t5 uppercase tracking-wider">Icon</span>
-        <div className="flex items-center gap-1 flex-wrap">
-          {CAT_ICONS.map(ic => (
-            <button key={ic} onClick={() => setIcon(ic)} className={`p-1.5 rounded transition-colors ${icon === ic ? "bg-s3 text-t1" : "text-t5 hover:text-t3"}`}>
-              <CategoryIcon icon={ic} size={12} />
-            </button>
-          ))}
+      <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Icon</span>
+          <IconPicker value={icon} onChange={setIcon} />
         </div>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-[10px] text-t5 uppercase tracking-wider">Color</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {PRESET_COLORS.slice(0, 14).map(c => (
-            <button key={c} onClick={() => setColor(c)} className="w-4 h-4 rounded-full transition-all"
-              style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgba(${c},0.7)` : "none", outlineOffset: 1 }}
-            />
-          ))}
+        <div className="flex flex-col gap-1.5 flex-1">
+          <span className="text-[10px] text-t5 uppercase tracking-wider">Color</span>
+          <div className="flex gap-1.5 flex-wrap">
+            {PRESET_COLORS.slice(0, 14).map(c => (
+              <button key={c} onClick={() => setColor(c)} className="w-4 h-4 rounded-full transition-all"
+                style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgba(${c},0.7)` : "none", outlineOffset: 1 }}
+              />
+            ))}
+          </div>
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-1">

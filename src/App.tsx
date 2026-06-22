@@ -47,6 +47,7 @@ import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import DevPage from "./components/DevPage";
 import { useDevStore } from "./devStore";
+import { IconDisplay, IconPicker } from "./components/IconPicker";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
 import { useToastStore } from "./toastStore";
@@ -930,6 +931,7 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
         cursor: isDragging ? "grabbing" : "pointer",
       }}
     >
+      <IconDisplay name={cat.icon ?? "folder"} size={11} />
       {cat.name}
       <span className="text-[10px] opacity-60">{pendingCount}</span>
       {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
@@ -938,17 +940,18 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
 }
 
 function AddCategoryModal({ onAdd, onClose }: {
-  onAdd: (name: string, color: string) => Promise<void>;
+  onAdd: (name: string, color: string, icon: string) => Promise<void>;
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[4]);
+  const [icon, setIcon] = useState("folder");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
 
   const save = async () => {
     if (!name.trim()) return;
-    await onAdd(name.trim(), color);
+    await onAdd(name.trim(), color, icon);
     onClose();
   };
 
@@ -969,9 +972,15 @@ function AddCategoryModal({ onAdd, onClose }: {
           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           placeholder="Category name…"
         />
-        <div>
-          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-          <ColorPalette current={color} onChange={setColor} />
+        <div className="flex items-start gap-3">
+          <div>
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
+            <IconPicker value={icon} onChange={setIcon} />
+          </div>
+          <div className="flex-1">
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+            <ColorPalette current={color} onChange={setColor} />
+          </div>
         </div>
         <div className="flex gap-2 justify-end pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
@@ -982,21 +991,24 @@ function AddCategoryModal({ onAdd, onClose }: {
   );
 }
 
-function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
+function CategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, onClose }: {
   cat: TaskCategory;
   onRename: (id: number, name: string) => Promise<void>;
   onRecolor: (id: number, color: string) => Promise<void>;
+  onReicon: (id: number, icon: string) => Promise<void>;
   onRemove: (id: number, name: string) => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(cat.name);
   const [color, setColor] = useState(cat.color);
+  const [icon, setIcon] = useState(cat.icon ?? "folder");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
 
   const save = async () => {
     if (name.trim() && name.trim() !== cat.name) await onRename(cat.id, name.trim());
     if (color !== cat.color) await onRecolor(cat.id, color);
+    if (icon !== cat.icon) await onReicon(cat.id, icon);
     onClose();
   };
 
@@ -1017,9 +1029,15 @@ function CategoryEditModal({ cat, onRename, onRecolor, onRemove, onClose }: {
           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           placeholder="Category name…"
         />
-        <div>
-          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-          <ColorPalette current={color} onChange={setColor} />
+        <div className="flex items-start gap-3">
+          <div>
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
+            <IconPicker value={icon} onChange={setIcon} />
+          </div>
+          <div className="flex-1">
+            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+            <ColorPalette current={color} onChange={setColor} />
+          </div>
         </div>
         <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
           <div className="flex gap-2">
@@ -1232,7 +1250,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -1785,7 +1803,7 @@ export default function App() {
           {/* Add category modal */}
           {showAddCategoryModal && (
             <AddCategoryModal
-              onAdd={addCategory}
+              onAdd={(name, color, icon) => addCategory(name, color, icon)}
               onClose={() => setShowAddCategoryModal(false)}
             />
           )}
@@ -1795,6 +1813,7 @@ export default function App() {
               cat={catEditModal}
               onRename={updateCategoryName}
               onRecolor={updateCategoryColor}
+              onReicon={updateCategoryIcon}
               onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
               onClose={() => setCatEditModal(null)}
             />

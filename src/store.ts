@@ -16,6 +16,7 @@ export interface TaskCategory {
   id: number;
   name: string;
   color: string;
+  icon: string;
   position: number;
 }
 
@@ -53,6 +54,7 @@ export interface DeletedCategory {
   id: number;
   name: string;
   color: string;
+  icon: string;
 }
 
 interface State {
@@ -67,7 +69,8 @@ interface State {
   setQuery: (q: string) => void;
   load: () => Promise<void>;
   loadCategories: () => Promise<void>;
-  addCategory: (name: string, color?: string) => Promise<void>;
+  addCategory: (name: string, color?: string, icon?: string) => Promise<void>;
+  updateCategoryIcon: (id: number, icon: string) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
   updateCategoryName: (id: number, name: string) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
@@ -107,16 +110,22 @@ export const useTodoStore = create<State>((set, get) => ({
 
   loadCategories: async () => {
     const db = await getDb();
-    const rows = await db.select<TaskCategory[]>("SELECT id, name, color, position FROM task_categories ORDER BY position ASC, id ASC");
-    set({ categories: rows });
+    const rows = await db.select<TaskCategory[]>("SELECT id, name, color, icon, position FROM task_categories ORDER BY position ASC, id ASC");
+    set({ categories: rows.map(r => ({ ...r, icon: r.icon ?? "folder" })) });
   },
 
-  addCategory: async (name, color?) => {
+  addCategory: async (name, color?, icon = "folder") => {
     const db = await getDb();
     const existing = get().categories;
     const resolvedColor = color ?? PRESET_COLORS[existing.length % PRESET_COLORS.length];
     const pos = existing.length;
-    await db.execute("INSERT OR IGNORE INTO task_categories (name, color, position) VALUES (?, ?, ?)", [name.trim(), resolvedColor, pos]);
+    await db.execute("INSERT OR IGNORE INTO task_categories (name, color, icon, position) VALUES (?, ?, ?, ?)", [name.trim(), resolvedColor, icon, pos]);
+    await get().loadCategories();
+  },
+
+  updateCategoryIcon: async (id, icon) => {
+    const db = await getDb();
+    await db.execute("UPDATE task_categories SET icon = ? WHERE id = ?", [icon, id]);
     await get().loadCategories();
   },
 
@@ -147,9 +156,9 @@ export const useTodoStore = create<State>((set, get) => ({
   removeCategory: async (id) => {
     if (id === 1) return;
     const db = await getDb();
-    const rows = await db.select<{ name: string; color: string }[]>("SELECT name, color FROM task_categories WHERE id = ?", [id]);
+    const rows = await db.select<{ name: string; color: string; icon: string }[]>("SELECT name, color, icon FROM task_categories WHERE id = ?", [id]);
     if (rows[0]) {
-      await db.execute("INSERT OR REPLACE INTO deleted_categories (id, name, color) VALUES (?, ?, ?)", [id, rows[0].name, rows[0].color]);
+      await db.execute("INSERT OR REPLACE INTO deleted_categories (id, name, color, icon) VALUES (?, ?, ?, ?)", [id, rows[0].name, rows[0].color, rows[0].icon ?? "folder"]);
     }
     await db.execute("UPDATE todos SET deleted_at = datetime('now') WHERE category_id = ? AND deleted_at IS NULL", [id]);
     await db.execute("DELETE FROM task_categories WHERE id = ?", [id]);
