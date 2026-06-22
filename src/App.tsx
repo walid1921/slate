@@ -1319,7 +1319,7 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  const { load: loadDev, trashedItems: devTrashedItems, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
+  const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
@@ -2066,12 +2066,14 @@ export default function App() {
                     <button onClick={() => askConfirm("Delete all dev items?", "All deleted dev items will be permanently removed.", () => clearDevTrash())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {(() => {
-                    const knownCatIds = new Set(devCategories.map(c => c.id));
-                    const catGroups = devCategories
+                    // Merge active + soft-deleted categories so we can show proper names for deleted ones
+                    const allCats = [...devCategories, ...devTrashedCategories];
+                    const knownCatIds = new Set(allCats.map(c => c.id));
+                    const catGroups = allCats
                       .map(cat => ({ ...cat, items: devTrashedItems.filter(i => i.category_id === cat.id) }))
                       .filter(g => g.items.length > 0);
                     const orphans = devTrashedItems.filter(i => !knownCatIds.has(i.category_id));
-                    if (orphans.length > 0) catGroups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, section_id: -1, items: orphans });
+                    if (orphans.length > 0) catGroups.push({ id: -1, name: "Unknown Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, section_id: -1, items: orphans });
 
                     // Group category groups by section_id
                     const bySectionId = new Map<number, typeof catGroups>();

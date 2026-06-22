@@ -34,6 +34,7 @@ export interface DevSection {
 interface DevStore {
   items: DevItem[];
   trashedItems: DevItem[];
+  trashedCategories: DevCategory[];
   categories: DevCategory[];
   sections: DevSection[];
   loading: boolean;
@@ -63,6 +64,7 @@ interface DevStore {
 export const useDevStore = create<DevStore>((set, get) => ({
   items: [],
   trashedItems: [],
+  trashedCategories: [],
   categories: [],
   sections: [],
   loading: true,
@@ -74,7 +76,7 @@ export const useDevStore = create<DevStore>((set, get) => ({
         "SELECT id, name, position FROM dev_sections ORDER BY position ASC, id ASC"
       );
       const cats = await db.select<DevCategory[]>(
-        "SELECT id, name, color, icon, position, is_preset, section_id FROM dev_categories ORDER BY position ASC, id ASC"
+        "SELECT id, name, color, icon, position, is_preset, section_id FROM dev_categories WHERE deleted_at IS NULL ORDER BY position ASC, id ASC"
       );
       const rows = await db.select<DevItem[]>(
         "SELECT id, text, done, category_id, priority, position, description, created_at FROM dev_items WHERE deleted_at IS NULL ORDER BY position ASC, id ASC"
@@ -210,7 +212,7 @@ export const useDevStore = create<DevStore>((set, get) => ({
     try {
       const db = await getDb();
       await db.execute("UPDATE dev_items SET deleted_at = datetime('now') WHERE category_id = ? AND deleted_at IS NULL", [id]);
-      await db.execute("DELETE FROM dev_categories WHERE id = ?", [id]);
+      await db.execute("UPDATE dev_categories SET deleted_at = datetime('now') WHERE id = ?", [id]);
       await get().load();
     } catch (e) {
       showErrorToast("Couldn't remove category");
@@ -285,7 +287,7 @@ export const useDevStore = create<DevStore>((set, get) => ({
         "UPDATE dev_items SET deleted_at = datetime('now') WHERE category_id IN (SELECT id FROM dev_categories WHERE section_id = ?) AND deleted_at IS NULL",
         [id]
       );
-      await db.execute("DELETE FROM dev_categories WHERE section_id = ?", [id]);
+      await db.execute("UPDATE dev_categories SET deleted_at = datetime('now') WHERE section_id = ? AND deleted_at IS NULL", [id]);
       await db.execute("DELETE FROM dev_sections WHERE id = ?", [id]);
       await get().load();
     } catch (e) {
@@ -299,7 +301,13 @@ export const useDevStore = create<DevStore>((set, get) => ({
       const rows = await db.select<DevItem[]>(
         "SELECT id, text, done, category_id, priority, position, description, created_at FROM dev_items WHERE deleted_at IS NOT NULL ORDER BY category_id ASC, id DESC"
       );
-      set({ trashedItems: rows.map(r => ({ ...r, done: Boolean(r.done), description: r.description ?? "" })) });
+      const cats = await db.select<DevCategory[]>(
+        "SELECT id, name, color, icon, position, is_preset, section_id FROM dev_categories WHERE deleted_at IS NOT NULL ORDER BY position ASC, id ASC"
+      );
+      set({
+        trashedItems: rows.map(r => ({ ...r, done: Boolean(r.done), description: r.description ?? "" })),
+        trashedCategories: cats.map(c => ({ ...c, is_preset: Boolean(c.is_preset) })),
+      });
     } catch (e) {
       showErrorToast("Failed to load dev trash");
     }
@@ -330,7 +338,8 @@ export const useDevStore = create<DevStore>((set, get) => ({
     try {
       const db = await getDb();
       await db.execute("DELETE FROM dev_items WHERE deleted_at IS NOT NULL");
-      set({ trashedItems: [] });
+      await db.execute("DELETE FROM dev_categories WHERE deleted_at IS NOT NULL");
+      set({ trashedItems: [], trashedCategories: [] });
     } catch (e) {
       showErrorToast("Couldn't clear trash");
     }

@@ -151,6 +151,7 @@ export async function getDb(): Promise<Database> {
     )
   `);
 
+  await _db.execute(`ALTER TABLE dev_categories ADD COLUMN deleted_at TEXT`).catch(() => {});
   await _db.execute(`ALTER TABLE dev_items ADD COLUMN description TEXT NOT NULL DEFAULT ''`).catch(() => {});
 
   await _db.execute(`
