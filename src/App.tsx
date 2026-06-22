@@ -200,8 +200,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {/* Created */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
-          <Clock size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Created</span>
+          <Clock size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Created</span>
         </div>
         <div className="flex items-center gap-1.5">
           {todo.show_created_at
@@ -217,8 +217,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {/* Priority */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
-          <Flag size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Priority</span>
+          <Flag size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Priority</span>
         </div>
         <div className="flex gap-1.5">
           {(["none", "low", "medium", "high"] as Priority[]).map((p) => (
@@ -235,8 +235,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {/* Deadline */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
-          <CalendarDays size={10} className="text-t5 shrink-0" />
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Deadline</span>
+          <CalendarDays size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Deadline</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -262,8 +262,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           <div className="flex flex-col justify-between px-4 py-3 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Timer size={10} className="text-t5 shrink-0" />
-                <span className="text-[10px] text-t5 uppercase tracking-wider">Timer</span>
+                <Timer size={10} className="text-t4 shrink-0" />
+                <span className="text-[10px] text-t4 uppercase tracking-wider">Timer</span>
               </div>
               <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} side="bottom" onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
                 {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
@@ -293,8 +293,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
             <button onClick={() => toggleSection("timelog")} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <Timer size={10} className="text-t5 shrink-0" />
-                  <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+                  <Timer size={10} className="text-t4 shrink-0" />
+                  <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
                 </div>
                 {openSection === "timelog" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
               </div>
@@ -308,8 +308,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           ) : (
             <div className="flex flex-col justify-between px-3 py-2 gap-1.5">
               <div className="flex items-center gap-1.5">
-                <Timer size={10} className="text-t5 shrink-0" />
-                <span className="text-[10px] text-t5 uppercase tracking-wider">Time log</span>
+                <Timer size={10} className="text-t4 shrink-0" />
+                <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
               </div>
               <span className="text-[11px] text-t5">No sessions</span>
             </div>
@@ -366,8 +366,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       <div className="flex flex-col border-t border-s shrink-0">
         <button onClick={() => toggleSection("notes")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
           <div className="flex items-center gap-1.5">
-            <FileText size={10} className="text-t5 shrink-0" />
-            <span className="text-[10px] text-t5 uppercase tracking-wider">Notes</span>
+            <FileText size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
           </div>
           {openSection === "notes" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
         </button>
@@ -389,8 +389,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       <div className="flex flex-col border-t border-s shrink-0">
         <button onClick={() => toggleSection("subtasks")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
           <div className="flex items-center gap-1.5">
-            <CheckSquare size={10} className="text-t5 shrink-0" />
-            <span className="text-[10px] text-t5 uppercase tracking-wider">Subtasks</span>
+            <CheckSquare size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
           </div>
           <div className="flex items-center gap-1.5">
             {todo.subtasks.length > 0 && (
@@ -1030,7 +1030,7 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
           >
             <IconDisplay name={catIcon} size={11} style={{ color: accentColor, flexShrink: 0 }} />
             <span
-              className="text-[11px] font-medium truncate flex-1"
+              className="text-[13px] font-medium truncate flex-1"
               style={{ color: todo ? "var(--c-text-2)" : "var(--c-text-5)" }}
             >
               {todo ? todo.text : "Pick a task"}
@@ -1967,7 +1967,7 @@ export default function App() {
               ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted tasks</div>
               : <>
                   <div className="flex items-center justify-between px-5 py-1.5">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">{trash.length} deleted</span>
+                    <span className="text-[10px] text-t4 uppercase tracking-wider">{trash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all tasks?", "All deleted tasks will be permanently removed.", () => deleteAllPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {(() => {
@@ -2020,7 +2020,7 @@ export default function App() {
               ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted reminders</div>
               : <>
                   <div className="flex items-center justify-between px-5 py-1.5">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">{reminderTrash.length} deleted</span>
+                    <span className="text-[10px] text-t4 uppercase tracking-wider">{reminderTrash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all reminders?", "All deleted reminders will be permanently removed.", () => deleteAllRemindersPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {reminderTrash.map((r) => (
@@ -2039,7 +2039,7 @@ export default function App() {
               ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted notes</div>
               : <>
                   <div className="flex items-center justify-between px-5 py-1.5">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">{noteTrash.length} deleted</span>
+                    <span className="text-[10px] text-t4 uppercase tracking-wider">{noteTrash.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all notes?", "All deleted notes will be permanently removed.", () => deleteAllNotesPermanently())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {noteTrash.map((n) => (
@@ -2058,7 +2058,7 @@ export default function App() {
               ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted items</div>
               : <>
                   <div className="flex items-center justify-between px-5 py-1.5">
-                    <span className="text-[10px] text-t5 uppercase tracking-wider">{devTrashedItems.length} deleted</span>
+                    <span className="text-[10px] text-t4 uppercase tracking-wider">{devTrashedItems.length} deleted</span>
                     <button onClick={() => askConfirm("Delete all dev items?", "All deleted dev items will be permanently removed.", () => clearDevTrash())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
                   </div>
                   {(() => {
