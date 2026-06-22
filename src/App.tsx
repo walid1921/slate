@@ -1366,7 +1366,7 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  const { load: loadDev } = useDevStore();
+  const { load: loadDev, trashedItems: devTrashedItems, categories: devCategories, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
@@ -1391,8 +1391,9 @@ export default function App() {
     loadTrash();
     loadReminderTrash();
     loadNoteTrash();
+    loadDevTrash();
     navigate("trash");
-  }, [view, loadTrash, loadReminderTrash, loadNoteTrash]);
+  }, [view, loadTrash, loadReminderTrash, loadNoteTrash, loadDevTrash]);
 
 
   // Listen for window-shown event to auto-focus input + animate in
@@ -2103,6 +2104,51 @@ export default function App() {
                   ))}
                 </>
           )}
+          {preTrashView === "dev" && (
+            devTrashedItems.length === 0
+              ? <div className="px-5 py-10 text-center text-t5 text-sm select-none">No deleted items</div>
+              : <>
+                  <div className="flex items-center justify-between px-5 py-1.5">
+                    <span className="text-[10px] text-t5 uppercase tracking-wider">{devTrashedItems.length} deleted</span>
+                    <button onClick={() => askConfirm("Delete all dev items?", "All deleted dev items will be permanently removed.", () => clearDevTrash())} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">Delete all</button>
+                  </div>
+                  {(() => {
+                    const knownCatIds = new Set(devCategories.map(c => c.id));
+                    const groups = devCategories
+                      .map(cat => ({ ...cat, items: devTrashedItems.filter(i => i.category_id === cat.id) }))
+                      .filter(g => g.items.length > 0);
+                    const orphans = devTrashedItems.filter(i => !knownCatIds.has(i.category_id));
+                    if (orphans.length > 0) groups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, items: orphans });
+                    return groups.map(({ id, name, color, items }) => {
+                      const key = `dev-${id}`;
+                      const collapsed = openTrashGroup !== key;
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center gap-2 px-5 py-1.5 mt-1 group/hdr cursor-pointer select-none" onClick={() => setOpenTrashGroup(prev => prev === key ? null : key)}>
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{name}</span>
+                            <span className="text-[10px] text-t6">{items.length}</span>
+                            <ChevronDown size={10} className="text-t6 transition-transform ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
+                            <button
+                              onClick={e => { e.stopPropagation(); askConfirm(`Delete "${name}" permanently?`, `${items.length} item${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => items.forEach(i => permanentDeleteDevItem(i.id))); }}
+                              className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
+                            ><Trash2 size={11} /></button>
+                          </div>
+                          {!collapsed && items.map(item => (
+                            <div key={item.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                              <span className="flex-1 text-[14px] text-t3 line-through truncate">{item.text}</span>
+                              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => restoreDevItem(item.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                                <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => permanentDeleteDevItem(item.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    });
+                  })()}
+                </>
+          )}
         </div>
       )}
 
@@ -2228,7 +2274,7 @@ export default function App() {
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear sent</span>
                 </div>
               )}
-              {(view === "todos" || view === "reminders" || view === "notes") && (
+              {(view === "todos" || view === "reminders" || view === "notes" || view === "dev") && (
                 <div className="group/trash relative">
                   <button
                     onClick={openTrash}

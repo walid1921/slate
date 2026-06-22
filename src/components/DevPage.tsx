@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
-  Zap, Layers, Plus, X, Send, Trash2, RotateCcw, ChevronDown, ChevronLeft,
+  Zap, Layers, Plus, X, Send,
 } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -177,11 +177,10 @@ function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
 const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "terminal", "flask", "zap", "layers"] as const;
 
 export default function DevPage() {
-  const { items, trashedItems, categories, load, loadTrashed, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, restoreItem, permanentDeleteItem, clearDevTrash } = useDevStore();
+  const { items, categories, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory } = useDevStore();
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [addingCat, setAddingCat] = useState(false);
   const [showSend, setShowSend] = useState(false);
-  const [showTrash, setShowTrash] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevItem | null>(null);
 
@@ -206,25 +205,12 @@ export default function DevPage() {
   const activeCat = categories.find(c => c.id === activeCatId) ?? null;
   const catItems = activeCat ? items.filter(i => i.category_id === activeCat.id) : [];
 
-  if (showTrash) {
-    return (
-      <DevTrashSection
-        trashedItems={trashedItems}
-        categories={categories}
-        onRestore={restoreItem}
-        onDeletePermanent={permanentDeleteItem}
-        onClearAll={clearDevTrash}
-        onBack={() => setShowTrash(false)}
-      />
-    );
-  }
-
   return (
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
-      {/* Category tab bar */}
-      <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
+      {/* Category tab bar — categories scroll, actions fixed right */}
+      <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <div className="flex items-center gap-0.5 overflow-x-auto min-w-0 pl-2 pt-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
           {categories.map(cat => {
             const isActive = activeCatId === cat.id;
             const cTotal = items.filter(i => i.category_id === cat.id).length;
@@ -245,34 +231,8 @@ export default function DevPage() {
               </button>
             );
           })}
-          <button
-            onClick={() => setAddingCat(true)}
-            className="flex items-center gap-1 px-3 py-2 text-t5 hover:text-t3 transition-colors shrink-0"
-          >
-            <Plus size={11} />
-          </button>
         </div>
-      </div>
-
-      {/* Actions bar */}
-      <div className="flex items-center justify-between px-4 py-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        <button
-          onClick={() => { setShowTrash(true); loadTrashed(); }}
-          className="text-t6 hover:text-t3 transition-colors"
-          title="Trash"
-        >
-          <Trash2 size={10} />
-        </button>
-        <div className="flex items-center gap-3">
-          {activeCat && (
-            <button
-              onClick={() => setShowSend(true)}
-              className="text-sky-400 hover:text-sky-300 transition-colors"
-              title="Send to Tasks"
-            >
-              <Send size={10} />
-            </button>
-          )}
+        <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
           {activeCat && !activeCat.is_preset && (
             <button
               onClick={() => { removeCategory(activeCat.id); setActiveCatId(categories[0]?.id ?? null); }}
@@ -282,6 +242,22 @@ export default function DevPage() {
               <X size={10} />
             </button>
           )}
+          {activeCat && (
+            <button
+              onClick={() => setShowSend(true)}
+              className="text-sky-400 hover:text-sky-300 transition-colors"
+              title="Send to Tasks"
+            >
+              <Send size={10} />
+            </button>
+          )}
+          <button
+            onClick={() => setAddingCat(true)}
+            className="text-t5 hover:text-t3 transition-colors"
+            title="New category"
+          >
+            <Plus size={11} />
+          </button>
         </div>
       </div>
 
@@ -656,107 +632,7 @@ function SendToTasksModal({ items, devCategoryName, onClose }: {
   );
 }
 
-function DevTrashSection({ trashedItems, categories, onRestore, onDeletePermanent, onClearAll, onBack }: {
-  trashedItems: DevItem[];
-  categories: DevCategory[];
-  onRestore: (id: number) => Promise<void>;
-  onDeletePermanent: (id: number) => Promise<void>;
-  onClearAll: () => Promise<void>;
-  onBack: () => void;
-}) {
-  const [openGroup, setOpenGroup] = useState<number | null>(null);
-  const [pendingConfirm, setPendingConfirm] = useState<{ label: string; sub: string; onConfirm: () => void } | null>(null);
 
-  const knownCatIds = new Set(categories.map(c => c.id));
-  type TrashGroup = DevCategory & { items: DevItem[] };
-  const groups: TrashGroup[] = categories
-    .map(cat => ({ ...cat, items: trashedItems.filter(i => i.category_id === cat.id) }))
-    .filter(g => g.items.length > 0);
-  const orphans = trashedItems.filter(i => !knownCatIds.has(i.category_id));
-  if (orphans.length > 0) {
-    groups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, items: orphans });
-  }
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0 view-animate">
-      <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="text-t5 hover:text-t3 transition-colors"><ChevronLeft size={12} /></button>
-          <span className="text-[11px] text-t3">Trash</span>
-          <span className="text-[10px] text-t6">{trashedItems.length}</span>
-        </div>
-        {trashedItems.length > 0 && (
-          <button
-            onClick={() => setPendingConfirm({ label: "Delete all items permanently?", sub: "This cannot be undone.", onConfirm: onClearAll })}
-            className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors"
-          >Delete all</button>
-        )}
-      </div>
-      <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-        {trashedItems.length === 0 ? (
-          <div className="px-5 py-10 text-center text-[13px] text-t5 select-none">No deleted items</div>
-        ) : (
-          groups.map(group => {
-            const collapsed = openGroup !== group.id;
-            return (
-              <div key={group.id}>
-                <div
-                  className="flex items-center gap-2 px-5 py-1.5 mt-1 group/hdr cursor-pointer select-none"
-                  onClick={() => setOpenGroup(prev => prev === group.id ? null : group.id)}
-                >
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${group.color},0.7)` }} />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${group.color},0.7)` }}>{group.name}</span>
-                  <span className="text-[10px] text-t6">{group.items.length}</span>
-                  <ChevronDown size={10} className="text-t6 ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", transition: "transform 0.15s" }} />
-                  <button
-                    onClick={e => { e.stopPropagation(); setPendingConfirm({ label: `Delete "${group.name}" permanently?`, sub: `${group.items.length} item${group.items.length !== 1 ? "s" : ""} will be removed.`, onConfirm: () => group.items.forEach(i => onDeletePermanent(i.id)) }); }}
-                    className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
-                    title="Delete group permanently"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-                {!collapsed && group.items.map(item => (
-                  <div key={item.id} className="group flex items-center gap-2.5 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 40 }}>
-                    {item.priority !== "none" && (
-                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
-                    )}
-                    <span className="flex-1 text-[12px] text-t4 line-through truncate">{item.text}</span>
-                    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onRestore(item.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400">
-                        <RotateCcw size={11} />
-                      </button>
-                      <button onClick={() => setPendingConfirm({ label: "Delete permanently?", sub: `"${item.text}"`, onConfirm: () => onDeletePermanent(item.id) })} title="Delete forever" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400">
-                        <X size={10} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })
-        )}
-      </div>
-
-      {pendingConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setPendingConfirm(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 280, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
-            <span className="text-[12px] text-t2">{pendingConfirm.label}</span>
-            <span className="text-[11px] text-t4 truncate">{pendingConfirm.sub}</span>
-            <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => setPendingConfirm(null)} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
-              <button
-                onClick={() => { pendingConfirm.onConfirm(); setPendingConfirm(null); }}
-                className="text-[11px] px-3 py-1 rounded transition-colors"
-                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "rgb(248,113,113)" }}
-              >Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function AddCategoryModal({ onAdd, onClose }: {
   onAdd: (name: string, color: string, icon: string) => void;
