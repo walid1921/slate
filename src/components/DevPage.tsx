@@ -8,6 +8,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { useDevStore, DevItem, DevCategory, DevPriority } from "../devStore";
 import { PRESET_COLORS, useTodoStore } from "../store";
+import { showSuccessToast } from "../toastStore";
 
 const PRIORITY_COLOR: Record<DevPriority, string> = {
   none: "transparent",
@@ -566,6 +567,7 @@ function SendToTasksModal({ items, devCategoryName, onClose }: {
       await add(item.text, item.priority as any, null, null, catId, desc);
     }
     setLoading(false);
+    showSuccessToast(`${count} item${count !== 1 ? "s" : ""} added`);
     onClose();
   };
 

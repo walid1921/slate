@@ -18,3 +18,7 @@ export const useToastStore = create<ToastState>((set) => ({
 export function showErrorToast(message?: string): void {
   useToastStore.getState().show("error", message ?? "Something went wrong");
 }
+
+export function showSuccessToast(message?: string): void {
+  useToastStore.getState().show("success", message);
+}

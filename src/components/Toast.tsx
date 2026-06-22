@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle, Download, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle, Download, Upload, Send } from "lucide-react";
 
-export type ToastType = "exported" | "imported" | "exported-imported" | "error";
+export type ToastType = "exported" | "imported" | "exported-imported" | "error" | "success";
 
 interface ToastProps {
   type: ToastType;
@@ -29,6 +29,11 @@ const CONFIG: Record<ToastType, { icon: React.ReactNode; title: string; sub: str
     icon: <AlertCircle size={15} className="text-red-400" />,
     title: "Something went wrong",
     sub: "Please try again",
+  },
+  success: {
+    icon: <Send size={14} className="text-sky-400" />,
+    title: "Sent to Tasks",
+    sub: "Items added",
   },
 };
 
