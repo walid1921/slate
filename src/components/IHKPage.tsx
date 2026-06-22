@@ -381,19 +381,36 @@ function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAd
 }
 
 export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg: string, fn: () => void) => void }) {
-  const { entries, load, add, update, remove, reorder, sentWeeks, toggleSent, modules, addModule, removeModule } = useIHKStore();
+  const { entries, load, add, update, remove, reorder, sentWeeks, seenWeekKeys, toggleSent, modules, addModule, removeModule, registerWeek } = useIHKStore();
   const [showModules, setShowModules] = useState(false);
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(null);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load().then(() => registerWeek(currentKey)); }, []);
 
-  const weeks = groupByWeek(entries);
-  const hasCurrentWeek = weeks.some(([k]) => k === currentKey);
-  const allWeeks: [string, { year: number; kw: number; entries: IHKEntry[] }][] = hasCurrentWeek
-    ? weeks
-    : [[currentKey, { year: currentYear, kw: currentKW, entries: [] }], ...weeks];
+  // Build a contiguous range from the earliest known week to today
+  const entryWeekKeys = new Set(groupByWeek(entries).map(([k]) => k));
+  const allKnownKeys = new Set([...entryWeekKeys, ...seenWeekKeys, currentKey]);
+
+  // Find earliest week key (lexicographic sort works because format is YYYY-WW)
+  const sortedKeys = [...allKnownKeys].sort();
+  const earliest = sortedKeys[0] ?? currentKey;
+  const [eYear, eKW] = earliest.split("-").map(Number);
+
+  // Walk forward from earliest to current week, adding every intermediate week
+  const weekMap = new Map(groupByWeek(entries));
+  const allWeeks: [string, { year: number; kw: number; entries: IHKEntry[] }][] = [];
+  let wYear = eYear, wKW = eKW;
+  while (buildWeekKey(wYear, wKW) <= currentKey) {
+    const key = buildWeekKey(wYear, wKW);
+    allWeeks.unshift([key, weekMap.get(key) ?? { year: wYear, kw: wKW, entries: [] }]);
+    const { start } = getWeekRange(wYear, wKW);
+    const nextMon = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const localStr = `${nextMon.getFullYear()}-${String(nextMon.getMonth()+1).padStart(2,'0')}-${String(nextMon.getDate()).padStart(2,'0')}`;
+    const next = getISOWeek(localStr);
+    wYear = next.year; wKW = next.kw;
+  }
 
   const pastWeeks = allWeeks.filter(([k]) => k !== currentKey).map(([key, { year, kw }]) => ({ key, year, kw }));
 

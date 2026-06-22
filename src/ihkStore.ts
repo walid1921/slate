@@ -34,6 +34,7 @@ export interface IHKEntry {
 interface IHKState {
   entries: IHKEntry[];
   sentWeeks: Set<string>;
+  seenWeekKeys: Set<string>;
   modules: IHKModule[];
   load: () => Promise<void>;
   loadModules: () => Promise<void>;
@@ -44,11 +45,13 @@ interface IHKState {
   remove: (id: number) => Promise<void>;
   reorder: (orderedIds: number[]) => Promise<void>;
   toggleSent: (weekKey: string) => Promise<void>;
+  registerWeek: (weekKey: string) => Promise<void>;
 }
 
 export const useIHKStore = create<IHKState>((set, get) => ({
   entries: [],
   sentWeeks: new Set(),
+  seenWeekKeys: new Set(),
   modules: [],
 
   loadModules: async () => {
@@ -74,9 +77,14 @@ export const useIHKStore = create<IHKState>((set, get) => ({
     const rows = await db.select<IHKEntry[]>(
       "SELECT id, text, category, date, position, created_at FROM ihk_entries ORDER BY position ASC, id ASC"
     );
-    const sentRows = await db.select<{ week_key: string }[]>("SELECT week_key FROM ihk_weeks WHERE sent = 1");
+    const weekRows = await db.select<{ week_key: string; sent: number }[]>("SELECT week_key, sent FROM ihk_weeks");
     const modRows = await db.select<IHKModule[]>("SELECT id, name, type FROM ihk_modules ORDER BY type ASC, name ASC");
-    set({ entries: rows, sentWeeks: new Set(sentRows.map(r => r.week_key)), modules: modRows });
+    set({
+      entries: rows,
+      sentWeeks: new Set(weekRows.filter(r => r.sent).map(r => r.week_key)),
+      seenWeekKeys: new Set(weekRows.map(r => r.week_key)),
+      modules: modRows,
+    });
   },
 
   add: async (text, category, date) => {
@@ -130,5 +138,12 @@ export const useIHKStore = create<IHKState>((set, get) => ({
       const rest = s.entries.filter(e => !orderedIds.includes(e.id));
       return { entries: [...reordered, ...rest].sort((a, b) => a.position - b.position) };
     });
+  },
+
+  registerWeek: async (weekKey) => {
+    if (get().seenWeekKeys.has(weekKey)) return;
+    const db = await getDb();
+    await db.execute("INSERT OR IGNORE INTO ihk_weeks (week_key, sent) VALUES (?, 0)", [weekKey]);
+    set(s => ({ seenWeekKeys: new Set([...s.seenWeekKeys, weekKey]) }));
   },
 }));
