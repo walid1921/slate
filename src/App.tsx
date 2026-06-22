@@ -1212,8 +1212,16 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
         })();
         return (
           <div onClick={() => onOpenTask(todo.id)} className="text-left px-3 pt-3 pb-2.5 flex flex-col hover:bg-white/3 transition-colors flex-1 cursor-pointer" style={{ gap: 8 }}>
-            {/* Meta: priority badge + category + status */}
+            {/* Meta: [Category (Status)]  [● Priority] */}
             <div className="flex items-center gap-1.5">
+              <span
+                className="flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 rounded-full shrink-0"
+                style={{ background: category ? `rgba(${category.color},0.1)` : "var(--c-surface-2)", color: catColor }}
+              >
+                {category?.name ?? "—"}
+                <span style={{ color: "var(--c-text-5)" }}>({statusLabel})</span>
+              </span>
+              <span className="flex-1" />
               {todo.priority !== "none" && (
                 <span
                   className="flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
@@ -1223,16 +1231,6 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                   {PRIORITY_LABEL[todo.priority]}
                 </span>
               )}
-              {category && (
-                <span className="text-[9px] font-medium flex-1 truncate" style={{ color: catColor }}>{category.name}</span>
-              )}
-              <span
-                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0"
-                style={{
-                  background: todo.status === 'in_progress' ? "rgba(59,130,246,0.12)" : todo.status === 'done' ? "rgba(16,185,129,0.12)" : "var(--c-surface-2)",
-                  color: todo.status === 'in_progress' ? "rgba(96,165,250,0.9)" : todo.status === 'done' ? "rgba(52,211,153,0.9)" : "var(--c-text-5)",
-                }}
-              >{statusLabel}</span>
             </div>
 
             {/* Subtask progress bar (always shown when subtasks exist) */}
