@@ -242,6 +242,13 @@ export default function DevPage() {
               <X size={10} />
             </button>
           )}
+          <button
+            onClick={() => setAddingCat(true)}
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+            title="New category"
+          >
+            <Plus size={11} />
+          </button>
           {activeCat && (
             <button
               onClick={() => setShowSend(true)}
@@ -251,13 +258,6 @@ export default function DevPage() {
               <Send size={10} />
             </button>
           )}
-          <button
-            onClick={() => setAddingCat(true)}
-            className="text-t5 hover:text-t3 transition-colors"
-            title="New category"
-          >
-            <Plus size={11} />
-          </button>
         </div>
       </div>
 
