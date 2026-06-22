@@ -238,5 +238,99 @@ export async function getDb(): Promise<Database> {
     await _db.execute(`INSERT OR IGNORE INTO meta (key,value) VALUES ('dev_seeded','1')`);
   }
 
+  // v2 — new categories + expanded items
+  const devV2 = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_content_v2'`);
+  if (!devV2.length) {
+    const v2Cats: [number, string, string, string, number][] = [
+      [9,  'Accessibility', '34,197,94',   'shield',   8],
+      [10, 'E-Commerce',    '251,146,60',  'layers',   9],
+      [11, 'SEO',           '139,92,246',  'zap',      10],
+    ];
+    for (const [id, name, color, icon, pos] of v2Cats) {
+      await _db.execute(`INSERT OR IGNORE INTO dev_categories (id,name,color,icon,position,is_preset) VALUES (?,?,?,?,?,1)`, [id, name, color, icon, pos]);
+    }
+
+    const v2Items: [number, string, number, string, number][] = [
+      // Design extras
+      [52, 'Define color tokens — CSS variables for primary, secondary, accent, and neutral colors', 1, 'high',   7],
+      [53, 'Establish typography scale — font sizes & line heights for heading/body/caption on all breakpoints', 1, 'high',   8],
+      [54, 'Design all interactive states — hover, focus, active, disabled, loading, error for every component', 1, 'high',   9],
+      [55, 'Navigation designed for mobile — hamburger, slide-in drawer, touch targets ≥ 44×44px', 1, 'medium', 10],
+      [56, 'Consistent icon style across the app — outline vs fill, same size grid', 1, 'low',    11],
+      [57, 'Skeleton loaders and fallback images defined for all async content', 1, 'medium', 12],
+      [58, 'Dark mode variants designed and tested for every component', 1, 'medium', 13],
+      // Frontend extras
+      [59, 'Error boundaries wrap major UI sections — one crash does not blank the whole page', 2, 'high',   7],
+      [60, 'Component library documented with usage examples — Storybook or inline stories', 2, 'low',    8],
+      [61, 'All async states handled — loading, success, error, and empty', 2, 'high',   9],
+      [62, 'Progressive enhancement — core action works without JS, enhanced with JS', 2, 'medium', 10],
+      [63, 'Web fonts preloaded and loaded with font-display: swap', 2, 'medium', 11],
+      // Backend extras
+      [64, 'API versioned (/v1/, /v2/) so clients can migrate on their own schedule', 3, 'medium', 7],
+      [65, 'Caching strategy defined — Redis or CDN for hot data, invalidation planned', 3, 'high',   8],
+      [66, 'Background job queue for slow operations — email, exports, image processing', 3, 'high',   9],
+      [67, 'OpenAPI / Swagger docs generated from code and kept in sync', 3, 'medium', 10],
+      [68, 'Webhooks validated by HMAC signature before processing', 3, 'high',   11],
+      // Database extras
+      [69, 'Soft deletes with deleted_at timestamp instead of hard DELETE', 4, 'medium', 6],
+      [70, 'Audit log table for sensitive mutations — who changed what and when', 4, 'high',   7],
+      [71, 'Database credentials rotated and never stored in application code', 4, 'high',   8],
+      // Security extras
+      [72, 'Content Security Policy (CSP) header blocks unauthorized script sources', 5, 'high',   7],
+      [73, 'Security headers set — X-Frame-Options, X-Content-Type-Options, Referrer-Policy', 5, 'high',   8],
+      [74, 'User-supplied HTML sanitized server-side before storing or rendering', 5, 'high',   9],
+      [75, 'Session ID regenerated on login to prevent session fixation attacks', 5, 'high',   10],
+      // DevOps extras
+      [76, 'Docker image built in CI — no manual builds on production servers', 6, 'medium', 6],
+      [77, 'Staging environment mirrors production — every deploy tested there first', 6, 'high',   7],
+      [78, 'Database migrations applied automatically as part of the deploy pipeline', 6, 'high',   8],
+      [79, 'Incident runbook documented — on-call knows exactly what to do at 3am', 6, 'medium', 9],
+      // Testing extras
+      [80, 'E2E tests cover critical flows — signup, login, checkout, main CRUD actions', 7, 'high',   5],
+      [81, 'Visual regression tests catch unexpected UI changes between deployments', 7, 'medium', 6],
+      [82, 'Load tested before launch — know the breaking point before users find it', 7, 'high',   7],
+      // Performance extras
+      [83, 'Images served in modern formats (WebP / AVIF) with legacy fallback', 8, 'high',   6],
+      [84, 'Font loading optimized — preloaded, font-display: swap, subset to used glyphs', 8, 'medium', 7],
+      [85, 'Third-party scripts deferred or async — no render-blocking analytics or chat widgets', 8, 'high',   8],
+      [86, 'HTTP caching headers set — Cache-Control for static assets, ETag for dynamic', 8, 'medium', 9],
+      [87, 'GZIP or Brotli compression enabled at server or CDN level', 8, 'medium', 10],
+      // Accessibility
+      [88, 'Semantic HTML used throughout — header, nav, main, article, footer, section', 9, 'high',   0],
+      [89, 'Heading hierarchy correct — h1 → h2 → h3, no levels skipped', 9, 'high',   1],
+      [90, 'All images have descriptive alt text; decorative images use alt=""', 9, 'high',   2],
+      [91, 'Full keyboard navigation — Tab, Enter, Space, arrow keys work everywhere', 9, 'high',   3],
+      [92, 'Focus rings visible — outline:none never used without a visible replacement', 9, 'high',   4],
+      [93, 'ARIA attributes used for dynamic content — aria-live, aria-expanded, aria-label', 9, 'medium', 5],
+      [94, 'Color is not the only information channel — icons and labels accompany color cues', 9, 'medium', 6],
+      [95, 'Forms use <label> elements linked to inputs — placeholder is not a label', 9, 'high',   7],
+      [96, 'Lighthouse accessibility score > 90 on all key pages', 9, 'high',   8],
+      // E-Commerce
+      [97,  'Product gallery with main image, thumbnails, and zoom / 360° view', 10, 'high',   0],
+      [98,  'Stock status clearly visible — available, low stock, and out-of-stock handled on PDP', 10, 'high',   1],
+      [99,  'Variant selectors (size, color) update price and stock availability dynamically', 10, 'high',   2],
+      [100, 'Add-to-cart gives visual feedback — cart count animation or toast < 300ms', 10, 'medium', 3],
+      [101, 'Cart persists across sessions — items survive a page refresh or browser close', 10, 'high',   4],
+      [102, 'Promo / coupon code field in cart with clear success and error feedback', 10, 'medium', 5],
+      [103, 'Shipping cost shown before the payment step — no surprise fees at checkout', 10, 'high',   6],
+      [104, 'Guest checkout available — account creation must never block a purchase', 10, 'high',   7],
+      [105, 'Order confirmation page shown + transactional email sent automatically after purchase', 10, 'high',   8],
+      [106, 'Return policy and shipping info visible on product page and at checkout', 10, 'medium', 9],
+      // SEO
+      [107, 'Each page has a unique <title> tag and meta description under 160 characters', 11, 'high',   0],
+      [108, 'Open Graph tags set — og:title, og:description, og:image for every shareable page', 11, 'medium', 1],
+      [109, 'Canonical URLs defined to prevent duplicate content penalties', 11, 'high',   2],
+      [110, 'XML sitemap generated and submitted to Google Search Console', 11, 'medium', 3],
+      [111, 'robots.txt configured — crawlable pages allowed, staging and admin blocked', 11, 'medium', 4],
+      [112, 'Structured data (JSON-LD) added for products, breadcrumbs, and reviews', 11, 'medium', 5],
+      [113, 'Internal linking strategy defined — related content linked with descriptive anchor text', 11, 'low',    6],
+      [114, 'Core Web Vitals monitored in Google Search Console — a drop to Poor affects rankings', 11, 'high',   7],
+    ];
+    for (const [id, text, cat_id, priority, pos] of v2Items) {
+      await _db.execute(`INSERT OR IGNORE INTO dev_items (id,text,category_id,priority,position) VALUES (?,?,?,?,?)`, [id, text, cat_id, priority, pos]);
+    }
+    await _db.execute(`INSERT OR IGNORE INTO meta (key,value) VALUES ('dev_content_v2','1')`);
+  }
+
   return _db;
 }
