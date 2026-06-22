@@ -26,6 +26,7 @@ import {
   Flag,
   Timer,
   Code2,
+  Search,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -1072,17 +1073,27 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
     return v ? Number(v) : null;
   });
   const [dropOpen, setDropOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!dropOpen) return;
-    const h = (e: MouseEvent) => { if (dropRef.current && !dropRef.current.contains(e.target as Node)) setDropOpen(false); };
+    if (!dropOpen && !searchOpen) return;
+    const h = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
+    };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
-  }, [dropOpen]);
+  }, [dropOpen, searchOpen]);
 
   const activeTodos = todos.filter(t => t.status !== 'done');
   const todo = todos.find(t => t.id === focusId) ?? null;
+  const category = todo ? (categories.find(c => c.id === todo.category_id) ?? null) : null;
   const taskSessions = todo ? sessions.filter(s => s.task_id === todo.id) : [];
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
   const [elapsed, setElapsed] = useState(0);
@@ -1099,7 +1110,19 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
     setFocusId(id);
     localStorage.setItem("focus_task_id", String(id));
     setDropOpen(false);
+    setSearchOpen(false);
+    setSearchQuery("");
   };
+
+  const openSearch = () => {
+    setDropOpen(false);
+    setSearchOpen(true);
+    setTimeout(() => searchInputRef.current?.focus(), 10);
+  };
+
+  const filteredTodos = searchQuery.trim()
+    ? activeTodos.filter(t => t.text.toLowerCase().includes(searchQuery.toLowerCase()))
+    : activeTodos;
 
   const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
@@ -1111,39 +1134,71 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const headerBorder = done ? "1px solid rgba(16,185,129,0.2)" : overdue ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(59,130,246,0.15)";
   const accentColor = done ? "rgba(52,211,153,0.9)" : overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
 
+  const catIcon = category?.icon ?? "zap";
+
   return (
     <div className="relative rounded-xl flex flex-col gap-0 h-full" ref={dropRef} style={{ border: cardBorder, background: cardBg }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: headerBorder }}>
-        <div className="flex items-center gap-1.5">
-          <Zap size={11} style={{ color: accentColor }} className="shrink-0" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accentColor }}>Clockify</span>
+      {searchOpen ? (
+        <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: headerBorder }}>
+          <Search size={10} style={{ color: accentColor, flexShrink: 0 }} />
+          <input
+            ref={searchInputRef}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search tasks…"
+            className="flex-1 bg-transparent text-[11px] outline-none"
+            style={{ color: "var(--c-text-2)" }}
+          />
+          <button onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="shrink-0 transition-colors" style={{ color: "var(--c-text-5)" }}>
+            <X size={10} />
+          </button>
         </div>
-        {/* Task picker */}
-        <button onClick={() => setDropOpen(v => !v)}
-          className="flex items-center gap-1 text-[10px] text-t4 hover:text-t2 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5">
-          <span className="max-w-[60px] truncate">{todo ? todo.text : "Pick a task"}</span>
-          <ChevronDown size={9} />
-        </button>
-        {dropOpen && (
-          <div className="dropdown absolute left-0 right-0 z-50 py-1 overflow-y-scroll rounded-b-xl" style={{ top: 33, bottom: 0 }}>
-            {activeTodos.length === 0
-              ? <p className="px-3 py-2 text-[11px] text-t5">No active tasks</p>
-              : activeTodos.map(t => (
-                <button key={t.id} onClick={() => selectTask(t.id)}
-                  className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
-                  <span className="truncate">{t.text}</span>
-                </button>
-              ))
-            }
-          </div>
-        )}
-      </div>
+      ) : (
+        <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: headerBorder }}>
+          <button
+            onClick={() => setDropOpen(v => !v)}
+            className="flex items-center gap-1.5 min-w-0 flex-1 text-left"
+          >
+            <IconDisplay name={catIcon} size={11} style={{ color: accentColor, flexShrink: 0 }} />
+            <span
+              className="text-[11px] font-medium truncate flex-1"
+              style={{ color: todo ? "var(--c-text-2)" : "var(--c-text-5)" }}
+            >
+              {todo ? todo.text : "Pick a task"}
+            </span>
+            <ChevronDown size={9} style={{ color: "var(--c-text-5)", flexShrink: 0 }} />
+          </button>
+          <button onClick={openSearch} className="shrink-0 transition-colors" style={{ color: "var(--c-text-5)" }}>
+            <Search size={11} />
+          </button>
+        </div>
+      )}
+
+      {/* Task list dropdown (pick or search) */}
+      {(dropOpen || (searchOpen && searchQuery.trim())) && (
+        <div className="dropdown absolute left-0 right-0 z-50 py-1 overflow-y-auto rounded-b-xl" style={{ top: 33, bottom: 0 }}>
+          {filteredTodos.length === 0
+            ? <p className="px-3 py-2 text-[11px] text-t5">{searchQuery.trim() ? "No tasks found" : "No active tasks"}</p>
+            : filteredTodos.map(t => {
+                const tCat = categories.find(c => c.id === t.category_id);
+                return (
+                  <button key={t.id} onClick={() => selectTask(t.id)}
+                    className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
+                    {tCat
+                      ? <IconDisplay name={tCat.icon ?? "folder"} size={10} style={{ color: `rgba(${tCat.color},0.7)`, flexShrink: 0 }} />
+                      : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
+                    }
+                    <span className="truncate">{t.text}</span>
+                  </button>
+                );
+              })
+          }
+        </div>
+      )}
 
       {/* Body */}
       {todo ? (() => {
-        const category = categories.find(c => c.id === todo.category_id);
         const statusLabel = todo.status === 'in_progress' ? 'In Progress' : 'To Do';
         const catColor = category ? `rgba(${category.color},0.85)` : "var(--c-text-5)";
         return (

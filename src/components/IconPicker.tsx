@@ -124,13 +124,15 @@ export function IconDisplay({
   name,
   size = 12,
   className,
+  style,
 }: {
   name: string;
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const Comp = ICON_MAP[name] ?? Layers;
-  return <Comp size={size} className={className} />;
+  return <Comp size={size} className={className} style={style} />;
 }
 
 export function IconPicker({
