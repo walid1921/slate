@@ -1844,7 +1844,7 @@ export default function App() {
             <Tooltip label="Add category">
               <button
                 onClick={() => setShowAddCategoryModal(true)}
-                className="p-1.5 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors shrink-0 mr-1"
+                className="p-1.5 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors shrink-0 mr-1"
               >
                 <FolderPlus size={11} />
               </button>
