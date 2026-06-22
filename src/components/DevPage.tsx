@@ -62,7 +62,7 @@ export default function DevPage() {
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
       {/* Category tab bar */}
-      <div className="flex items-center gap-0 px-2 pt-1 shrink-0">
+      <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
       <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
         {categories.map(cat => {
           const isActive = activeCatId === cat.id;
@@ -72,10 +72,11 @@ export default function DevPage() {
             <button
               key={cat.id}
               onClick={() => setActiveCatId(cat.id)}
-              className="relative flex items-center gap-1.5 px-3 py-2 text-[12px] shrink-0 select-none transition-colors rounded-t"
+              className="relative flex items-center gap-1.5 px-3 py-2 text-[12px] shrink-0 select-none transition-colors"
               style={{
                 color: isActive ? `rgba(${cat.color},1)` : `rgba(${cat.color},0.45)`,
-                background: isActive ? `rgba(${cat.color},0.08)` : "transparent",
+                borderBottom: isActive ? `2px solid rgba(${cat.color},0.8)` : "2px solid transparent",
+                marginBottom: -1,
               }}
             >
               <CategoryIcon icon={cat.icon} size={11} />
@@ -97,16 +98,6 @@ export default function DevPage() {
         </button>
       </div>
       </div>
-
-      {/* Category progress bar */}
-      {catItems.length > 0 && activeCat && (
-        <div className="h-[2px] shrink-0" style={{ background: "var(--c-border)" }}>
-          <div
-            className="h-full transition-all duration-300"
-            style={{ width: `${catPct}%`, background: `rgba(${activeCat.color},0.6)` }}
-          />
-        </div>
-      )}
 
       {/* Filter tabs + global progress + actions */}
       <div className="flex items-center justify-between px-4 py-2 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
@@ -151,6 +142,22 @@ export default function DevPage() {
           )}
         </div>
       </div>
+
+      {/* Category progress bar */}
+      {activeCat && catItems.length > 0 && (
+        <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-medium" style={{ color: `rgba(${activeCat.color},0.85)` }}>{activeCat.name}</span>
+            <span className="text-[10px] text-t4 font-mono">{catDone}/{catItems.length} · {Math.round(catPct)}%</span>
+          </div>
+          <div className="h-[6px] rounded-full overflow-hidden" style={{ background: "var(--c-surface-3)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{ width: `${catPct}%`, background: catPct === 100 ? "rgba(16,185,129,0.75)" : `rgba(${activeCat.color},0.65)` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Items list */}
       <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
