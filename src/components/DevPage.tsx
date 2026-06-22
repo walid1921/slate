@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
-  Zap, Layers, Plus, X, Send,
+  Zap, Layers, Plus, X, Send, Pencil, Trash2,
 } from "lucide-react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useDevStore, DevItem, DevCategory, DevPriority } from "../devStore";
+import { useDevStore, DevItem, DevCategory, DevPriority, DevSection } from "../devStore";
 import { PRESET_COLORS, useTodoStore } from "../store";
 import { showSuccessToast } from "../toastStore";
 import { Tooltip } from "./Tooltip";
@@ -178,7 +178,7 @@ function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
 const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "terminal", "flask", "zap", "layers"] as const;
 
 export default function DevPage() {
-  const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, addSection, removeSection } = useDevStore();
+  const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, addSection, removeSection, updateSectionName } = useDevStore();
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [filterPriority, setFilterPriority] = useState<DevPriority | "all">("all");
@@ -188,6 +188,10 @@ export default function DevPage() {
   const [showSend, setShowSend] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevItem | null>(null);
+  const [catContextMenu, setCatContextMenu] = useState<{ cat: DevCategory; x: number; y: number } | null>(null);
+  const [catEditModal, setCatEditModal] = useState<DevCategory | null>(null);
+  const [sectionContextMenu, setSectionContextMenu] = useState<{ section: DevSection; x: number; y: number } | null>(null);
+  const [sectionEditModal, setSectionEditModal] = useState<DevSection | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -247,31 +251,19 @@ export default function DevPage() {
       {/* Section nav bar */}
       <div className="flex items-center gap-1 px-2 py-1.5 shrink-0 flex-wrap" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
         {sections.map(section => (
-          <div key={section.id} className="group/sect relative inline-flex items-center shrink-0">
-            <button
-              onClick={() => setActiveSectionId(section.id)}
-              className="flex items-center px-2.5 py-0.5 text-[11px] rounded font-medium transition-all"
-              style={{
-                color: activeSectionId === section.id ? "var(--c-text-2)" : "var(--c-text-5)",
-                background: activeSectionId === section.id ? "var(--c-surface-3)" : "transparent",
-                border: `1px solid ${activeSectionId === section.id ? "var(--c-border)" : "transparent"}`,
-              }}
-            >
-              {section.name}
-            </button>
-            {section.id !== 1 && sections.length > 1 && (
-              <button
-                onClick={() => {
-                  removeSection(section.id);
-                  if (activeSectionId === section.id) setActiveSectionId(sections.find(s => s.id !== section.id)?.id ?? null);
-                }}
-                className="absolute -right-1.5 -top-1.5 w-3.5 h-3.5 rounded-full hidden group-hover/sect:flex items-center justify-center text-t5 hover:text-red-400 transition-colors"
-                style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)", zIndex: 1 }}
-              >
-                <X size={7} />
-              </button>
-            )}
-          </div>
+          <button
+            key={section.id}
+            onClick={() => setActiveSectionId(section.id)}
+            onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setSectionContextMenu({ section, x: r.left, y: r.bottom + 2 }); }}
+            className="flex items-center px-2.5 py-0.5 text-[11px] rounded font-medium transition-all shrink-0"
+            style={{
+              color: activeSectionId === section.id ? "var(--c-text-2)" : "var(--c-text-5)",
+              background: activeSectionId === section.id ? "var(--c-surface-3)" : "transparent",
+              border: `1px solid ${activeSectionId === section.id ? "var(--c-border)" : "transparent"}`,
+            }}
+          >
+            {section.name}
+          </button>
         ))}
         {addingSection ? (
           <input
@@ -309,6 +301,7 @@ export default function DevPage() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCatId(cat.id)}
+                onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setCatContextMenu({ cat, x: r.left, y: r.bottom + 2 }); }}
                 className="relative flex items-center gap-1.5 px-3 py-2 text-[12px] shrink-0 select-none transition-colors"
                 style={{
                   color: isActive ? `rgba(${cat.color},1)` : `rgba(${cat.color},0.45)`,
@@ -324,16 +317,6 @@ export default function DevPage() {
           })}
         </div>
         <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
-          {activeCat && !activeCat.is_preset && (
-            <Tooltip label="Delete category">
-              <button
-                onClick={() => { removeCategory(activeCat.id); setActiveCatId(sectionCategories.filter(c => c.id !== activeCat.id)[0]?.id ?? null); }}
-                className="p-1 rounded text-t6 hover:text-red-400 hover:bg-s1 transition-colors"
-              >
-                <X size={10} />
-              </button>
-            </Tooltip>
-          )}
           <Tooltip label="New category">
             <button
               onClick={() => setAddingCat(true)}
@@ -461,6 +444,87 @@ export default function DevPage() {
             devCategoryName={activeCat.name}
             onClose={() => setShowSend(false)}
           />
+        </div>
+      )}
+
+      {/* Category edit modal */}
+      {catEditModal && (
+        <DevCategoryEditModal
+          cat={catEditModal}
+          onRename={(id, name) => updateCategoryName(id, name)}
+          onRecolor={(id, color) => updateCategoryColor(id, color)}
+          onReicon={(id, icon) => updateCategoryIcon(id, icon)}
+          onRemove={id => { removeCategory(id); setActiveCatId(sectionCategories.filter(c => c.id !== id)[0]?.id ?? null); }}
+          onClose={() => setCatEditModal(null)}
+        />
+      )}
+
+      {/* Section edit modal */}
+      {sectionEditModal && (
+        <DevSectionEditModal
+          section={sectionEditModal}
+          onRename={(id, name) => updateSectionName(id, name)}
+          onRemove={id => { removeSection(id); if (activeSectionId === id) setActiveSectionId(sections.find(s => s.id !== id)?.id ?? null); }}
+          onClose={() => setSectionEditModal(null)}
+        />
+      )}
+
+      {/* Category context menu */}
+      {catContextMenu && (
+        <div
+          className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+          style={{ top: catContextMenu.y, left: catContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
+          onMouseLeave={() => setCatContextMenu(null)}
+        >
+          <button
+            className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+            onClick={() => { setCatEditModal(catContextMenu.cat); setCatContextMenu(null); }}
+          >
+            <Pencil size={11} className="text-t4" /> Edit
+          </button>
+          {!catContextMenu.cat.is_preset && (
+            <button
+              className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
+              onClick={() => {
+                const { cat } = catContextMenu;
+                setCatContextMenu(null);
+                setPendingDelete(null);
+                removeCategory(cat.id);
+                setActiveCatId(sectionCategories.filter(c => c.id !== cat.id)[0]?.id ?? null);
+              }}
+            >
+              <Trash2 size={11} /> Delete
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Section context menu */}
+      {sectionContextMenu && (
+        <div
+          className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+          style={{ top: sectionContextMenu.y, left: sectionContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
+          onMouseLeave={() => setSectionContextMenu(null)}
+        >
+          <button
+            className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+            onClick={() => { setSectionEditModal(sectionContextMenu.section); setSectionContextMenu(null); }}
+          >
+            <Pencil size={11} className="text-t4" /> Edit
+          </button>
+          {sectionContextMenu.section.id !== 1 && (
+            <button
+              className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
+              onClick={() => {
+                const { section } = sectionContextMenu;
+                setSectionContextMenu(null);
+                removeSection(section.id);
+                if (activeSectionId === section.id) setActiveSectionId(sections.find(s => s.id !== section.id)?.id ?? null);
+              }}
+            >
+              <Trash2 size={11} /> Delete
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -755,6 +819,135 @@ function SendToTasksModal({ items, devCategoryName, onClose }: {
 }
 
 
+
+function DevCategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, onClose }: {
+  cat: DevCategory;
+  onRename: (id: number, name: string) => void;
+  onRecolor: (id: number, color: string) => void;
+  onReicon: (id: number, icon: string) => void;
+  onRemove: (id: number) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(cat.name);
+  const [color, setColor] = useState(cat.color);
+  const [icon, setIcon] = useState(cat.icon);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+
+  const save = () => {
+    if (name.trim() && name.trim() !== cat.name) onRename(cat.id, name.trim());
+    if (color !== cat.color) onRecolor(cat.id, color);
+    if (icon !== cat.icon) onReicon(cat.id, icon);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
+          <span className="text-[13px] font-semibold text-t1">Edit category</span>
+          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
+        </div>
+        <input
+          ref={inputRef}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
+          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          placeholder="Category name…"
+        />
+        <div>
+          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {CAT_ICONS.map(ic => (
+              <button key={ic} onClick={() => setIcon(ic)} className={`p-1.5 rounded transition-colors ${icon === ic ? "bg-s3 text-t1" : "text-t5 hover:text-t3"}`}>
+                <CategoryIcon icon={ic} size={12} />
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
+          <div className="grid grid-cols-7 gap-1.5">
+            {PRESET_COLORS.slice(0, 14).map(c => (
+              <button key={c} onClick={() => setColor(c)} className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+            <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
+          </div>
+          {!cat.is_preset && (
+            <button
+              onClick={() => { onRemove(cat.id); onClose(); }}
+              className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <Trash2 size={12} /> Delete category
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DevSectionEditModal({ section, onRename, onRemove, onClose }: {
+  section: DevSection;
+  onRename: (id: number, name: string) => void;
+  onRemove: (id: number) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(section.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
+
+  const save = () => {
+    if (name.trim() && name.trim() !== section.name) onRename(section.id, name.trim());
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-t1">Edit page</span>
+          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
+        </div>
+        <input
+          ref={inputRef}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
+          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
+          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          placeholder="Page name…"
+        />
+        <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
+            <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
+          </div>
+          {section.id !== 1 && (
+            <button
+              onClick={() => { onRemove(section.id); onClose(); }}
+              className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
+              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <Trash2 size={12} /> Delete page
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AddCategoryModal({ onAdd, onClose }: {
   onAdd: (name: string, color: string, icon: string) => void;

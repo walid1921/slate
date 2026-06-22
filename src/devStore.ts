@@ -49,9 +49,12 @@ interface DevStore {
   reorderItems: (categoryId: number, orderedIds: number[]) => Promise<void>;
   addCategory: (name: string, color: string, icon: string, sectionId?: number) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
+  updateCategoryName: (id: number, name: string) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
+  updateCategoryIcon: (id: number, icon: string) => Promise<void>;
   addSection: (name: string) => Promise<void>;
   removeSection: (id: number) => Promise<void>;
+  updateSectionName: (id: number, name: string) => Promise<void>;
   restoreItem: (id: number) => Promise<void>;
   permanentDeleteItem: (id: number) => Promise<void>;
   clearDevTrash: () => Promise<void>;
@@ -221,6 +224,40 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, color } : c) }));
     } catch (e) {
       showErrorToast("Couldn't update color");
+    }
+  },
+
+  updateCategoryName: async (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_categories SET name = ? WHERE id = ?", [trimmed, id]);
+      set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, name: trimmed } : c) }));
+    } catch (e) {
+      showErrorToast("Couldn't update category name");
+    }
+  },
+
+  updateCategoryIcon: async (id, icon) => {
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_categories SET icon = ? WHERE id = ?", [icon, id]);
+      set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, icon } : c) }));
+    } catch (e) {
+      showErrorToast("Couldn't update category icon");
+    }
+  },
+
+  updateSectionName: async (id, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_sections SET name = ? WHERE id = ?", [trimmed, id]);
+      set(s => ({ sections: s.sections.map(sec => sec.id === id ? { ...sec, name: trimmed } : sec) }));
+    } catch (e) {
+      showErrorToast("Couldn't update page name");
     }
   },
 
