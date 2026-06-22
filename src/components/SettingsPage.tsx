@@ -592,16 +592,16 @@ function DataTab() {
           [s.id, s.task_id, s.started_at, s.ended_at ?? null]
         );
       }
-      for (const e of (data.ihkEntries ?? [])) {
-        await db.execute(
-          "INSERT INTO ihk_entries (id, text, category, date, position, created_at) VALUES (?,?,?,?,?,?)",
-          [e.id, e.text, e.category, e.date, e.position, e.created_at]
-        );
-      }
       for (const m of (data.ihkModules ?? [])) {
         await db.execute(
           "INSERT INTO ihk_modules (id, name, type, created_at) VALUES (?,?,?,?)",
           [m.id, m.name, m.type, m.created_at]
+        );
+      }
+      for (const e of (data.ihkEntries ?? [])) {
+        await db.execute(
+          "INSERT INTO ihk_entries (id, text, category, date, position, created_at) VALUES (?,?,?,?,?,?)",
+          [e.id, e.text, e.category, e.date, e.position, e.created_at]
         );
       }
       for (const w of (data.ihkWeeks ?? [])) {
@@ -619,14 +619,14 @@ function DataTab() {
       // Dev content (version 3+ exports)
       for (const sec of (data.devSections ?? [])) {
         await db.execute(
-          "INSERT OR IGNORE INTO dev_sections (id, name, position, created_at) VALUES (?,?,?,?)",
-          [sec.id, sec.name, sec.position, sec.created_at ?? new Date().toISOString()]
+          "INSERT OR IGNORE INTO dev_sections (id, name, position, created_at, deleted_at) VALUES (?,?,?,?,?)",
+          [sec.id, sec.name, sec.position, sec.created_at ?? new Date().toISOString(), sec.deleted_at ?? null]
         );
       }
       for (const c of (data.devCategories ?? [])) {
         await db.execute(
-          "INSERT OR IGNORE INTO dev_categories (id, name, color, icon, position, is_preset, section_id) VALUES (?,?,?,?,?,?,?)",
-          [c.id, c.name, c.color, c.icon ?? "folder", c.position, c.is_preset ? 1 : 0, c.section_id ?? 1]
+          "INSERT OR IGNORE INTO dev_categories (id, name, color, icon, position, is_preset, section_id, deleted_at) VALUES (?,?,?,?,?,?,?,?)",
+          [c.id, c.name, c.color, c.icon ?? "code-2", c.position, c.is_preset ? 1 : 0, c.section_id ?? 1, c.deleted_at ?? null]
         );
       }
       for (const i of (data.devItems ?? [])) {
