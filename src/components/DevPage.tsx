@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
   Zap, Layers, Plus, X, Send, Pencil, Trash2,
@@ -192,6 +193,7 @@ export default function DevPage() {
   const [catEditModal, setCatEditModal] = useState<DevCategory | null>(null);
   const [sectionContextMenu, setSectionContextMenu] = useState<{ section: DevSection; x: number; y: number } | null>(null);
   const [sectionEditModal, setSectionEditModal] = useState<DevSection | null>(null);
+  const [devConfirm, setDevConfirm] = useState<{ msg: string; sub: string; onConfirm: () => void } | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -457,7 +459,14 @@ export default function DevPage() {
           onRename={(id, name) => updateCategoryName(id, name)}
           onRecolor={(id, color) => updateCategoryColor(id, color)}
           onReicon={(id, icon) => updateCategoryIcon(id, icon)}
-          onRemove={id => { removeCategory(id); setActiveCatId(sectionCategories.filter(c => c.id !== id)[0]?.id ?? null); }}
+          onRemove={id => {
+            const name = catEditModal.name;
+            setDevConfirm({
+              msg: `Delete "${name}"?`,
+              sub: "All items in this category will be moved to trash.",
+              onConfirm: () => { removeCategory(id); setActiveCatId(sectionCategories.filter(c => c.id !== id)[0]?.id ?? null); },
+            });
+          }}
           onClose={() => setCatEditModal(null)}
         />
       )}
@@ -467,15 +476,22 @@ export default function DevPage() {
         <DevSectionEditModal
           section={sectionEditModal}
           onRename={(id, name) => updateSectionName(id, name)}
-          onRemove={id => { removeSection(id); if (activeSectionId === id) setActiveSectionId(sections.find(s => s.id !== id)?.id ?? null); }}
+          onRemove={id => {
+            const name = sectionEditModal.name;
+            setDevConfirm({
+              msg: `Delete "${name}"?`,
+              sub: "All categories and items in this page will be removed.",
+              onConfirm: () => { removeSection(id); if (activeSectionId === id) setActiveSectionId(sections.find(s => s.id !== id)?.id ?? null); },
+            });
+          }}
           onClose={() => setSectionEditModal(null)}
         />
       )}
 
-      {/* Category context menu */}
-      {catContextMenu && (
+      {/* Category context menu — portaled to avoid transform clipping */}
+      {catContextMenu && createPortal(
         <div
-          className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+          className="fixed z-[9999] dropdown rounded-lg overflow-hidden shadow-xl"
           style={{ top: catContextMenu.y, left: catContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
           onMouseLeave={() => setCatContextMenu(null)}
         >
@@ -491,21 +507,24 @@ export default function DevPage() {
               onClick={() => {
                 const { cat } = catContextMenu;
                 setCatContextMenu(null);
-                setPendingDelete(null);
-                removeCategory(cat.id);
-                setActiveCatId(sectionCategories.filter(c => c.id !== cat.id)[0]?.id ?? null);
+                setDevConfirm({
+                  msg: `Delete "${cat.name}"?`,
+                  sub: "All items in this category will be moved to trash.",
+                  onConfirm: () => { removeCategory(cat.id); setActiveCatId(sectionCategories.filter(c => c.id !== cat.id)[0]?.id ?? null); },
+                });
               }}
             >
               <Trash2 size={11} /> Delete
             </button>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Section context menu */}
-      {sectionContextMenu && (
+      {/* Section context menu — portaled to avoid transform clipping */}
+      {sectionContextMenu && createPortal(
         <div
-          className="fixed z-50 dropdown rounded-lg overflow-hidden shadow-xl"
+          className="fixed z-[9999] dropdown rounded-lg overflow-hidden shadow-xl"
           style={{ top: sectionContextMenu.y, left: sectionContextMenu.x, minWidth: 140, border: "1px solid var(--c-border)" }}
           onMouseLeave={() => setSectionContextMenu(null)}
         >
@@ -521,13 +540,37 @@ export default function DevPage() {
               onClick={() => {
                 const { section } = sectionContextMenu;
                 setSectionContextMenu(null);
-                removeSection(section.id);
-                if (activeSectionId === section.id) setActiveSectionId(sections.find(s => s.id !== section.id)?.id ?? null);
+                setDevConfirm({
+                  msg: `Delete "${section.name}"?`,
+                  sub: "All categories and items in this page will be removed.",
+                  onConfirm: () => { removeSection(section.id); if (activeSectionId === section.id) setActiveSectionId(sections.find(s => s.id !== section.id)?.id ?? null); },
+                });
               }}
             >
               <Trash2 size={11} /> Delete
             </button>
           )}
+        </div>,
+        document.body
+      )}
+
+      {/* Generic confirm dialog */}
+      {devConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setDevConfirm(null); }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 290, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
+            <span className="text-[13px] font-medium text-t1">{devConfirm.msg}</span>
+            <span className="text-[11px] text-t4">{devConfirm.sub}</span>
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setDevConfirm(null)} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
+              <button
+                onClick={() => { devConfirm.onConfirm(); setDevConfirm(null); }}
+                className="text-[11px] px-3 py-1 rounded transition-colors"
+                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "rgb(248,113,113)" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
