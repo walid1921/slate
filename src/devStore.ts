@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getDb } from "./db";
+import { getDb, resetDevDb } from "./db";
 import { showErrorToast } from "./toastStore";
 
 export type DevPriority = "none" | "low" | "medium" | "high";
@@ -60,6 +60,7 @@ interface DevStore {
   restoreItem: (id: number) => Promise<void>;
   permanentDeleteItem: (id: number) => Promise<void>;
   clearDevTrash: () => Promise<void>;
+  resetDevContent: () => Promise<void>;
 }
 
 export const useDevStore = create<DevStore>((set, get) => ({
@@ -363,6 +364,15 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set({ trashedItems: [], trashedCategories: [], trashedSections: [] });
     } catch (e) {
       showErrorToast("Couldn't clear trash");
+    }
+  },
+
+  resetDevContent: async () => {
+    try {
+      await resetDevDb();
+      await get().load();
+    } catch (e) {
+      showErrorToast("Couldn't reset dev checklist");
     }
   },
 }));

@@ -356,3 +356,12 @@ export async function getDb(): Promise<Database> {
 
   return _db;
 }
+
+export async function resetDevDb(): Promise<void> {
+  const db = await getDb();
+  await db.execute("DELETE FROM dev_items");
+  await db.execute("DELETE FROM dev_categories");
+  await db.execute("DELETE FROM dev_sections");
+  await db.execute("DELETE FROM meta WHERE key IN ('dev_seeded', 'dev_content_v2', 'dev_sections_v1')");
+  _db = null;
+}
