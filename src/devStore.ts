@@ -33,6 +33,7 @@ interface DevStore {
   deleteItem: (id: number) => Promise<void>;
   updateItemText: (id: number, text: string) => Promise<void>;
   resetCategory: (categoryId: number) => Promise<void>;
+  reorderItems: (categoryId: number, orderedIds: number[]) => Promise<void>;
   addCategory: (name: string, color: string, icon: string) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
@@ -112,6 +113,23 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ items: s.items.map(i => i.id === id ? { ...i, text: trimmed } : i) }));
     } catch (e) {
       showErrorToast("Couldn't update item");
+    }
+  },
+
+  reorderItems: async (_categoryId, orderedIds) => {
+    try {
+      const db = await getDb();
+      for (let i = 0; i < orderedIds.length; i++) {
+        await db.execute("UPDATE dev_items SET position = ? WHERE id = ?", [i, orderedIds[i]]);
+      }
+      const posMap = new Map(orderedIds.map((id, i) => [id, i]));
+      set(s => ({
+        items: s.items
+          .map(item => posMap.has(item.id) ? { ...item, position: posMap.get(item.id)! } : item)
+          .sort((a, b) => a.position - b.position),
+      }));
+    } catch (e) {
+      showErrorToast("Couldn't reorder items");
     }
   },
 

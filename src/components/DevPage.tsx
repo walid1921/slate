@@ -3,6 +3,9 @@ import {
   Code2, Palette, Server, Database, ShieldCheck, Terminal, FlaskConical,
   Zap, Layers, Plus, X, RotateCcw, Check, CheckCheck, Send,
 } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useDevStore, DevItem, DevPriority } from "../devStore";
 import { PRESET_COLORS, useTodoStore } from "../store";
 
@@ -11,6 +14,12 @@ const PRIORITY_COLOR: Record<DevPriority, string> = {
   low: "rgb(96,165,250)",
   medium: "rgb(251,191,36)",
   high: "rgb(248,113,113)",
+};
+const PRIORITY_BG: Record<DevPriority, string> = {
+  none: "transparent",
+  low: "rgba(96,165,250,0.12)",
+  medium: "rgba(251,191,36,0.12)",
+  high: "rgba(248,113,113,0.12)",
 };
 
 function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
@@ -33,11 +42,22 @@ const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "termina
 type Filter = "all" | "pending" | "done";
 
 export default function DevPage() {
-  const { items, categories, load, toggleItem, deleteItem, updateItemText, addItem, resetCategory, addCategory, removeCategory } = useDevStore();
+  const { items, categories, load, toggleItem, deleteItem, updateItemText, addItem, resetCategory, reorderItems, addCategory, removeCategory } = useDevStore();
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [addingCat, setAddingCat] = useState(false);
   const [showSend, setShowSend] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || activeCatId === null) return;
+    const all = items.filter(i => i.category_id === activeCatId);
+    const oldIdx = all.findIndex(i => i.id === active.id);
+    const newIdx = all.findIndex(i => i.id === over.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    reorderItems(activeCatId, arrayMove(all, oldIdx, newIdx).map(i => i.id));
+  };
 
   useEffect(() => { load(); }, []);
 
@@ -170,29 +190,34 @@ export default function DevPage() {
       )}
 
       {/* Items list */}
-      <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
-        {filteredItems.map(item => (
-          <DevItemRow
-            key={item.id}
-            item={item}
-            rgb={activeCat?.color ?? "99,102,241"}
-            onToggle={() => toggleItem(item.id)}
-            onDelete={() => deleteItem(item.id)}
-            onEdit={t => updateItemText(item.id, t)}
-          />
-        ))}
-        {filteredItems.length === 0 && filter !== "all" && (
-          <p className="px-5 py-4 text-[11px] text-t6">No {filter} items</p>
-        )}
-        {filteredItems.length === 0 && filter === "all" && activeCat && (
-          <p className="px-5 py-4 text-[11px] text-t6">No items yet</p>
-        )}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={catItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+            {filteredItems.map(item => (
+              <DevItemRow
+                key={item.id}
+                item={item}
+                rgb={activeCat?.color ?? "99,102,241"}
+                isDraggable={filter === "all"}
+                onToggle={() => toggleItem(item.id)}
+                onDelete={() => deleteItem(item.id)}
+                onEdit={t => updateItemText(item.id, t)}
+              />
+            ))}
+            {filteredItems.length === 0 && filter !== "all" && (
+              <p className="px-5 py-4 text-[11px] text-t6">No {filter} items</p>
+            )}
+            {filteredItems.length === 0 && filter === "all" && activeCat && (
+              <p className="px-5 py-4 text-[11px] text-t6">No items yet</p>
+            )}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Add item */}
       {activeCat && (
         <div className="shrink-0 px-4 py-2.5" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          <AddItemRow rgb={activeCat.color} onAdd={t => addItem(t, activeCat.id)} />
+          <AddItemRow rgb={activeCat.color} onAdd={(t, priority) => addItem(t, activeCat.id, priority)} />
         </div>
       )}
 
@@ -220,24 +245,30 @@ export default function DevPage() {
   );
 }
 
-function DevItemRow({ item, rgb, onToggle, onDelete, onEdit }: {
-  item: DevItem; rgb: string;
+function DevItemRow({ item, rgb, isDraggable, onToggle, onDelete, onEdit }: {
+  item: DevItem; rgb: string; isDraggable: boolean;
   onToggle: () => void; onDelete: () => void; onEdit: (t: string) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(item.text);
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
   const commit = () => { onEdit(val); setEditing(false); };
 
   return (
     <div
-      className="flex items-center gap-2.5 px-5 py-2 hover:bg-s1 transition-colors"
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, cursor: isDraggable && !editing ? "grab" : "default" }}
+      className="flex items-center gap-2.5 px-5 py-2 hover:bg-s1 transition-colors active:cursor-grabbing"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      {...(isDraggable ? { ...attributes, ...listeners } : {})}
     >
       <button
         onClick={onToggle}
+        onPointerDown={e => e.stopPropagation()}
         className="shrink-0 w-[15px] h-[15px] rounded flex items-center justify-center transition-all"
         style={{
           border: item.done ? "none" : `1px solid rgba(${rgb},0.4)`,
@@ -247,16 +278,13 @@ function DevItemRow({ item, rgb, onToggle, onDelete, onEdit }: {
         {item.done && <Check size={9} strokeWidth={3} className="text-white" />}
       </button>
 
-      {item.priority !== "none" && (
-        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
-      )}
-
       {editing ? (
         <input
           autoFocus
           value={val}
           onChange={e => setVal(e.target.value)}
           onBlur={commit}
+          onPointerDown={e => e.stopPropagation()}
           onKeyDown={e => { if (e.key === "Enter" || e.key === "Escape") commit(); }}
           className="flex-1 bg-transparent text-[12px] text-t2 outline-none"
         />
@@ -269,8 +297,18 @@ function DevItemRow({ item, rgb, onToggle, onDelete, onEdit }: {
         </span>
       )}
 
+      {item.priority !== "none" && !editing && (
+        <span
+          className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-medium capitalize"
+          style={{ color: PRIORITY_COLOR[item.priority], background: PRIORITY_BG[item.priority] }}
+        >
+          {item.priority}
+        </span>
+      )}
+
       <button
         onClick={onDelete}
+        onPointerDown={e => e.stopPropagation()}
         style={{ opacity: hovered ? 1 : 0, transition: "opacity 0.15s" }}
         className="shrink-0 text-t6 hover:text-red-400 transition-colors"
       >
@@ -280,14 +318,34 @@ function DevItemRow({ item, rgb, onToggle, onDelete, onEdit }: {
   );
 }
 
-function AddItemRow({ rgb, onAdd }: { rgb: string; onAdd: (t: string) => void }) {
+const PRIORITIES_SELECT: DevPriority[] = ["low", "medium", "high"];
+
+function AddItemRow({ rgb, onAdd }: { rgb: string; onAdd: (t: string, priority: DevPriority) => void }) {
   const [val, setVal] = useState("");
   const [active, setActive] = useState(false);
+  const [priority, setPriority] = useState<DevPriority>("none");
 
-  const commit = () => { if (val.trim()) { onAdd(val.trim()); setVal(""); } };
+  const commit = () => {
+    if (val.trim()) { onAdd(val.trim(), priority); setVal(""); setPriority("none"); }
+  };
 
   return (
     <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 shrink-0">
+        {PRIORITIES_SELECT.map(p => (
+          <button
+            key={p}
+            onClick={() => setPriority(prev => prev === p ? "none" : p)}
+            title={p}
+            className="w-2 h-2 rounded-full transition-all"
+            style={{
+              background: PRIORITY_COLOR[p],
+              opacity: priority === p ? 1 : 0.22,
+              transform: priority === p ? "scale(1.35)" : "scale(1)",
+            }}
+          />
+        ))}
+      </div>
       <Plus size={10} style={{ color: active ? `rgba(${rgb},0.6)` : "var(--c-text-6)", flexShrink: 0 }} />
       <input
         value={val}
