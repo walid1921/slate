@@ -210,7 +210,7 @@ export const useDevStore = create<DevStore>((set, get) => ({
     try {
       const db = await getDb();
       await db.execute("UPDATE dev_items SET deleted_at = datetime('now') WHERE category_id = ? AND deleted_at IS NULL", [id]);
-      await db.execute("DELETE FROM dev_categories WHERE id = ? AND is_preset = 0", [id]);
+      await db.execute("DELETE FROM dev_categories WHERE id = ?", [id]);
       await get().load();
     } catch (e) {
       showErrorToast("Couldn't remove category");

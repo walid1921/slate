@@ -501,22 +501,20 @@ export default function DevPage() {
           >
             <Pencil size={11} className="text-t4" /> Edit
           </button>
-          {!catContextMenu.cat.is_preset && (
-            <button
-              className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
-              onClick={() => {
-                const { cat } = catContextMenu;
-                setCatContextMenu(null);
-                setDevConfirm({
-                  msg: `Delete "${cat.name}"?`,
-                  sub: "All items in this category will be moved to trash.",
-                  onConfirm: () => { removeCategory(cat.id); setActiveCatId(sectionCategories.filter(c => c.id !== cat.id)[0]?.id ?? null); },
-                });
-              }}
-            >
-              <Trash2 size={11} /> Delete
-            </button>
-          )}
+          <button
+            className="w-full text-left px-3 py-2 text-[12px] text-red-400/80 hover:bg-s2 hover:text-red-400 transition-colors flex items-center gap-2"
+            onClick={() => {
+              const { cat } = catContextMenu;
+              setCatContextMenu(null);
+              setDevConfirm({
+                msg: `Delete "${cat.name}"?`,
+                sub: "All items in this category will be moved to trash.",
+                onConfirm: () => { removeCategory(cat.id); setActiveCatId(sectionCategories.filter(c => c.id !== cat.id)[0]?.id ?? null); },
+              });
+            }}
+          >
+            <Trash2 size={11} /> Delete
+          </button>
         </div>,
         document.body
       )}
@@ -929,15 +927,13 @@ function DevCategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, on
             <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
             <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
           </div>
-          {!cat.is_preset && (
-            <button
-              onClick={() => { onRemove(cat.id); onClose(); }}
-              className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
-              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
-            >
-              <Trash2 size={12} /> Delete category
-            </button>
-          )}
+          <button
+            onClick={() => { onRemove(cat.id); onClose(); }}
+            className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
+            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
+          >
+            <Trash2 size={12} /> Delete category
+          </button>
         </div>
       </div>
     </div>
