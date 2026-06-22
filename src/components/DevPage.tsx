@@ -107,6 +107,7 @@ export default function DevPage() {
   const [addingCat, setAddingCat] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DevItem | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -170,7 +171,7 @@ export default function DevPage() {
           {activeCat && (
             <button
               onClick={() => setShowSend(true)}
-              className="text-t6 hover:text-sky-400 transition-colors"
+              className="text-sky-400 hover:text-sky-300 transition-colors"
               title="Send to Tasks"
             >
               <Send size={10} />
@@ -197,7 +198,7 @@ export default function DevPage() {
                 key={item.id}
                 item={item}
                 onClick={() => setSelectedItem(item)}
-                onDelete={() => deleteItem(item.id)}
+                onDelete={() => setPendingDelete(item)}
               />
             ))}
             {catItems.length === 0 && activeCat && (
@@ -234,6 +235,26 @@ export default function DevPage() {
             onUpdateText={async (text) => { await updateItemText(selectedItem.id, text); setSelectedItem(s => s ? { ...s, text } : s); }}
             onUpdatePriority={async (priority) => { await updateItemPriority(selectedItem.id, priority); setSelectedItem(s => s ? { ...s, priority } : s); }}
           />
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {pendingDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setPendingDelete(null); }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 280, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
+            <span className="text-[12px] text-t2">Delete this item?</span>
+            <span className="text-[11px] text-t4 truncate">"{pendingDelete.text}"</span>
+            <div className="flex justify-end gap-2 pt-1">
+              <button onClick={() => setPendingDelete(null)} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
+              <button
+                onClick={() => { deleteItem(pendingDelete.id); setPendingDelete(null); }}
+                className="text-[11px] px-3 py-1 rounded transition-colors"
+                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)", color: "rgb(248,113,113)" }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -282,12 +303,7 @@ function DevItemRow({ item, onClick, onDelete }: {
       <span className="flex-1 text-[12px] text-t2">{item.text}</span>
 
       {item.priority !== "none" && (
-        <span
-          className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-medium capitalize"
-          style={{ color: PRIORITY_COLOR[item.priority], background: PRIORITY_BG[item.priority] }}
-        >
-          {item.priority}
-        </span>
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
       )}
 
       <button
@@ -473,7 +489,7 @@ function SendToTasksModal({ items, devCategoryName, onClose }: {
                 <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} className="accent-sky-400" />
                 <span className="text-[11px] text-t2 truncate flex-1">{item.text}</span>
                 {item.priority !== "none" && (
-                  <span className="text-[9px] px-1 rounded shrink-0 font-medium capitalize" style={{ color: PRIORITY_COLOR[item.priority] }}>{item.priority}</span>
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
                 )}
               </label>
             ))}
