@@ -1319,7 +1319,7 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  const { load: loadDev, trashedItems: devTrashedItems, categories: devCategories, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
+  const { load: loadDev, trashedItems: devTrashedItems, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
@@ -2067,38 +2067,71 @@ export default function App() {
                   </div>
                   {(() => {
                     const knownCatIds = new Set(devCategories.map(c => c.id));
-                    const groups = devCategories
+                    const catGroups = devCategories
                       .map(cat => ({ ...cat, items: devTrashedItems.filter(i => i.category_id === cat.id) }))
                       .filter(g => g.items.length > 0);
                     const orphans = devTrashedItems.filter(i => !knownCatIds.has(i.category_id));
-                    if (orphans.length > 0) groups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, section_id: 1, items: orphans });
-                    return groups.map(({ id, name, color, items }) => {
-                      const key = `dev-${id}`;
-                      const collapsed = openTrashGroup !== key;
-                      return (
-                        <div key={key}>
-                          <div className="flex items-center gap-2 px-5 py-1.5 mt-1 group/hdr cursor-pointer select-none" onClick={() => setOpenTrashGroup(prev => prev === key ? null : key)}>
-                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
-                            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{name}</span>
-                            <span className="text-[10px] text-t6">{items.length}</span>
-                            <ChevronDown size={10} className="text-t6 transition-transform ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
-                            <button
-                              onClick={e => { e.stopPropagation(); askConfirm(`Delete "${name}" permanently?`, `${items.length} item${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => items.forEach(i => permanentDeleteDevItem(i.id))); }}
-                              className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
-                            ><Trash2 size={11} /></button>
+                    if (orphans.length > 0) catGroups.push({ id: -1, name: "Deleted Category", color: "156,163,175", icon: "layers", position: 999, is_preset: false, section_id: -1, items: orphans });
+
+                    // Group category groups by section_id
+                    const bySectionId = new Map<number, typeof catGroups>();
+                    for (const g of catGroups) {
+                      if (!bySectionId.has(g.section_id)) bySectionId.set(g.section_id, []);
+                      bySectionId.get(g.section_id)!.push(g);
+                    }
+
+                    // Build ordered entries: known sections first, then deleted sections, then orphans
+                    const sectionEntries: Array<{ label: string; key: string; cats: typeof catGroups }> = [];
+                    for (const sec of devSections) {
+                      const cats = bySectionId.get(sec.id);
+                      if (cats) sectionEntries.push({ label: sec.name, key: `sec-${sec.id}`, cats });
+                    }
+                    for (const [sid, cats] of bySectionId) {
+                      if (sid !== -1 && !devSections.find(s => s.id === sid))
+                        sectionEntries.push({ label: "Deleted Page", key: `sec-del-${sid}`, cats });
+                    }
+                    const orphanCats = bySectionId.get(-1);
+                    if (orphanCats) sectionEntries.push({ label: "Deleted Page", key: "sec-orphan", cats: orphanCats });
+
+                    const multiSection = sectionEntries.length > 1;
+
+                    return sectionEntries.map(({ label, key: secKey, cats }) => (
+                      <div key={secKey}>
+                        {multiSection && (
+                          <div className="px-5 pt-3 pb-0.5 flex items-center gap-2">
+                            <span className="text-[9px] text-t6 uppercase tracking-widest font-semibold">{label}</span>
+                            <span className="flex-1 h-px" style={{ background: "var(--c-border-subtle)" }} />
                           </div>
-                          {!collapsed && items.map(item => (
-                            <div key={item.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
-                              <span className="flex-1 text-[14px] text-t3 line-through truncate">{item.text}</span>
-                              <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => restoreDevItem(item.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
-                                <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => permanentDeleteDevItem(item.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                        )}
+                        {cats.map(({ id, name, color, items }) => {
+                          const key = `dev-${id}`;
+                          const collapsed = openTrashGroup !== key;
+                          return (
+                            <div key={key}>
+                              <div className="flex items-center gap-2 px-5 py-1.5 mt-1 group/hdr cursor-pointer select-none" onClick={() => setOpenTrashGroup(prev => prev === key ? null : key)}>
+                                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: `rgba(${color},0.7)` }} />
+                                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: `rgba(${color},0.7)` }}>{name}</span>
+                                <span className="text-[10px] text-t6">{items.length}</span>
+                                <ChevronDown size={10} className="text-t6 transition-transform ml-0.5" style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)" }} />
+                                <button
+                                  onClick={e => { e.stopPropagation(); askConfirm(`Delete "${name}" permanently?`, `${items.length} item${items.length !== 1 ? "s" : ""} will be permanently removed.`, () => items.forEach(i => permanentDeleteDevItem(i.id))); }}
+                                  className="ml-auto opacity-0 group-hover/hdr:opacity-100 text-t5 hover:text-red-400 transition-all"
+                                ><Trash2 size={11} /></button>
                               </div>
+                              {!collapsed && items.map(item => (
+                                <div key={item.id} className="group flex items-center gap-3 px-5 border-b border-s hover:bg-s1 transition-colors" style={{ minHeight: 48 }}>
+                                  <span className="flex-1 text-[14px] text-t3 line-through truncate">{item.text}</span>
+                                  <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => restoreDevItem(item.id)} title="Restore" className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-green-400"><RotateCcw size={12} /></button>
+                                    <button onClick={() => askConfirm("Delete permanently?", "This cannot be undone.", () => permanentDeleteDevItem(item.id))} className="w-6 h-6 flex items-center justify-center rounded hover:bg-s3 transition-colors text-t4 hover:text-red-400"><X size={10} /></button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      );
-                    });
+                          );
+                        })}
+                      </div>
+                    ));
                   })()}
                 </>
           )}
