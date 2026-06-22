@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
-import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, PRESET_COLORS, SubTask } from "./store";
+import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
@@ -48,7 +48,8 @@ import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
 import DevPage from "./components/DevPage";
 import { useDevStore } from "./devStore";
-import { IconDisplay, IconPicker } from "./components/IconPicker";
+import { IconDisplay } from "./components/IconPicker";
+import CategoryModal from "./components/CategoryModal";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
 import { useToastStore } from "./toastStore";
@@ -894,20 +895,6 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
   );
 }
 
-function ColorPalette({ current, onChange }: { current: string; onChange: (c: string) => void }) {
-  return (
-    <div className="grid grid-cols-6 gap-2">
-      {PRESET_COLORS.map(c => (
-        <button
-          key={c}
-          onClick={() => onChange(c)}
-          className="w-6 h-6 rounded-full transition-transform hover:scale-110 shrink-0"
-          style={{ background: `rgb(${c})`, outline: c === current ? `2px solid rgb(${c})` : "none", outlineOffset: 2, border: c === "255,255,255" ? "1px solid rgba(255,255,255,0.2)" : "none" }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick, onContextMenu }: {
   cat: TaskCategory; isActive: boolean; pendingCount: number; hasOverdue: boolean;
@@ -940,125 +927,6 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
   );
 }
 
-function AddCategoryModal({ onAdd, onClose }: {
-  onAdd: (name: string, color: string, icon: string) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState(PRESET_COLORS[4]);
-  const [icon, setIcon] = useState("folder");
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
-
-  const save = async () => {
-    if (!name.trim()) return;
-    await onAdd(name.trim(), color, icon);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }}>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
-          <span className="text-[13px] font-semibold text-t1">New category</span>
-          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
-        </div>
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
-          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          placeholder="Category name…"
-        />
-        <div className="flex items-start gap-3">
-          <div>
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
-            <IconPicker value={icon} onChange={setIcon} />
-          </div>
-          <div className="flex-1">
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-            <ColorPalette current={color} onChange={setColor} />
-          </div>
-        </div>
-        <div className="flex gap-2 justify-end pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-          <button onClick={save} className="px-3 py-1.5 rounded-lg text-[12px] text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Create</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, onClose }: {
-  cat: TaskCategory;
-  onRename: (id: number, name: string) => Promise<void>;
-  onRecolor: (id: number, color: string) => Promise<void>;
-  onReicon: (id: number, icon: string) => Promise<void>;
-  onRemove: (id: number, name: string) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(cat.name);
-  const [color, setColor] = useState(cat.color);
-  const [icon, setIcon] = useState(cat.icon ?? "folder");
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
-
-  const save = async () => {
-    if (name.trim() && name.trim() !== cat.name) await onRename(cat.id, name.trim());
-    if (color !== cat.color) await onRecolor(cat.id, color);
-    if (icon !== cat.icon) await onReicon(cat.id, icon);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }}>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
-          <span className="text-[13px] font-semibold text-t1">Edit category</span>
-          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
-        </div>
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
-          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          placeholder="Category name…"
-        />
-        <div className="flex items-start gap-3">
-          <div>
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
-            <IconPicker value={icon} onChange={setIcon} />
-          </div>
-          <div className="flex-1">
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-            <ColorPalette current={color} onChange={setColor} />
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-            <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
-          </div>
-          {cat.id !== 1 && (
-            <button
-              onClick={() => { onRemove(cat.id, cat.name); onClose(); }}
-              className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
-              style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
-            >
-              <Trash2 size={12} /> Delete category
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -1902,22 +1770,28 @@ export default function App() {
             setPendingKanbanStatus(null);
           }} />}
 
-          {/* Category context menu */}
           {/* Add category modal */}
           {showAddCategoryModal && (
-            <AddCategoryModal
-              onAdd={(name, color, icon) => addCategory(name, color, icon)}
+            <CategoryModal
+              title="New category"
+              submitLabel="Create"
+              onSubmit={(name, color, icon) => addCategory(name, color, icon)}
               onClose={() => setShowAddCategoryModal(false)}
             />
           )}
           {/* Edit category modal */}
           {catEditModal && (
-            <CategoryEditModal
-              cat={catEditModal}
-              onRename={updateCategoryName}
-              onRecolor={updateCategoryColor}
-              onReicon={updateCategoryIcon}
-              onRemove={(id, name) => askConfirm("Delete category?", `"${name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(id))}
+            <CategoryModal
+              title="Edit category"
+              initialName={catEditModal.name}
+              initialColor={catEditModal.color}
+              initialIcon={catEditModal.icon ?? "folder"}
+              onSubmit={async (name, color, icon) => {
+                if (name !== catEditModal.name) await updateCategoryName(catEditModal.id, name);
+                if (color !== catEditModal.color) await updateCategoryColor(catEditModal.id, color);
+                if (icon !== (catEditModal.icon ?? "folder")) await updateCategoryIcon(catEditModal.id, icon);
+              }}
+              onDelete={catEditModal.id !== 1 ? () => askConfirm("Delete category?", `"${catEditModal.name}" will be deleted. All its tasks will be moved to trash.`, () => removeCategory(catEditModal.id)) : undefined}
               onClose={() => setCatEditModal(null)}
             />
           )}

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Plus, X, Send, Pencil, Trash2 } from "lucide-react";
-import { IconDisplay, IconPicker } from "./IconPicker";
+import { IconDisplay } from "./IconPicker";
+import CategoryModal from "./CategoryModal";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDevStore, DevItem, DevCategory, DevPriority, DevSection } from "../devStore";
-import { PRESET_COLORS, useTodoStore } from "../store";
+import { useTodoStore } from "../store";
 import { showSuccessToast } from "../toastStore";
 import { Tooltip } from "./Tooltip";
 
@@ -381,12 +382,13 @@ export default function DevPage() {
 
       {/* Add category modal */}
       {addingCat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setAddingCat(false); }}>
-          <AddCategoryModal
-            onAdd={(name, color, icon) => { addCategory(name, color, icon, activeSectionId ?? 1); setAddingCat(false); }}
-            onClose={() => setAddingCat(false)}
-          />
-        </div>
+        <CategoryModal
+          title="New category"
+          submitLabel="Add"
+          initialIcon="code-2"
+          onSubmit={(name, color, icon) => addCategory(name, color, icon, activeSectionId ?? 1)}
+          onClose={() => setAddingCat(false)}
+        />
       )}
 
       {/* Item detail modal */}
@@ -437,12 +439,18 @@ export default function DevPage() {
 
       {/* Category edit modal */}
       {catEditModal && (
-        <DevCategoryEditModal
-          cat={catEditModal}
-          onRename={(id, name) => updateCategoryName(id, name)}
-          onRecolor={(id, color) => updateCategoryColor(id, color)}
-          onReicon={(id, icon) => updateCategoryIcon(id, icon)}
-          onRemove={id => {
+        <CategoryModal
+          title="Edit category"
+          initialName={catEditModal.name}
+          initialColor={catEditModal.color}
+          initialIcon={catEditModal.icon ?? "folder"}
+          onSubmit={async (name, color, icon) => {
+            if (name !== catEditModal.name) await updateCategoryName(catEditModal.id, name);
+            if (color !== catEditModal.color) await updateCategoryColor(catEditModal.id, color);
+            if (icon !== (catEditModal.icon ?? "folder")) await updateCategoryIcon(catEditModal.id, icon);
+          }}
+          onDelete={() => {
+            const id = catEditModal.id;
             const name = catEditModal.name;
             setDevConfirm({
               msg: `Delete "${name}"?`,
@@ -848,77 +856,6 @@ function SendToTasksModal({ items, devCategoryName, devCategoryIcon, onClose }: 
 
 
 
-function DevCategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, onClose }: {
-  cat: DevCategory;
-  onRename: (id: number, name: string) => void;
-  onRecolor: (id: number, color: string) => void;
-  onReicon: (id: number, icon: string) => void;
-  onRemove: (id: number) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(cat.name);
-  const [color, setColor] = useState(cat.color);
-  const [icon, setIcon] = useState(cat.icon);
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { setTimeout(() => inputRef.current?.focus(), 10); }, []);
-
-  const save = () => {
-    if (name.trim() && name.trim() !== cat.name) onRename(cat.id, name.trim());
-    if (color !== cat.color) onRecolor(cat.id, color);
-    if (icon !== cat.icon) onReicon(cat.id, icon);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.45)" }} onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-4 p-5" style={{ width: 260, border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full shrink-0" style={{ background: `rgb(${color})` }} />
-          <span className="text-[13px] font-semibold text-t1">Edit category</span>
-          <button onClick={onClose} className="ml-auto text-t5 hover:text-t2 transition-colors"><X size={12} /></button>
-        </div>
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={e => setName(e.target.value)}
-          onKeyDown={e => { e.stopPropagation(); if (e.key === "Enter") save(); if (e.key === "Escape") onClose(); }}
-          className="w-full px-3 py-2 rounded-lg text-[13px] text-t1 outline-none"
-          style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          placeholder="Category name…"
-        />
-        <div className="flex items-start gap-3">
-          <div>
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
-            <IconPicker value={icon} onChange={setIcon} />
-          </div>
-          <div className="flex-1">
-            <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-            <div className="grid grid-cols-7 gap-1.5">
-              {PRESET_COLORS.slice(0, 14).map(c => (
-                <button key={c} onClick={() => setColor(c)} className="w-4 h-4 rounded-full transition-transform hover:scale-110"
-                  style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="flex-1 py-1.5 rounded-lg text-[12px] text-t3 hover:text-t2 transition-colors" style={{ background: "var(--c-surface-2)" }}>Cancel</button>
-            <button onClick={save} className="flex-1 py-1.5 rounded-lg text-[12px] font-medium text-blue-400 hover:text-blue-300 transition-colors" style={{ background: "rgba(59,130,246,0.15)" }}>Save</button>
-          </div>
-          <button
-            onClick={() => { onRemove(cat.id); onClose(); }}
-            className="w-full py-1.5 rounded-lg text-[12px] font-medium text-red-400 hover:text-red-300 transition-colors flex items-center justify-center gap-1.5"
-            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}
-          >
-            <Trash2 size={12} /> Delete category
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function DevSectionEditModal({ section, onRename, onRemove, onClose }: {
   section: DevSection;
@@ -971,49 +908,3 @@ function DevSectionEditModal({ section, onRename, onRemove, onClose }: {
   );
 }
 
-function AddCategoryModal({ onAdd, onClose }: {
-  onAdd: (name: string, color: string, icon: string) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState("");
-  const [color, setColor] = useState(PRESET_COLORS[5]);
-  const [icon, setIcon] = useState("code-2");
-
-  const submit = () => { if (name.trim()) onAdd(name.trim(), color, icon); };
-
-  return (
-    <div className="dropdown rounded-xl shadow-2xl flex flex-col gap-3 p-4" style={{ width: 280, border: "1px solid var(--c-border)" }}>
-      <span className="text-[11px] text-t3 uppercase tracking-wider font-semibold">New Category</span>
-      <input
-        autoFocus value={name} onChange={e => setName(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter") submit(); if (e.key === "Escape") onClose(); }}
-        placeholder="Category name…"
-        className="bg-transparent text-[13px] text-t2 outline-none border-b pb-1"
-        style={{ borderColor: "var(--c-border)" }}
-      />
-      <div className="flex items-start gap-3">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Icon</span>
-          <IconPicker value={icon} onChange={setIcon} />
-        </div>
-        <div className="flex flex-col gap-1.5 flex-1">
-          <span className="text-[10px] text-t5 uppercase tracking-wider">Color</span>
-          <div className="flex gap-1.5 flex-wrap">
-            {PRESET_COLORS.slice(0, 14).map(c => (
-              <button key={c} onClick={() => setColor(c)} className="w-4 h-4 rounded-full transition-all"
-                style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgba(${c},0.7)` : "none", outlineOffset: 1 }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onClose} className="text-[11px] text-t5 hover:text-t3 px-2 py-1 transition-colors">Cancel</button>
-        <button onClick={submit} disabled={!name.trim()} className="text-[11px] px-3 py-1 rounded transition-colors disabled:opacity-40"
-          style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)", color: "var(--c-text-2)" }}>
-          Add
-        </button>
-      </div>
-    </div>
-  );
-}
