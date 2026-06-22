@@ -26,9 +26,11 @@ export interface DevCategory {
 
 interface DevStore {
   items: DevItem[];
+  trashedItems: DevItem[];
   categories: DevCategory[];
   loading: boolean;
   load: () => Promise<void>;
+  loadTrashed: () => Promise<void>;
   addItem: (text: string, categoryId: number, priority?: DevPriority) => Promise<void>;
   toggleItem: (id: number) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
@@ -40,10 +42,14 @@ interface DevStore {
   addCategory: (name: string, color: string, icon: string) => Promise<void>;
   removeCategory: (id: number) => Promise<void>;
   updateCategoryColor: (id: number, color: string) => Promise<void>;
+  restoreItem: (id: number) => Promise<void>;
+  permanentDeleteItem: (id: number) => Promise<void>;
+  clearDevTrash: () => Promise<void>;
 }
 
 export const useDevStore = create<DevStore>((set, get) => ({
   items: [],
+  trashedItems: [],
   categories: [],
   loading: true,
 
@@ -200,6 +206,49 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ categories: s.categories.map(c => c.id === id ? { ...c, color } : c) }));
     } catch (e) {
       showErrorToast("Couldn't update color");
+    }
+  },
+
+  loadTrashed: async () => {
+    try {
+      const db = await getDb();
+      const rows = await db.select<DevItem[]>(
+        "SELECT id, text, done, category_id, priority, position, description, created_at FROM dev_items WHERE deleted_at IS NOT NULL ORDER BY category_id ASC, id DESC"
+      );
+      set({ trashedItems: rows.map(r => ({ ...r, done: Boolean(r.done), description: r.description ?? "" })) });
+    } catch (e) {
+      showErrorToast("Failed to load dev trash");
+    }
+  },
+
+  restoreItem: async (id) => {
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_items SET deleted_at = NULL WHERE id = ?", [id]);
+      set(s => ({ trashedItems: s.trashedItems.filter(i => i.id !== id) }));
+      await get().load();
+    } catch (e) {
+      showErrorToast("Couldn't restore item");
+    }
+  },
+
+  permanentDeleteItem: async (id) => {
+    try {
+      const db = await getDb();
+      await db.execute("DELETE FROM dev_items WHERE id = ?", [id]);
+      set(s => ({ trashedItems: s.trashedItems.filter(i => i.id !== id) }));
+    } catch (e) {
+      showErrorToast("Couldn't delete item");
+    }
+  },
+
+  clearDevTrash: async () => {
+    try {
+      const db = await getDb();
+      await db.execute("DELETE FROM dev_items WHERE deleted_at IS NOT NULL");
+      set({ trashedItems: [] });
+    } catch (e) {
+      showErrorToast("Couldn't clear trash");
     }
   },
 }));
