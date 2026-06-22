@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, X, Send, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Plus, X, Send, Pencil, Trash2 } from "lucide-react";
 import { IconDisplay } from "./IconPicker";
 import CategoryModal from "./CategoryModal";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -162,7 +162,7 @@ const ITEM_DESCRIPTIONS: Record<number, string> = {
 
 
 export default function DevPage() {
-  const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, addSection, removeSection, updateSectionName, resetDevContent } = useDevStore();
+  const { items, categories, sections, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, addSection, removeSection, updateSectionName } = useDevStore();
   const [activeSectionId, setActiveSectionId] = useState<number | null>(null);
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [filterPriority, setFilterPriority] = useState<DevPriority | "all">("all");
@@ -192,10 +192,11 @@ export default function DevPage() {
 
   useEffect(() => { load(); }, []);
 
-  // Set initial active section on first load
+  // Set initial active section on first load, and recover if section was deleted/reset
   useEffect(() => {
-    if (sections.length > 0 && activeSectionId === null) setActiveSectionId(sections[0].id);
-  }, [sections.length]);
+    if (sections.length === 0) { setActiveSectionId(null); return; }
+    if (!sections.find(s => s.id === activeSectionId)) setActiveSectionId(sections[0].id);
+  }, [sections]);
 
   // When active section changes, reset to first category in that section
   useEffect(() => {
@@ -271,27 +272,9 @@ export default function DevPage() {
           <Tooltip label="New page">
             <button
               onClick={() => setAddingSection(true)}
-              className="p-1 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors"
+              className="p-1 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors"
             >
-              <Plus size={10} />
-            </button>
-          </Tooltip>
-          <Tooltip label="Reset to defaults">
-            <button
-              onClick={() => setDevConfirm({
-                msg: "Reset all dev content?",
-                sub: "All pages, categories and items will be replaced with the default checklist. This cannot be undone.",
-                onConfirm: async () => {
-                  await resetDevContent();
-                  const fresh = useDevStore.getState();
-                  const firstSection = fresh.sections[0] ?? null;
-                  setActiveSectionId(firstSection?.id ?? null);
-                  setActiveCatId(fresh.categories.find(c => c.section_id === firstSection?.id)?.id ?? null);
-                },
-              })}
-              className="p-1 rounded text-t5 hover:text-red-400 hover:bg-s1 transition-colors"
-            >
-              <RotateCcw size={10} />
+              <Plus size={11} />
             </button>
           </Tooltip>
         </div>

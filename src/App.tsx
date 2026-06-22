@@ -1308,7 +1308,7 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
+  const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
@@ -2256,6 +2256,17 @@ export default function App() {
                     <CheckCheck size={13} />
                   </button>
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/clearsent:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Clear sent</span>
+                </div>
+              )}
+              {view === "dev" && (
+                <div className="group/reset relative">
+                  <button
+                    onClick={() => askConfirm("Reset dev checklist?", "All pages, categories and items will be replaced with the default checklist. This cannot be undone.", () => resetDevContent(), "Reset")}
+                    className="w-7 h-5 flex items-center justify-center text-t4 hover:text-red-400 transition-colors"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/reset:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Reset checklist</span>
                 </div>
               )}
               {(view === "todos" || view === "reminders" || view === "notes" || view === "dev") && (
