@@ -264,7 +264,7 @@ export default function DevPage() {
       {/* Items list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={catItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex-1 min-h-0 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+          <div className="flex-1 min-h-0 overflow-y-auto pt-2" style={{ scrollbarWidth: "none" }}>
             {catItems.map(item => (
               <DevItemRow
                 key={item.id}
