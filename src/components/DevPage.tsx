@@ -102,7 +102,7 @@ function CategoryIcon({ icon, size = 11 }: { icon: string; size?: number }) {
 const CAT_ICONS = ["code-2", "palette", "server", "database", "shield", "terminal", "flask", "zap", "layers"] as const;
 
 export default function DevPage() {
-  const { items, categories, load, deleteItem, updateItemText, updateItemPriority, addItem, reorderItems, addCategory, removeCategory } = useDevStore();
+  const { items, categories, load, deleteItem, updateItemText, updateItemPriority, updateItemDescription, addItem, reorderItems, addCategory, removeCategory } = useDevStore();
   const [activeCatId, setActiveCatId] = useState<number | null>(null);
   const [addingCat, setAddingCat] = useState(false);
   const [showSend, setShowSend] = useState(false);
@@ -234,6 +234,7 @@ export default function DevPage() {
             onClose={() => setSelectedItem(null)}
             onUpdateText={async (text) => { await updateItemText(selectedItem.id, text); setSelectedItem(s => s ? { ...s, text } : s); }}
             onUpdatePriority={async (priority) => { await updateItemPriority(selectedItem.id, priority); setSelectedItem(s => s ? { ...s, priority } : s); }}
+            onUpdateDescription={async (desc) => { await updateItemDescription(selectedItem.id, desc); setSelectedItem(s => s ? { ...s, description: desc } : s); }}
           />
         </div>
       )}
@@ -300,11 +301,11 @@ function DevItemRow({ item, onClick, onDelete }: {
         if (listeners?.onPointerMove) (listeners as any).onPointerMove?.(e);
       }}
     >
-      <span className="flex-1 text-[12px] text-t2">{item.text}</span>
-
       {item.priority !== "none" && (
         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[item.priority] }} />
       )}
+
+      <span className="flex-1 text-[12px] text-t2">{item.text}</span>
 
       <button
         onClick={e => { e.stopPropagation(); onDelete(); }}
@@ -318,22 +319,25 @@ function DevItemRow({ item, onClick, onDelete }: {
   );
 }
 
-function ItemDetailModal({ item, category, onClose, onUpdateText, onUpdatePriority }: {
+function ItemDetailModal({ item, category, onClose, onUpdateText, onUpdatePriority, onUpdateDescription }: {
   item: DevItem;
   category: DevCategory;
   onClose: () => void;
   onUpdateText: (text: string) => Promise<void>;
   onUpdatePriority: (priority: DevPriority) => Promise<void>;
+  onUpdateDescription: (desc: string) => Promise<void>;
 }) {
   const [title, setTitle] = useState(item.text);
-  const description = ITEM_DESCRIPTIONS[item.id] ?? "";
+  const defaultDesc = ITEM_DESCRIPTIONS[item.id] ?? "";
+  const [desc, setDesc] = useState(item.description || defaultDesc);
 
   const commitTitle = () => { if (title.trim() && title.trim() !== item.text) onUpdateText(title.trim()); };
+  const commitDesc = () => { if (desc !== (item.description || defaultDesc)) onUpdateDescription(desc); };
 
   return (
     <div
       className="dropdown rounded-xl shadow-2xl flex flex-col p-5"
-      style={{ width: 400, maxWidth: "90vw", border: "1px solid var(--c-border)" }}
+      style={{ width: 420, maxWidth: "90vw", border: "1px solid var(--c-border)" }}
       onMouseDown={e => e.stopPropagation()}
     >
       {/* Header */}
@@ -346,7 +350,6 @@ function ItemDetailModal({ item, category, onClose, onUpdateText, onUpdatePriori
             <CategoryIcon icon={category.icon} size={9} />
             {category.name}
           </span>
-          {/* Priority pills */}
           {(["low", "medium", "high"] as DevPriority[]).map(p => (
             <button
               key={p}
@@ -371,17 +374,24 @@ function ItemDetailModal({ item, category, onClose, onUpdateText, onUpdatePriori
         value={title}
         onChange={e => setTitle(e.target.value)}
         onBlur={commitTitle}
-        onKeyDown={e => { if (e.key === "Enter") { commitTitle(); (e.target as HTMLInputElement).blur(); } if (e.key === "Escape") { setTitle(item.text); (e.target as HTMLInputElement).blur(); } }}
+        onKeyDown={e => {
+          if (e.key === "Enter") { commitTitle(); (e.target as HTMLInputElement).blur(); }
+          if (e.key === "Escape") { setTitle(item.text); (e.target as HTMLInputElement).blur(); }
+        }}
         className="bg-transparent text-[15px] font-semibold text-t1 outline-none mb-3 w-full"
         style={{ caretColor: `rgba(${category.color},0.8)` }}
       />
 
       {/* Description */}
-      {description ? (
-        <p className="text-[12px] text-t3 leading-relaxed">{description}</p>
-      ) : (
-        <p className="text-[11px] text-t6 italic">No description for this item.</p>
-      )}
+      <textarea
+        value={desc}
+        onChange={e => setDesc(e.target.value)}
+        onBlur={commitDesc}
+        placeholder="Add a description…"
+        rows={4}
+        className="bg-transparent text-[12px] text-t3 leading-relaxed outline-none resize-none w-full placeholder:text-t6"
+        style={{ caretColor: `rgba(${category.color},0.8)` }}
+      />
     </div>
   );
 }

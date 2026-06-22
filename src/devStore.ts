@@ -11,6 +11,7 @@ export interface DevItem {
   category_id: number;
   priority: DevPriority;
   position: number;
+  description: string;
   created_at: string;
 }
 
@@ -33,6 +34,7 @@ interface DevStore {
   deleteItem: (id: number) => Promise<void>;
   updateItemText: (id: number, text: string) => Promise<void>;
   updateItemPriority: (id: number, priority: DevPriority) => Promise<void>;
+  updateItemDescription: (id: number, description: string) => Promise<void>;
   resetCategory: (categoryId: number) => Promise<void>;
   reorderItems: (categoryId: number, orderedIds: number[]) => Promise<void>;
   addCategory: (name: string, color: string, icon: string) => Promise<void>;
@@ -52,11 +54,11 @@ export const useDevStore = create<DevStore>((set, get) => ({
         "SELECT id, name, color, icon, position, is_preset FROM dev_categories ORDER BY position ASC, id ASC"
       );
       const rows = await db.select<DevItem[]>(
-        "SELECT id, text, done, category_id, priority, position, created_at FROM dev_items WHERE deleted_at IS NULL ORDER BY position ASC, id ASC"
+        "SELECT id, text, done, category_id, priority, position, description, created_at FROM dev_items WHERE deleted_at IS NULL ORDER BY position ASC, id ASC"
       );
       set({
         categories: cats.map(c => ({ ...c, is_preset: Boolean(c.is_preset) })),
-        items: rows.map(r => ({ ...r, done: Boolean(r.done) })),
+        items: rows.map(r => ({ ...r, done: Boolean(r.done), description: r.description ?? "" })),
         loading: false,
       });
     } catch (e) {
@@ -114,6 +116,16 @@ export const useDevStore = create<DevStore>((set, get) => ({
       set(s => ({ items: s.items.map(i => i.id === id ? { ...i, text: trimmed } : i) }));
     } catch (e) {
       showErrorToast("Couldn't update item");
+    }
+  },
+
+  updateItemDescription: async (id, description) => {
+    try {
+      const db = await getDb();
+      await db.execute("UPDATE dev_items SET description = ? WHERE id = ?", [description, id]);
+      set(s => ({ items: s.items.map(i => i.id === id ? { ...i, description } : i) }));
+    } catch (e) {
+      showErrorToast("Couldn't save description");
     }
   },
 

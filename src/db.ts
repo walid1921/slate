@@ -151,6 +151,8 @@ export async function getDb(): Promise<Database> {
     )
   `);
 
+  await _db.execute(`ALTER TABLE dev_items ADD COLUMN description TEXT NOT NULL DEFAULT ''`).catch(() => {});
+
   // Seed default categories + items once
   const devSeeded = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_seeded'`);
   if (!devSeeded.length) {
