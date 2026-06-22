@@ -1319,7 +1319,7 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
+  const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
@@ -2084,7 +2084,7 @@ export default function App() {
 
                     // Build ordered entries: known sections first, then deleted sections, then orphans
                     const sectionEntries: Array<{ label: string; key: string; cats: typeof catGroups }> = [];
-                    for (const sec of devSections) {
+                    for (const sec of [...devSections, ...devTrashedSections]) {
                       const cats = bySectionId.get(sec.id);
                       if (cats) sectionEntries.push({ label: sec.name, key: `sec-${sec.id}`, cats });
                     }
