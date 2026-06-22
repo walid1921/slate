@@ -145,12 +145,12 @@ export default function DevPage() {
 
       {/* Category progress bar */}
       {activeCat && catItems.length > 0 && (
-        <div className="px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-          <div className="flex items-center justify-between mb-1.5">
+        <div className="px-4 py-2 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-medium" style={{ color: `rgba(${activeCat.color},0.85)` }}>{activeCat.name}</span>
             <span className="text-[10px] text-t4 font-mono">{catDone}/{catItems.length} · {Math.round(catPct)}%</span>
           </div>
-          <div className="h-[6px] rounded-full overflow-hidden" style={{ background: "var(--c-surface-3)" }}>
+          <div className="h-[4px] rounded-full overflow-hidden" style={{ background: "var(--c-surface-3)" }}>
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{ width: `${catPct}%`, background: catPct === 100 ? "rgba(16,185,129,0.75)" : `rgba(${activeCat.color},0.65)` }}
