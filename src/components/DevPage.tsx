@@ -9,6 +9,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useDevStore, DevItem, DevCategory, DevPriority } from "../devStore";
 import { PRESET_COLORS, useTodoStore } from "../store";
 import { showSuccessToast } from "../toastStore";
+import { Tooltip } from "./Tooltip";
 
 const PRIORITY_COLOR: Record<DevPriority, string> = {
   none: "transparent",
@@ -234,29 +235,32 @@ export default function DevPage() {
         </div>
         <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
           {activeCat && !activeCat.is_preset && (
-            <button
-              onClick={() => { removeCategory(activeCat.id); setActiveCatId(categories[0]?.id ?? null); }}
-              className="text-t6 hover:text-red-400 transition-colors"
-              title="Delete category"
-            >
-              <X size={10} />
-            </button>
+            <Tooltip label="Delete category">
+              <button
+                onClick={() => { removeCategory(activeCat.id); setActiveCatId(categories[0]?.id ?? null); }}
+                className="p-1 rounded text-t6 hover:text-red-400 hover:bg-s1 transition-colors"
+              >
+                <X size={10} />
+              </button>
+            </Tooltip>
           )}
-          <button
-            onClick={() => setAddingCat(true)}
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-            title="New category"
-          >
-            <Plus size={11} />
-          </button>
-          {activeCat && (
+          <Tooltip label="New category">
             <button
-              onClick={() => setShowSend(true)}
-              className="text-sky-400 hover:text-sky-300 transition-colors"
-              title="Send to Tasks"
+              onClick={() => setAddingCat(true)}
+              className="p-1 rounded text-blue-400 hover:text-blue-300 hover:bg-s1 transition-colors"
             >
-              <Send size={10} />
+              <Plus size={11} />
             </button>
+          </Tooltip>
+          {activeCat && (
+            <Tooltip label="Send to Tasks">
+              <button
+                onClick={() => setShowSend(true)}
+                className="p-1 rounded text-sky-400 hover:text-sky-300 hover:bg-s1 transition-colors"
+              >
+                <Send size={10} />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>
