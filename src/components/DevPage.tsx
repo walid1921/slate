@@ -62,7 +62,8 @@ export default function DevPage() {
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
       {/* Category tab bar */}
-      <div className="flex items-center overflow-x-auto category-tabs-scroll shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)", scrollbarWidth: "none" }}>
+      <div className="flex items-center gap-0 px-2 pt-1.5 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+      <div className="flex items-center gap-0.5 flex-1 overflow-x-auto category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
         {categories.map(cat => {
           const isActive = activeCatId === cat.id;
           const cDone = items.filter(i => i.category_id === cat.id && i.done).length;
@@ -96,6 +97,7 @@ export default function DevPage() {
         >
           <Plus size={11} />
         </button>
+      </div>
       </div>
 
       {/* Category progress bar */}
