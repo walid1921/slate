@@ -886,20 +886,20 @@ function DevCategoryEditModal({ cat, onRename, onRecolor, onReicon, onRemove, on
           style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           placeholder="Category name…"
         />
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <div>
             <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Icon</span>
             <IconPicker value={icon} onChange={setIcon} />
           </div>
           <div className="flex-1">
             <span className="text-[10px] text-t5 uppercase tracking-wider mb-2 block">Color</span>
-          <div className="grid grid-cols-7 gap-1.5">
-            {PRESET_COLORS.slice(0, 14).map(c => (
-              <button key={c} onClick={() => setColor(c)} className="w-5 h-5 rounded-full transition-transform hover:scale-110"
-                style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
-              />
-            ))}
-          </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {PRESET_COLORS.slice(0, 14).map(c => (
+                <button key={c} onClick={() => setColor(c)} className="w-4 h-4 rounded-full transition-transform hover:scale-110"
+                  style={{ background: `rgb(${c})`, outline: color === c ? `2px solid rgb(${c})` : "none", outlineOffset: 2 }}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
