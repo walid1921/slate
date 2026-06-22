@@ -248,47 +248,50 @@ export default function DevPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 view-animate">
 
-      {/* Section nav bar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 shrink-0 flex-wrap" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
-        {sections.map(section => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSectionId(section.id)}
-            onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setSectionContextMenu({ section, x: r.left, y: r.bottom + 2 }); }}
-            className="flex items-center px-2.5 py-0.5 text-[11px] rounded font-medium transition-all shrink-0"
-            style={{
-              color: activeSectionId === section.id ? "var(--c-text-2)" : "var(--c-text-5)",
-              background: activeSectionId === section.id ? "var(--c-surface-3)" : "transparent",
-              border: `1px solid ${activeSectionId === section.id ? "var(--c-border)" : "transparent"}`,
-            }}
-          >
-            {section.name}
-          </button>
-        ))}
-        {addingSection ? (
-          <input
-            autoFocus
-            value={newSectionName}
-            onChange={e => setNewSectionName(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === "Enter") commitSection();
-              if (e.key === "Escape") { setAddingSection(false); setNewSectionName(""); }
-            }}
-            onBlur={() => commitSection()}
-            placeholder="Page name…"
-            className="px-2 py-0.5 text-[11px] bg-transparent text-t2 outline-none border-b"
-            style={{ borderColor: "var(--c-border)", minWidth: 80, maxWidth: 120 }}
-          />
-        ) : (
+      {/* Section nav bar — pills scroll, + fixed right */}
+      <div className="flex items-center shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+        <div className="flex items-center gap-1 overflow-x-auto min-w-0 pl-2 py-1.5 category-tabs-scroll" style={{ scrollbarWidth: "none" }}>
+          {sections.map(section => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSectionId(section.id)}
+              onContextMenu={e => { e.preventDefault(); const r = e.currentTarget.getBoundingClientRect(); setSectionContextMenu({ section, x: r.left, y: r.bottom + 2 }); }}
+              className="flex items-center px-2.5 py-0.5 text-[11px] rounded font-medium transition-all shrink-0"
+              style={{
+                color: activeSectionId === section.id ? "var(--c-text-2)" : "var(--c-text-5)",
+                background: activeSectionId === section.id ? "var(--c-surface-3)" : "transparent",
+                border: `1px solid ${activeSectionId === section.id ? "var(--c-border)" : "transparent"}`,
+              }}
+            >
+              {section.name}
+            </button>
+          ))}
+          {addingSection && (
+            <input
+              autoFocus
+              value={newSectionName}
+              onChange={e => setNewSectionName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") commitSection();
+                if (e.key === "Escape") { setAddingSection(false); setNewSectionName(""); }
+              }}
+              onBlur={() => commitSection()}
+              placeholder="Page name…"
+              className="px-2 py-0.5 text-[11px] bg-transparent text-t2 outline-none border-b shrink-0"
+              style={{ borderColor: "var(--c-border)", minWidth: 80, maxWidth: 120 }}
+            />
+          )}
+        </div>
+        <div className="flex items-center px-2 py-1.5 shrink-0">
           <Tooltip label="New page">
             <button
               onClick={() => setAddingSection(true)}
-              className="p-1 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors ml-0.5"
+              className="p-1 rounded text-t5 hover:text-t3 hover:bg-s1 transition-colors"
             >
               <Plus size={10} />
             </button>
           </Tooltip>
-        )}
+        </div>
       </div>
 
       {/* Category tab bar — categories scroll, actions fixed right */}
