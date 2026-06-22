@@ -25,6 +25,7 @@ import {
   EyeOff,
   Flag,
   Timer,
+  Code2,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
@@ -44,6 +45,8 @@ import ActivityHeatmap from "./components/ActivityHeatmap";
 import { logActivity } from "./activity";
 import { TodoFilter, TodoSort } from "./components/FilterBar";
 import SettingsPage from "./components/SettingsPage";
+import DevPage from "./components/DevPage";
+import { useDevStore } from "./devStore";
 import ReminderAlert from "./components/ReminderAlert";
 import { useSettingsStore } from "./settingsStore";
 import { useToastStore } from "./toastStore";
@@ -1286,13 +1289,13 @@ export default function App() {
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
   const [visible, setVisible] = useState(false);
   const [preTrashView, setPreTrashView] = useState<View>("main");
-  type View = "main" | "todos" | "trash" | "reminders" | "notes" | "ihk" | "settings";
-  type NavView = "main" | "todos" | "reminders" | "notes" | "ihk" | "settings";
+  type View = "main" | "todos" | "trash" | "reminders" | "notes" | "ihk" | "dev" | "settings";
+  type NavView = "main" | "todos" | "reminders" | "notes" | "ihk" | "dev" | "settings";
   const [view, setView] = useState<View>("main");
   const [lastNavView, setLastNavView] = useState<NavView>("main");
 
   const navigate = useCallback((v: View) => {
-    if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "ihk" || v === "settings") setLastNavView(v);
+    if (v === "main" || v === "todos" || v === "reminders" || v === "notes" || v === "ihk" || v === "dev" || v === "settings") setLastNavView(v);
     setView(v);
   }, []);
   const [addTaskOpen, setAddTaskOpen] = useState<false | "quick" | "deadline">(false);
@@ -1363,7 +1366,8 @@ export default function App() {
 
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
-  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers]);
+  const { load: loadDev } = useDevStore();
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
@@ -1552,7 +1556,7 @@ export default function App() {
       if (e.key === "Escape") { if (searchOpen) { setSearchOpen(false); return; } getCurrentWindow().hide(); return; }
       if ((e.metaKey || e.ctrlKey) && e.key === "f") { e.preventDefault(); setSearchOpen(o => !o); return; }
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "ihk", "settings"];
+        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "ihk", "dev", "settings"];
         const cur = tabs.indexOf(lastNavView);
         const next = e.key === "ArrowRight"
           ? tabs[(cur + 1) % tabs.length]
@@ -1591,7 +1595,7 @@ export default function App() {
     </button>
   );
 
-  const VIEW_TITLE: Record<View, string> = { main: "Slate", todos: "Tasks", trash: "Deleted", reminders: "Reminders", notes: "Notes", ihk: "IHK Records", settings: "Settings" };
+  const VIEW_TITLE: Record<View, string> = { main: "Slate", todos: "Tasks", trash: "Deleted", reminders: "Reminders", notes: "Notes", ihk: "IHK Records", dev: "Dev Checklist", settings: "Settings" };
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>
@@ -2108,6 +2112,7 @@ export default function App() {
       {/* Notes view */}
       {view === "notes" && <NotesPage onDeleteRequest={(id) => { const n = useNotesStore.getState().notes.find(n => n.id === id); askConfirm("Delete note?", `"${n?.title ?? "This note"}" will be permanently deleted.`, () => useNotesStore.getState().remove(id)); }} />}
       {view === "ihk" && <IHKPage onConfirm={askConfirm} />}
+      {view === "dev" && <DevPage />}
       {view === "settings" && <SettingsPage />}
 
       {/* Footer — all views */}
@@ -2125,6 +2130,8 @@ export default function App() {
                 ? `${trash.length} deleted`
                 : view === "settings"
                 ? "Settings"
+                : view === "dev"
+                ? (() => { const { items } = useDevStore.getState(); const d = items.filter(i => i.done).length; return `${d}/${items.length} done`; })()
                 : view === "todos"
                 ? `${todos.filter((t) => !t.done).length} task${todos.filter((t) => !t.done).length !== 1 ? "s" : ""} remaining`
                 : ""}
@@ -2139,9 +2146,9 @@ export default function App() {
                   className="absolute top-0.5 h-5 w-7 transition-transform duration-200 ease-out"
                   style={{
                     borderRadius: 5,
-                    background: lastNavView === "todos" ? "rgba(59,130,246,0.15)" : lastNavView === "reminders" ? "rgba(99,102,241,0.15)" : lastNavView === "notes" ? "rgba(16,185,129,0.15)" : lastNavView === "ihk" ? "rgba(251,191,36,0.15)" : "var(--c-surface-3)",
+                    background: lastNavView === "todos" ? "rgba(59,130,246,0.15)" : lastNavView === "reminders" ? "rgba(99,102,241,0.15)" : lastNavView === "notes" ? "rgba(16,185,129,0.15)" : lastNavView === "ihk" ? "rgba(251,191,36,0.15)" : lastNavView === "dev" ? "rgba(14,165,233,0.15)" : "var(--c-surface-3)",
                     left: "2px",
-                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : lastNavView === "ihk" ? "128px" : "160px"})`,
+                    transform: `translateX(${lastNavView === "main" ? "0px" : lastNavView === "todos" ? "32px" : lastNavView === "reminders" ? "64px" : lastNavView === "notes" ? "96px" : lastNavView === "ihk" ? "128px" : lastNavView === "dev" ? "160px" : "192px"})`,
                     transition: "transform 0.2s ease-out, background 0.2s ease-out",
                   }}
                 />
@@ -2181,6 +2188,13 @@ export default function App() {
                 >
                   <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>IHK</span>
                   <BookOpen size={14} />
+                </button>
+                <button
+                  onClick={() => navigate("dev")}
+                  className={`group/btn relative z-10 w-7 h-5 flex items-center justify-center transition-colors duration-200 ${lastNavView === "dev" ? "text-sky-400" : "text-t4 hover:text-t2"}`}
+                >
+                  <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] text-t2 whitespace-nowrap opacity-0 group-hover/btn:opacity-100 transition-opacity duration-150" style={{ background: "var(--c-tooltip)", border: "1px solid var(--c-border)" }}>Dev</span>
+                  <Code2 size={14} />
                 </button>
                 <button
                   onClick={() => navigate("settings")}
