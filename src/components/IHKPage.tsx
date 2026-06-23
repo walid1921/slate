@@ -179,9 +179,9 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom, modules }: {
               >{label}</button>
             ))}
           </div>
-          {catModules.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap">
-              {catModules.map(m => (
+          {modules.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap items-center">
+              {catModules.length > 0 ? catModules.map(m => (
                 <button key={m.id} onClick={() => setSelectedMod(selectedMod?.id === m.id ? null : m)}
                   className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
                   style={selectedMod?.id === m.id
@@ -189,7 +189,9 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom, modules }: {
                     : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)", opacity: 0.7 }
                   }
                 >{m.name}</button>
-              ))}
+              )) : (
+                <span className="text-[10px] text-t6 italic">No modules for this category</span>
+              )}
             </div>
           )}
           <div className="flex gap-2 items-center">
