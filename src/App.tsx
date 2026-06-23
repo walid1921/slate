@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-import { open as openFileDialog, confirm as confirmDialog } from "@tauri-apps/plugin-dialog";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
@@ -145,7 +145,7 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
   );
 }
 
-function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => void }) {
+function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClose: () => void; askConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
   const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
@@ -218,12 +218,12 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
     setTaskImages(rows);
   };
 
-  const deleteImage = async (id: number) => {
-    const ok = await confirmDialog("Delete this image?", { title: "Delete Image", kind: "warning" });
-    if (!ok) return;
-    const db = await import("./db").then(m => m.getDb());
-    await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
-    setTaskImages(imgs => imgs.filter(i => i.id !== id));
+  const deleteImage = (id: number) => {
+    askConfirm("Delete Image", "Are you sure you want to delete this image?", async () => {
+      const db = await import("./db").then(m => m.getDb());
+      await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
+      setTaskImages(imgs => imgs.filter(i => i.id !== id));
+    }, "Delete", "bg-red-500 hover:bg-red-600 text-white");
   };
 
   const saveDesc = () => {
@@ -2102,7 +2102,7 @@ export default function App() {
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
             </div>
-            <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} />
+            <TaskDetail todo={selectedTodo} onClose={() => setSelectedTodoId(null)} askConfirm={askConfirm} />
           </div>
         </div>
       )}
