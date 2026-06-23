@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import { open as openFileDialog, confirm as confirmDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
@@ -219,7 +219,8 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   };
 
   const deleteImage = async (id: number) => {
-    if (!window.confirm("Delete this image?")) return;
+    const ok = await confirmDialog("Delete this image?", { title: "Delete Image", kind: "warning" });
+    if (!ok) return;
     const db = await import("./db").then(m => m.getDb());
     await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
     setTaskImages(imgs => imgs.filter(i => i.id !== id));
