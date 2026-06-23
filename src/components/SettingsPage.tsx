@@ -691,17 +691,7 @@ function DataTab() {
       </Section>
 
       <Section title="Storage">
-        <SettingRow label="Backup folder" hint="Where auto-backups are saved (app data / backups/)">
-          <button
-            onClick={handleOpenBackupFolder}
-            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          >
-            Open in Finder
-          </button>
-        </SettingRow>
-        <Divider />
-        <SettingRow label="Data folder" hint="Where Slate stores its SQLite database">
+        <SettingRow label="Open folder" hint="Database and auto-backups live here">
           <button
             onClick={handleOpenDataFolder}
             className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
