@@ -55,7 +55,7 @@ export async function migrateImagesToFilesystem(): Promise<void> {
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       await writeFile(filePath, bytes);
-      await db.execute("UPDATE task_images SET path = ? WHERE id = ?", [filePath, row.id]);
+      await db.execute("UPDATE task_images SET path = ?, data = '' WHERE id = ?", [filePath, row.id]);
     } catch (e) {
       console.error("Failed to migrate image", row.id, e);
     }

@@ -518,7 +518,7 @@ function DataTab() {
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
         await writeFile(filePath, bytes);
         await db.execute(
-          "INSERT OR IGNORE INTO task_images (id, task_id, filename, path, created_at) VALUES (?,?,?,?,?)",
+          "INSERT OR IGNORE INTO task_images (id, task_id, filename, data, path, created_at) VALUES (?,?,?,'',?,?)",
           [img.id, img.task_id, img.filename, filePath, img.created_at ?? new Date().toISOString()]
         );
       }

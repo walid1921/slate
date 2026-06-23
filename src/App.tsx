@@ -216,7 +216,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
     const destPath = await saveImageToDir(bytes, filename, todo.id);
     const db = await import("./db").then(m => m.getDb());
     await db.execute(
-      "INSERT INTO task_images (task_id, filename, path) VALUES (?, ?, ?)",
+      "INSERT INTO task_images (task_id, filename, data, path) VALUES (?, ?, '', ?)",
       [todo.id, filename, destPath]
     );
     const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
