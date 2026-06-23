@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy, Settings } from "lucide-react";
+import { Plus, X, Pencil, Copy, Check, ChevronDown, ChevronRight, GripVertical, ClipboardCopy } from "lucide-react";
 import { useIHKStore, IHK_CATEGORIES, IHKCategory, IHKEntry, IHKModule } from "../ihkStore";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
@@ -404,7 +404,6 @@ function ModulesPanel({ modules, onAdd, onRemove }: { modules: IHKModule[]; onAd
 
 export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg: string, fn: () => void) => void }) {
   const { entries, load, add, update, remove, reorder, sentWeeks, seenWeekKeys, toggleSent, modules, addModule, removeModule, registerWeek } = useIHKStore();
-  const [showModules, setShowModules] = useState(false);
   const { kw: currentKW, year: currentYear } = getISOWeek(today());
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(null);
@@ -457,17 +456,7 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex items-center justify-end px-4 pt-3 shrink-0">
-        <button onClick={() => setShowModules(o => !o)}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] transition-colors ${showModules ? "text-t2" : "text-t4 hover:text-t2"}`}
-          style={showModules ? { background: "var(--c-surface-2)", border: "1px solid var(--c-border)" } : {}}
-        >
-          <Settings size={11} />
-          <span>Modules</span>
-          {modules.length > 0 && <span className="text-t5">({modules.length})</span>}
-        </button>
-      </div>
-      {showModules && <ModulesPanel modules={modules} onAdd={(name) => addModule(name, 2)} onRemove={removeModule} />}
+      <ModulesPanel modules={modules} onAdd={(name) => addModule(name, 2)} onRemove={removeModule} />
       <div className="overflow-y-auto flex-1 px-4 py-3 flex flex-col gap-5">
         {allWeeks.length === 0 && (
           <div className="flex flex-col items-center justify-center flex-1 text-t5 text-[12px] gap-1">
