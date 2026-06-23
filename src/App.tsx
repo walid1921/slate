@@ -178,22 +178,27 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
     return () => { if (descTimer.current) clearTimeout(descTimer.current); };
   }, [desc]);
 
-  useEffect(() => {
-    import("./db").then(({ getDb }) => getDb()).then(async db => {
-      const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
-        "SELECT id, filename, path, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
-      );
-      const withSrc = await Promise.all(rows.map(async img => ({
-        id: img.id,
-        filename: img.filename,
-        path: img.path,
-        src: img.path
+  const reloadImages = async () => {
+    const db = await import("./db").then(m => m.getDb());
+    const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
+      "SELECT id, filename, path, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
+    );
+    const results = await Promise.all(rows.map(async img => {
+      try {
+        const src = img.path
           ? await imageToDataUrl(img.path, img.filename)
-          : `data:image/jpeg;base64,${img.data}`,
-      })));
-      setTaskImages(withSrc);
-    }).catch(() => {});
-  }, [todo.id]);
+          : `data:image/jpeg;base64,${img.data}`;
+        return { id: img.id, filename: img.filename, path: img.path, src };
+      } catch {
+        // file was deleted externally — remove stale DB row silently
+        await db.execute("DELETE FROM task_images WHERE id = ?", [img.id]).catch(() => {});
+        return null;
+      }
+    }));
+    setTaskImages(results.filter(Boolean) as { id: number; filename: string; path: string; src: string }[]);
+  };
+
+  useEffect(() => { reloadImages().catch(() => {}); }, [todo.id]);
 
   const uploadImage = async () => {
     const win = getCurrentWindow();
@@ -219,16 +224,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       "INSERT INTO task_images (task_id, filename, data, path) VALUES (?, ?, '', ?)",
       [todo.id, filename, destPath]
     );
-    const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
-      "SELECT id, filename, path, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
-    );
-    const withSrc = await Promise.all(rows.map(async img => ({
-      id: img.id,
-      filename: img.filename,
-      path: img.path,
-      src: img.path ? await imageToDataUrl(img.path, img.filename) : `data:image/jpeg;base64,${img.data}`,
-    })));
-    setTaskImages(withSrc);
+    await reloadImages();
   };
 
   const deleteImage = (id: number) => {
