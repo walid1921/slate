@@ -166,6 +166,15 @@ export async function getDb(): Promise<Database> {
   `);
   await _db.execute(`ALTER TABLE dev_categories ADD COLUMN section_id INTEGER NOT NULL DEFAULT 1`).catch(() => {});
   await _db.execute(`ALTER TABLE dev_sections ADD COLUMN deleted_at TEXT`).catch(() => {});
+  await _db.execute(`
+    CREATE TABLE IF NOT EXISTS task_images (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id    INTEGER NOT NULL,
+      filename   TEXT    NOT NULL,
+      data       TEXT    NOT NULL,
+      created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
 
   // Seed default categories + items once
   const devSeeded = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_seeded'`);

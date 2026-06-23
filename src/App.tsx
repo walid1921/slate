@@ -27,8 +27,12 @@ import {
   Timer,
   Code2,
   Search,
+  ImagePlus,
+  Images,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
 import { useReminderStore } from "./reminderStore";
@@ -148,9 +152,11 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
-  const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | null>(null);
+  const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
-  const toggleSection = (s: "timelog" | "notes" | "subtasks") => setOpenSection(v => v === s ? null : s);
+  const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
+  const [taskImages, setTaskImages] = useState<{ id: number; filename: string; data: string }[]>([]);
+  const [lightbox, setLightbox] = useState<{ filename: string; data: string } | null>(null);
   const descTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -169,6 +175,44 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
     descTimer.current = setTimeout(() => setDescription(todo.id, desc), 400);
     return () => { if (descTimer.current) clearTimeout(descTimer.current); };
   }, [desc]);
+
+  useEffect(() => {
+    import("./db").then(({ getDb }) => getDb()).then(db =>
+      db.select<{ id: number; filename: string; data: string }[]>(
+        "SELECT id, filename, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
+      )
+    ).then(setTaskImages).catch(() => {});
+  }, [todo.id]);
+
+  const uploadImage = async () => {
+    const path = await openFileDialog({
+      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }],
+      multiple: false,
+    });
+    if (typeof path !== "string") return;
+    const bytes = await readFile(path);
+    if (bytes.length > 10 * 1024 * 1024) { alert("Image must be under 10 MB"); return; }
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 8192)
+      binary += String.fromCharCode(...(bytes.subarray(i, Math.min(i + 8192, bytes.length)) as unknown as number[]));
+    const base64 = btoa(binary);
+    const filename = path.split("/").pop() ?? "image";
+    const db = await import("./db").then(m => m.getDb());
+    await db.execute(
+      "INSERT INTO task_images (task_id, filename, data) VALUES (?, ?, ?)",
+      [todo.id, filename, base64]
+    );
+    const rows = await db.select<{ id: number; filename: string; data: string }[]>(
+      "SELECT id, filename, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
+    );
+    setTaskImages(rows);
+  };
+
+  const deleteImage = async (id: number) => {
+    const db = await import("./db").then(m => m.getDb());
+    await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
+    setTaskImages(imgs => imgs.filter(i => i.id !== id));
+  };
 
   const saveDesc = () => {
     if (descTimer.current) clearTimeout(descTimer.current);
@@ -426,6 +470,78 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
           </div>
         )}
       </div>
+
+      {/* Images */}
+      <div className="flex flex-col border-t border-s shrink-0">
+        <button onClick={() => toggleSection("images")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
+          <div className="flex items-center gap-1.5">
+            <Images size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">Images</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {taskImages.length > 0 && <span className="text-[10px] text-t5 font-mono">{taskImages.length}</span>}
+            <button
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => { e.stopPropagation(); uploadImage(); }}
+              className="p-1 rounded text-t5 hover:text-blue-400 transition-colors hover:bg-s2"
+            >
+              <ImagePlus size={10} />
+            </button>
+            {openSection === "images" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+          </div>
+        </button>
+        {openSection === "images" && (
+          <div className="border-t border-s px-4 py-3">
+            {taskImages.length === 0 ? (
+              <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors">
+                <ImagePlus size={12} /><span>Upload a reference image…</span>
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {taskImages.map(img => {
+                  const ext = img.filename.split(".").pop()?.toLowerCase() ?? "png";
+                  const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/png";
+                  const src = `data:${mime};base64,${img.data}`;
+                  return (
+                    <div key={img.id} className="group relative" style={{ width: 72, height: 72 }}>
+                      <img
+                        src={src}
+                        onClick={() => setLightbox({ filename: img.filename, data: src })}
+                        className="w-full h-full object-cover rounded-lg cursor-pointer"
+                        style={{ border: "1px solid var(--c-border)" }}
+                      />
+                      <button
+                        onClick={() => deleteImage(img.id)}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: "rgba(0,0,0,0.7)" }}
+                      >
+                        <X size={8} className="text-white" />
+                      </button>
+                    </div>
+                  );
+                })}
+                <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
+                  <ImagePlus size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.85)" }}
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox.data} className="max-w-[90vw] max-h-[85vh] rounded-lg object-contain" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+          <button className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-white" style={{ background: "rgba(255,255,255,0.15)" }}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

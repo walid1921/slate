@@ -419,6 +419,7 @@ function DataTab() {
       await db.execute("DELETE FROM dev_items");
       await db.execute("DELETE FROM dev_categories");
       await db.execute("DELETE FROM dev_sections");
+      await db.execute("DELETE FROM task_images");
       await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, icon, position) VALUES (1, 'General', '99,102,241', 'folder', 0)`);
       for (const c of (data.taskCategories ?? [])) {
         await db.execute(
@@ -503,6 +504,12 @@ function DataTab() {
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_content_v2', '1')");
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v1', '1')");
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v2', '1')");
+      }
+      for (const img of (data.taskImages ?? [])) {
+        await db.execute(
+          "INSERT OR IGNORE INTO task_images (id, task_id, filename, data, created_at) VALUES (?,?,?,?,?)",
+          [img.id, img.task_id, img.filename, img.data, img.created_at ?? new Date().toISOString()]
+        );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes(), loadDev()]);
       showToast(withBackup ? "exported-imported" : "imported");

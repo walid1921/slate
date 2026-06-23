@@ -31,6 +31,7 @@
     "dialog:allow-open",
     "fs:allow-write-text-file",
     "fs:allow-read-text-file",
+    "fs:allow-read-file",
     "fs:allow-mkdir",
     "fs:scope-home-recursive",
     "opener:allow-reveal-item-in-dir",
