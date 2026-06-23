@@ -687,7 +687,17 @@ function DataTab() {
       </Section>
 
       <Section title="Storage">
-        <SettingRow label="Open data folder" hint="Browse the folder where Slate stores its database">
+        <SettingRow label="Backup folder" hint="iCloud Drive / Slate Backups — where auto-backups are saved">
+          <button
+            onClick={handleOpenBackupFolder}
+            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            Open in Finder
+          </button>
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Data folder" hint="Where Slate stores its SQLite database">
           <button
             onClick={handleOpenDataFolder}
             className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
