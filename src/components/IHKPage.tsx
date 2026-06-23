@@ -95,14 +95,16 @@ function weekDotColor(entries: IHKEntry[], sent: boolean): string {
   return "rgba(239,68,68,0.7)";
 }
 
-function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
+function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom, modules }: {
   onSave: (text: string, cat: IHKCategory, date: string) => Promise<void>;
   defaultDate: string;
   pastWeeks?: { key: string; year: number; kw: number }[];
   onFillFrom?: (key: string) => void;
+  modules: IHKModule[];
 }) {
   const [open, setOpen] = useState(false);
   const [cat, setCat] = useState<IHKCategory>(0);
+  const [selectedMod, setSelectedMod] = useState<IHKModule | null>(null);
   const [text, setText] = useState("");
   const [date, setDate] = useState(defaultDate);
   const [saving, setSaving] = useState(false);
@@ -111,6 +113,7 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 10); }, [open]);
+  useEffect(() => { setSelectedMod(null); }, [cat]);
 
   useEffect(() => {
     if (!fillOpen) return;
@@ -119,10 +122,13 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
     return () => document.removeEventListener("mousedown", close);
   }, [fillOpen]);
 
+  const catModules = modules.filter(m => m.type === cat);
+
   const save = async () => {
     if (!text.trim() || saving) return;
     setSaving(true);
-    try { await onSave(text.trim(), cat, date); setText(""); setSaving(false); }
+    const finalText = selectedMod ? `${selectedMod.name}: ${text.trim()}` : text.trim();
+    try { await onSave(finalText, cat, date); setText(""); setSelectedMod(null); setSaving(false); }
     catch { setSaving(false); }
   };
 
@@ -173,6 +179,19 @@ function AddEntryRow({ onSave, defaultDate, pastWeeks, onFillFrom }: {
               >{label}</button>
             ))}
           </div>
+          {catModules.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap">
+              {catModules.map(m => (
+                <button key={m.id} onClick={() => setSelectedMod(selectedMod?.id === m.id ? null : m)}
+                  className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors"
+                  style={selectedMod?.id === m.id
+                    ? { background: CAT_COLORS[cat][1], color: `rgba(${CAT_COLORS[cat][0]},0.9)`, border: `1px solid rgba(${CAT_COLORS[cat][0]},0.4)` }
+                    : { background: "var(--c-surface-2)", color: "var(--c-text-4)", border: "1px solid var(--c-border)", opacity: 0.7 }
+                  }
+                >{m.name}</button>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2 items-center">
             <input ref={inputRef} value={text} onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); save(); } if (e.key === "Escape") { setOpen(false); setText(""); } e.stopPropagation(); }}
@@ -240,7 +259,7 @@ function SortableEntryRow({ entry, onDelete, onUpdate, onConfirm }: { entry: IHK
   );
 }
 
-function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle, onToggleSent, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom, onConfirm }: {
+function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle, onToggleSent, onAdd, onDelete, onUpdate, onReorder, pastWeeks, onFillFrom, onConfirm, modules }: {
   year: number; kw: number; entries: IHKEntry[]; isCurrentWeek: boolean;
   expanded: boolean; sent: boolean;
   onToggle: () => void; onToggleSent: () => void;
@@ -251,6 +270,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   pastWeeks?: { key: string; year: number; kw: number }[];
   onFillFrom?: (key: string) => void;
   onConfirm: (title: string, msg: string, fn: () => void) => void;
+  modules: IHKModule[];
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const { start } = getWeekRange(year, kw);
@@ -323,7 +343,7 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
               </div>
             );
           })}
-          <AddEntryRow onSave={onAdd} defaultDate={defaultDate} pastWeeks={isCurrentWeek ? pastWeeks : undefined} onFillFrom={isCurrentWeek ? onFillFrom : undefined} />
+          <AddEntryRow onSave={onAdd} defaultDate={defaultDate} pastWeeks={isCurrentWeek ? pastWeeks : undefined} onFillFrom={isCurrentWeek ? onFillFrom : undefined} modules={modules} />
         </div>
       )}
     </div>
@@ -468,6 +488,7 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
                 pastWeeks={pastWeeks}
                 onFillFrom={handleFillFrom}
                 onConfirm={onConfirm}
+                modules={modules}
               />
             ))}
           </div>
