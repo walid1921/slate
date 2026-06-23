@@ -4,7 +4,7 @@ import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
+import { writeTextFile, readTextFile, mkdir } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -518,6 +518,7 @@ function DataTab() {
   const handleOpenBackupFolder = async () => {
     try {
       const dir = await getBackupDir();
+      await mkdir(dir, { recursive: true });
       await revealItemInDir(dir);
     } catch {
       showErrorToast("Could not open backup folder");
