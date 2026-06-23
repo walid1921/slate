@@ -1,12 +1,10 @@
 import { writeTextFile, mkdir } from "@tauri-apps/plugin-fs";
-import { homeDir, join } from "@tauri-apps/api/path";
+import { appDataDir, join } from "@tauri-apps/api/path";
 import { getDb } from "./db";
 import { useSettingsStore } from "./settingsStore";
-import { showSuccessToast } from "./toastStore";
 
-export async function getICloudBackupDir(): Promise<string> {
-  const home = await homeDir();
-  return join(home, "Library", "Mobile Documents", "com~apple~CloudDocs", "Slate Backups");
+export async function getBackupDir(): Promise<string> {
+  return join(await appDataDir(), "backups");
 }
 
 export async function buildExportPayload(): Promise<string> {
@@ -42,18 +40,17 @@ function dateStr(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-export async function runAutoBackup(silent = false): Promise<boolean> {
+export async function runAutoBackup(_silent = false): Promise<boolean> {
   const store = useSettingsStore.getState();
   if (!store.autoBackupEnabled) return false;
   const today = dateStr();
   if (store.lastAutoBackup === today) return false;
   try {
-    const backupDir = await getICloudBackupDir();
+    const backupDir = await getBackupDir();
     await mkdir(backupDir, { recursive: true });
     const payload = await buildExportPayload();
     await writeTextFile(await join(backupDir, `slate-${today}.json`), payload);
     store.set("lastAutoBackup", today);
-    if (!silent) showSuccessToast("Auto-backup saved to iCloud");
     return true;
   } catch (e) {
     console.error("Auto-backup failed:", e);

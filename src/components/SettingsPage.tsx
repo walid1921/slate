@@ -15,7 +15,7 @@ import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
 import { useDevStore } from "../devStore";
 import { useToastStore, showErrorToast } from "../toastStore";
-import { getICloudBackupDir, buildExportPayload } from "../backup";
+import { getBackupDir, buildExportPayload } from "../backup";
 
 const guideSections = [
   {
@@ -629,10 +629,10 @@ function DataTab() {
 
   const handleOpenBackupFolder = async () => {
     try {
-      const dir = await getICloudBackupDir();
+      const dir = await getBackupDir();
       await revealItemInDir(dir);
     } catch {
-      showErrorToast("Could not open backup folder — make sure iCloud Drive is enabled");
+      showErrorToast("Could not open backup folder");
     }
   };
 
@@ -646,10 +646,10 @@ function DataTab() {
       <DataPreview />
       <div className="px-1 py-2 rounded-lg text-[11px] text-t4 leading-relaxed" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}>
         <span className="text-t3 font-medium">To protect your data: </span>
-        enable Auto-backup below, and before any big app update hit <span className="text-t3">Export…</span> to save a copy to your Desktop or iCloud manually.
+        enable Auto-backup below, and before any big app update hit <span className="text-t3">Export…</span> to save a copy to your Desktop or iCloud Drive manually.
       </div>
       <Section title="Backup">
-        <SettingRow label="Auto-backup to iCloud" hint="Saves a dated JSON to iCloud Drive / Slate Backups once per day on launch">
+        <SettingRow label="Auto-backup" hint="Saves a dated JSON to the app data folder once per day on launch">
           <Toggle value={autoBackupEnabled} onChange={v => set("autoBackupEnabled", v)} />
         </SettingRow>
         {autoBackupEnabled && (
@@ -691,7 +691,7 @@ function DataTab() {
       </Section>
 
       <Section title="Storage">
-        <SettingRow label="Backup folder" hint="iCloud Drive / Slate Backups — where auto-backups are saved">
+        <SettingRow label="Backup folder" hint="Where auto-backups are saved (app data / backups/)">
           <button
             onClick={handleOpenBackupFolder}
             className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
