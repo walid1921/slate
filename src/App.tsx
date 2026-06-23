@@ -121,6 +121,7 @@ function useNow(dueDate: string | null, dueTime: string | null): Date {
 }
 
 import { GlobalTooltip, Tooltip, TipBtn } from "./components/Tooltip";
+import { runAutoBackup } from "./backup";
 
 function TaskTitleInput({ todo }: { todo: Todo }) {
   const { updateText } = useTodoStore();
@@ -1309,7 +1310,7 @@ export default function App() {
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
-  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {

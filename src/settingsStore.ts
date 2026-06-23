@@ -21,6 +21,8 @@ export interface Settings {
   reminderInterval: 30 | 60 | 300;
   textSize: TextSize;
   windowMode: WindowMode;
+  autoBackupEnabled: boolean;
+  lastAutoBackup: string | null;
 }
 
 interface SettingsState extends Settings {
@@ -40,6 +42,8 @@ const DEFAULTS: Settings = {
   reminderInterval: 30,
   textSize: "normal",
   windowMode: "default",
+  autoBackupEnabled: false,
+  lastAutoBackup: null,
 };
 
 export const useSettingsStore = create<SettingsState>()(

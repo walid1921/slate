@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff } from "lucide-react";
+import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff, FolderOpen } from "lucide-react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -15,6 +15,7 @@ import { useReminderStore } from "../reminderStore";
 import { useNotesStore } from "../notesStore";
 import { useDevStore } from "../devStore";
 import { useToastStore, showErrorToast } from "../toastStore";
+import { getICloudBackupDir, buildExportPayload } from "../backup";
 
 const guideSections = [
   {
@@ -455,8 +456,8 @@ function DataTab() {
   const [importing, setImporting] = useState(false);
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
-  const [exportedPath, setExportedPath] = useState<string | null>(null);
   const showToast = useToastStore((s) => s.show);
+  const { autoBackupEnabled, lastAutoBackup, set } = useSettingsStore();
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -471,26 +472,14 @@ function DataTab() {
   const handleExport = async () => {
     try {
       setExporting(true);
-      const db = await getDb();
-      const todos = await db.select("SELECT * FROM todos");
-      const reminders = await db.select("SELECT * FROM reminders");
-      const notes = await db.select("SELECT * FROM notes");
-      const taskSessions = await db.select("SELECT * FROM task_sessions");
-      const taskCategories = await db.select("SELECT * FROM task_categories");
-      const deletedCategories = await db.select("SELECT * FROM deleted_categories");
-      const ihkEntries = await db.select("SELECT * FROM ihk_entries");
-      const ihkModules = await db.select("SELECT * FROM ihk_modules");
-      const ihkWeeks = await db.select("SELECT * FROM ihk_weeks");
-      const activity = await db.select("SELECT * FROM activity");
-      const devItems = await db.select("SELECT * FROM dev_items");
-      const devCategories = await db.select("SELECT * FROM dev_categories");
-      const devSections = await db.select("SELECT * FROM dev_sections");
-      const payload = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions, taskCategories, deletedCategories, ihkEntries, ihkModules, ihkWeeks, activity, devItems, devCategories, devSections }, null, 2);
-      const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}-${String(d.getHours()).padStart(2,"0")}-${String(d.getMinutes()).padStart(2,"0")}`;
-      const dir = await appDataDir();
-      const filePath = await join(dir, `slate-${today}.json`);
+      const payload = await buildExportPayload();
+      const d = new Date();
+      const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      const filePath = await withDialogFocus(() =>
+        saveDialog({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] })
+      );
+      if (!filePath) return;
       await writeTextFile(filePath, payload);
-      setExportedPath(filePath);
       showToast("exported");
     } catch (e) {
       console.error("export failed:", e);
@@ -521,23 +510,11 @@ function DataTab() {
       setImportConfirm(false);
       const db = await getDb();
       if (withBackup) {
-        const backupTodos = await db.select("SELECT * FROM todos");
-        const backupReminders = await db.select("SELECT * FROM reminders");
-        const backupNotes = await db.select("SELECT * FROM notes");
-        const backupTaskSessions = await db.select("SELECT * FROM task_sessions");
-        const backupTaskCategories = await db.select("SELECT * FROM task_categories");
-        const backupDeletedCategories = await db.select("SELECT * FROM deleted_categories");
-        const backupIhkEntries = await db.select("SELECT * FROM ihk_entries");
-        const backupIhkModules = await db.select("SELECT * FROM ihk_modules");
-        const backupIhkWeeks = await db.select("SELECT * FROM ihk_weeks");
-        const backupActivity = await db.select("SELECT * FROM activity");
-        const backupDevItems = await db.select("SELECT * FROM dev_items");
-        const backupDevCategories = await db.select("SELECT * FROM dev_categories");
-        const backupDevSections = await db.select("SELECT * FROM dev_sections");
-        const backupPayload = JSON.stringify({ version: 3, exportedAt: new Date().toISOString(), todos: backupTodos, reminders: backupReminders, notes: backupNotes, taskSessions: backupTaskSessions, taskCategories: backupTaskCategories, deletedCategories: backupDeletedCategories, ihkEntries: backupIhkEntries, ihkModules: backupIhkModules, ihkWeeks: backupIhkWeeks, activity: backupActivity, devItems: backupDevItems, devCategories: backupDevCategories, devSections: backupDevSections }, null, 2);
-        const bd = new Date(); const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
+        const payload = await buildExportPayload();
+        const bd = new Date();
+        const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
         const dir = await appDataDir();
-        await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), backupPayload);
+        await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), payload);
       }
       const raw = await readTextFile(importFile);
       const data = JSON.parse(raw);
@@ -554,7 +531,6 @@ function DataTab() {
       await db.execute("DELETE FROM dev_items");
       await db.execute("DELETE FROM dev_categories");
       await db.execute("DELETE FROM dev_sections");
-      // Restore General task category first (always required)
       await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, icon, position) VALUES (1, 'General', '99,102,241', 'folder', 0)`);
       for (const c of (data.taskCategories ?? [])) {
         await db.execute(
@@ -616,7 +592,6 @@ function DataTab() {
           [a.id, a.date, a.created_at]
         );
       }
-      // Dev content (version 3+ exports)
       for (const sec of (data.devSections ?? [])) {
         await db.execute(
           "INSERT OR IGNORE INTO dev_sections (id, name, position, created_at, deleted_at) VALUES (?,?,?,?,?)",
@@ -635,11 +610,11 @@ function DataTab() {
           [i.id, i.text, i.done ? 1 : 0, i.category_id, i.priority ?? "none", i.position, i.description ?? "", i.created_at ?? new Date().toISOString(), i.deleted_at ?? null]
         );
       }
-      // Mark dev as seeded so the next startup doesn't overwrite the imported data
       if ((data.devSections ?? []).length > 0) {
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_seeded', '1')");
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_content_v2', '1')");
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v1', '1')");
+        await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v2', '1')");
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes(), loadDev()]);
       showToast(withBackup ? "exported-imported" : "imported");
@@ -652,7 +627,16 @@ function DataTab() {
     }
   };
 
-  const handleOpenFolder = async () => {
+  const handleOpenBackupFolder = async () => {
+    try {
+      const dir = await getICloudBackupDir();
+      await revealItemInDir(dir);
+    } catch {
+      showErrorToast("Could not open backup folder — make sure iCloud Drive is enabled");
+    }
+  };
+
+  const handleOpenDataFolder = async () => {
     const dir = await appDataDir();
     await revealItemInDir(dir);
   };
@@ -661,18 +645,36 @@ function DataTab() {
     <div className="overflow-y-auto flex-1 py-4 px-4 flex flex-col gap-4">
       <DataPreview />
       <Section title="Backup">
-        <SettingRow label="Export data" hint="Save all tasks, reminders and notes as JSON">
+        <SettingRow label="Auto-backup to iCloud" hint="Saves a dated JSON to iCloud Drive / Slate Backups once per day on launch">
+          <Toggle value={autoBackupEnabled} onChange={v => set("autoBackupEnabled", v)} />
+        </SettingRow>
+        {autoBackupEnabled && (
+          <div className="flex items-center justify-between px-4 pb-2.5 -mt-1">
+            <p className="text-[11px] text-t5">
+              {lastAutoBackup ? `Last backup: ${lastAutoBackup}` : "Will run next time you open Slate"}
+            </p>
+            <button
+              onClick={handleOpenBackupFolder}
+              className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              <FolderOpen size={10} />
+              <span>Open folder</span>
+            </button>
+          </div>
+        )}
+        <Divider />
+        <SettingRow label="Export data" hint="Choose where to save all your data as a JSON file">
           <button
             onClick={handleExport}
             disabled={exporting}
             className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors disabled:opacity-40"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           >
-            {exporting ? "Exporting…" : "Export"}
+            {exporting ? "Exporting…" : "Export…"}
           </button>
         </SettingRow>
         <Divider />
-        <SettingRow label="Import data" hint="Restore from a previous export file">
+        <SettingRow label="Import data" hint="Replace all data from an export file — optionally saves a backup first">
           <button
             onClick={handlePickImport}
             disabled={importing}
@@ -687,7 +689,7 @@ function DataTab() {
       <Section title="Storage">
         <SettingRow label="Open data folder" hint="Browse the folder where Slate stores its database">
           <button
-            onClick={handleOpenFolder}
+            onClick={handleOpenDataFolder}
             className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           >
@@ -696,13 +698,12 @@ function DataTab() {
         </SettingRow>
       </Section>
 
-      {/* Import confirm modal */}
       {importConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
           <div className="dropdown rounded-lg p-5 mx-4 flex flex-col gap-3" style={{ width: "fit-content", minWidth: 320 }}>
-            <p className="text-[14px] font-semibold text-t1">Export current data first?</p>
+            <p className="text-[14px] font-semibold text-t1">Save a backup first?</p>
             <p className="text-[12px] text-t3 leading-relaxed">
-              Your current tasks, reminders and notes will be lost after importing. Do you want to export them first?
+              All current data will be replaced. You can save a backup to the app folder before importing.
             </p>
             <div className="flex gap-2 justify-end mt-1">
               <button
@@ -717,40 +718,14 @@ function DataTab() {
                 className="px-3 py-1.5 rounded text-[12px] text-t2 hover:text-t1 transition-colors"
                 style={{ background: "var(--c-surface-2)" }}
               >
-                No, just import
+                Skip backup
               </button>
               <button
                 onClick={() => handleImport(true)}
                 className="px-3 py-1.5 rounded text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
                 style={{ background: "rgba(59,130,246,0.15)" }}
               >
-                Yes, export then import
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Export success modal */}
-      {exportedPath && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="dropdown rounded-lg p-5 mx-4 flex flex-col gap-3" style={{ width: "fit-content", minWidth: 320 }}>
-            <p className="text-[14px] font-semibold text-t1">Data exported</p>
-            <p className="text-[12px] text-t3 leading-relaxed break-all">{exportedPath}</p>
-            <div className="flex gap-2 justify-end mt-1">
-              <button
-                onClick={() => setExportedPath(null)}
-                className="px-3 py-1.5 rounded text-[12px] text-t3 hover:text-t2 transition-colors"
-                style={{ background: "var(--c-surface-2)" }}
-              >
-                Close
-              </button>
-              <button
-                onClick={async () => { await revealItemInDir(exportedPath); setExportedPath(null); }}
-                className="px-3 py-1.5 rounded text-[12px] text-blue-400 hover:text-blue-300 transition-colors"
-                style={{ background: "rgba(59,130,246,0.15)" }}
-              >
-                Open Folder
+                Backup & import
               </button>
             </div>
           </div>
