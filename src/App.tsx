@@ -541,20 +541,22 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
 
       {/* Lightbox */}
       {lightbox && (
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.85)" }}
-          onClick={() => setLightbox(null)}
-        >
-          <img src={lightbox.data} className="max-w-[90vw] max-h-[85vh] rounded-lg object-contain" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+        <>
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.85)" }}
+            onClick={() => setLightbox(null)}
+          >
+            <img src={lightbox.data} className="max-w-[90vw] max-h-[85vh] rounded-lg object-contain" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+          </div>
           <button
-            onClick={e => { e.stopPropagation(); setLightbox(null); }}
-            className="fixed top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-white"
-            style={{ background: "rgba(255,255,255,0.2)" }}
+            onClick={() => setLightbox(null)}
+            className="fixed z-[201] flex items-center justify-center rounded-full text-white"
+            style={{ top: 16, right: 16, width: 32, height: 32, background: "rgba(255,255,255,0.2)" }}
           >
             <X size={14} />
           </button>
-        </div>
+        </>
       )}
     </div>
   );
