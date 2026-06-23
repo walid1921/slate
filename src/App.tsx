@@ -31,6 +31,7 @@ import {
   Images,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke } from "@tauri-apps/api/core";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { listen } from "@tauri-apps/api/event";
@@ -185,10 +186,19 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   }, [todo.id]);
 
   const uploadImage = async () => {
-    const path = await openFileDialog({
-      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }],
-      multiple: false,
-    });
+    const win = getCurrentWindow();
+    await invoke("set_auto_hide", { enabled: false });
+    await win.setAlwaysOnTop(false);
+    let path: string | string[] | null;
+    try {
+      path = await openFileDialog({
+        filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }],
+        multiple: false,
+      });
+    } finally {
+      await win.setAlwaysOnTop(true);
+      await invoke("set_auto_hide", { enabled: true });
+    }
     if (typeof path !== "string") return;
     const bytes = await readFile(path);
     if (bytes.length > 10 * 1024 * 1024) { alert("Image must be under 10 MB"); return; }
