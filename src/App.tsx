@@ -219,6 +219,7 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
   };
 
   const deleteImage = async (id: number) => {
+    if (!window.confirm("Delete this image?")) return;
     const db = await import("./db").then(m => m.getDb());
     await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
     setTaskImages(imgs => imgs.filter(i => i.id !== id));
