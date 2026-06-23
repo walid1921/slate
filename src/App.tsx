@@ -1442,15 +1442,19 @@ export default function App() {
           return;
         }
       }
-      // IHK quick entry: /i ModuleName text → save to current week
+      // IHK quick entry: /i ModuleName text → save to current week as "ModuleName: text"
       if (e.key === "Enter" && inputVal.startsWith("/i ")) {
         const rest = inputVal.slice(3).trim();
-        const fixedMatch = FIXED_PICKER.find(f => rest.toLowerCase().startsWith(f.name.toLowerCase() + " "));
-        const modMatch = ihkModules.find(m => rest.toLowerCase().startsWith(m.name.toLowerCase() + " "));
+        const startsWithModule = (name: string) =>
+          rest.toLowerCase().startsWith(name.toLowerCase() + " ") ||
+          rest.toLowerCase().startsWith(name.toLowerCase() + ": ");
+        const fixedMatch = FIXED_PICKER.find(f => startsWithModule(f.name));
+        const modMatch = ihkModules.find(m => startsWithModule(m.name));
         const matched = fixedMatch ?? (modMatch ? { name: modMatch.name, category: 2 as const } : null);
         if (matched) {
-          const text = rest.slice(matched.name.length).trim();
-          if (text) {
+          const rawContent = rest.slice(matched.name.length).trim().replace(/^:\s*/, "");
+          if (rawContent) {
+            const text = `${matched.name}: ${rawContent}`;
             const d = new Date(); const p = (n: number) => String(n).padStart(2, "0");
             const todayStr = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
             useIHKStore.getState().add(text, matched.category, todayStr);
