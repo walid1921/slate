@@ -4,7 +4,7 @@ import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { writeTextFile, readTextFile, mkdir } from "@tauri-apps/plugin-fs";
+import { writeTextFile, readTextFile, mkdir, writeFile, remove } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -16,6 +16,7 @@ import { useNotesStore } from "../notesStore";
 import { useDevStore } from "../devStore";
 import { useToastStore, showErrorToast } from "../toastStore";
 import { getBackupDir, buildExportPayload } from "../backup";
+import { getImagesDir } from "../images";
 
 const guideSections = [
   {
@@ -420,6 +421,9 @@ function DataTab() {
       await db.execute("DELETE FROM dev_categories");
       await db.execute("DELETE FROM dev_sections");
       await db.execute("DELETE FROM task_images");
+      const imagesDir = await getImagesDir();
+      await remove(imagesDir, { recursive: true }).catch(() => {});
+      await mkdir(imagesDir, { recursive: true });
       await db.execute(`INSERT OR IGNORE INTO task_categories (id, name, color, icon, position) VALUES (1, 'General', '99,102,241', 'folder', 0)`);
       for (const c of (data.taskCategories ?? [])) {
         await db.execute(
@@ -506,9 +510,16 @@ function DataTab() {
         await db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('dev_sections_v2', '1')");
       }
       for (const img of (data.taskImages ?? [])) {
+        if (!img.data) continue;
+        const safeName = img.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filePath = await join(imagesDir, `${img.id}_${safeName}`);
+        const binary = atob(img.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        await writeFile(filePath, bytes);
         await db.execute(
-          "INSERT OR IGNORE INTO task_images (id, task_id, filename, data, created_at) VALUES (?,?,?,?,?)",
-          [img.id, img.task_id, img.filename, img.data, img.created_at ?? new Date().toISOString()]
+          "INSERT OR IGNORE INTO task_images (id, task_id, filename, path, created_at) VALUES (?,?,?,?,?)",
+          [img.id, img.task_id, img.filename, filePath, img.created_at ?? new Date().toISOString()]
         );
       }
       await Promise.all([loadTodos(), loadReminders(), loadNotes(), loadDev()]);

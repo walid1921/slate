@@ -1,7 +1,8 @@
-import { writeTextFile, mkdir } from "@tauri-apps/plugin-fs";
+import { writeTextFile, mkdir, readFile } from "@tauri-apps/plugin-fs";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { getDb } from "./db";
 import { useSettingsStore } from "./settingsStore";
+import { bytesToBase64 } from "./images";
 
 export async function getBackupDir(): Promise<string> {
   return join(await appDataDir(), "backups");
@@ -11,7 +12,7 @@ export async function buildExportPayload(): Promise<string> {
   const db = await getDb();
   const [todos, reminders, notes, taskSessions, taskCategories, deletedCategories,
          ihkEntries, ihkModules, ihkWeeks, activity, devItems, devCategories, devSections,
-         taskImages] =
+         rawImages] =
     await Promise.all([
       db.select("SELECT * FROM todos"),
       db.select("SELECT * FROM reminders"),
@@ -26,8 +27,21 @@ export async function buildExportPayload(): Promise<string> {
       db.select("SELECT * FROM dev_items"),
       db.select("SELECT * FROM dev_categories"),
       db.select("SELECT * FROM dev_sections"),
-      db.select("SELECT * FROM task_images"),
+      db.select<{ id: number; task_id: number; filename: string; path: string; data: string; created_at: string }[]>(
+        "SELECT id, task_id, filename, path, data, created_at FROM task_images"
+      ),
     ]);
+
+  const taskImages = await Promise.all(rawImages.map(async img => {
+    let data = img.data;
+    if (img.path && !data) {
+      try {
+        data = bytesToBase64(await readFile(img.path));
+      } catch {}
+    }
+    return { id: img.id, task_id: img.task_id, filename: img.filename, data, created_at: img.created_at };
+  }));
+
   return JSON.stringify(
     { version: 3, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions,
       taskCategories, deletedCategories, ihkEntries, ihkModules, ihkWeeks, activity,

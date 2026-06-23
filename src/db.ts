@@ -171,10 +171,12 @@ export async function getDb(): Promise<Database> {
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       task_id    INTEGER NOT NULL,
       filename   TEXT    NOT NULL,
-      data       TEXT    NOT NULL,
+      data       TEXT    NOT NULL DEFAULT '',
+      path       TEXT    NOT NULL DEFAULT '',
       created_at TEXT    NOT NULL DEFAULT (datetime('now'))
     )
   `);
+  await _db.execute(`ALTER TABLE task_images ADD COLUMN path TEXT NOT NULL DEFAULT ''`).catch(() => {});
 
   // Seed default categories + items once
   const devSeeded = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'dev_seeded'`);

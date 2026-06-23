@@ -34,6 +34,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { open as openFileDialog } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { saveImageToDir, deleteImageFile, imageToDataUrl, migrateImagesToFilesystem } from "./images";
 import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
 import { useReminderStore } from "./reminderStore";
@@ -156,7 +157,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
   const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
-  const [taskImages, setTaskImages] = useState<{ id: number; filename: string; data: string }[]>([]);
+  const [taskImages, setTaskImages] = useState<{ id: number; filename: string; path: string; src: string }[]>([]);
   const [lightbox, setLightbox] = useState<{ filename: string; data: string } | null>(null);
   const descTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -178,20 +179,29 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   }, [desc]);
 
   useEffect(() => {
-    import("./db").then(({ getDb }) => getDb()).then(db =>
-      db.select<{ id: number; filename: string; data: string }[]>(
-        "SELECT id, filename, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
-      )
-    ).then(setTaskImages).catch(() => {});
+    import("./db").then(({ getDb }) => getDb()).then(async db => {
+      const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
+        "SELECT id, filename, path, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
+      );
+      const withSrc = await Promise.all(rows.map(async img => ({
+        id: img.id,
+        filename: img.filename,
+        path: img.path,
+        src: img.path
+          ? await imageToDataUrl(img.path, img.filename)
+          : `data:image/jpeg;base64,${img.data}`,
+      })));
+      setTaskImages(withSrc);
+    }).catch(() => {});
   }, [todo.id]);
 
   const uploadImage = async () => {
     const win = getCurrentWindow();
     await invoke("set_auto_hide", { enabled: false });
     await win.setAlwaysOnTop(false);
-    let path: string | string[] | null;
+    let pickedPath: string | string[] | null;
     try {
-      path = await openFileDialog({
+      pickedPath = await openFileDialog({
         filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }],
         multiple: false,
       });
@@ -199,27 +209,32 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       await win.setAlwaysOnTop(true);
       await invoke("set_auto_hide", { enabled: true });
     }
-    if (typeof path !== "string") return;
-    const bytes = await readFile(path);
+    if (typeof pickedPath !== "string") return;
+    const bytes = await readFile(pickedPath);
     if (bytes.length > 10 * 1024 * 1024) { alert("Image must be under 10 MB"); return; }
-    let binary = "";
-    for (let i = 0; i < bytes.length; i += 8192)
-      binary += String.fromCharCode(...(bytes.subarray(i, Math.min(i + 8192, bytes.length)) as unknown as number[]));
-    const base64 = btoa(binary);
-    const filename = path.split("/").pop() ?? "image";
+    const filename = pickedPath.split("/").pop() ?? "image";
+    const destPath = await saveImageToDir(bytes, filename, todo.id);
     const db = await import("./db").then(m => m.getDb());
     await db.execute(
-      "INSERT INTO task_images (task_id, filename, data) VALUES (?, ?, ?)",
-      [todo.id, filename, base64]
+      "INSERT INTO task_images (task_id, filename, path) VALUES (?, ?, ?)",
+      [todo.id, filename, destPath]
     );
-    const rows = await db.select<{ id: number; filename: string; data: string }[]>(
-      "SELECT id, filename, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
+    const rows = await db.select<{ id: number; filename: string; path: string; data: string }[]>(
+      "SELECT id, filename, path, data FROM task_images WHERE task_id = ? ORDER BY created_at ASC", [todo.id]
     );
-    setTaskImages(rows);
+    const withSrc = await Promise.all(rows.map(async img => ({
+      id: img.id,
+      filename: img.filename,
+      path: img.path,
+      src: img.path ? await imageToDataUrl(img.path, img.filename) : `data:image/jpeg;base64,${img.data}`,
+    })));
+    setTaskImages(withSrc);
   };
 
   const deleteImage = (id: number) => {
     askConfirm("Delete Image", "Are you sure you want to delete this image?", async () => {
+      const img = taskImages.find(i => i.id === id);
+      if (img?.path) await deleteImageFile(img.path);
       const db = await import("./db").then(m => m.getDb());
       await db.execute("DELETE FROM task_images WHERE id = ?", [id]);
       setTaskImages(imgs => imgs.filter(i => i.id !== id));
@@ -510,15 +525,11 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               </button>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {taskImages.map(img => {
-                  const ext = img.filename.split(".").pop()?.toLowerCase() ?? "png";
-                  const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "gif" ? "image/gif" : ext === "webp" ? "image/webp" : "image/png";
-                  const src = `data:${mime};base64,${img.data}`;
-                  return (
+                {taskImages.map(img => (
                     <div key={img.id} className="group relative" style={{ width: 72, height: 72 }}>
                       <img
-                        src={src}
-                        onClick={() => setLightbox({ filename: img.filename, data: src })}
+                        src={img.src}
+                        onClick={() => setLightbox({ filename: img.filename, data: img.src })}
                         className="w-full h-full object-cover rounded-lg cursor-pointer"
                         style={{ border: "1px solid var(--c-border)" }}
                       />
@@ -530,8 +541,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
                         <X size={8} className="text-white" />
                       </button>
                     </div>
-                  );
-                })}
+                ))}
                 <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
                   <ImagePlus size={16} />
                 </button>
@@ -1453,7 +1463,7 @@ export default function App() {
   // Load todos on mount + request notification permission early
   const { load: loadTimers } = useTimerStore();
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
-  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
+  useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); migrateImagesToFilesystem(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
   // Background notification checker — runs every 30s
   useEffect(() => {
