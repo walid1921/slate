@@ -543,19 +543,28 @@ function TaskDetail({ todo, onClose: _onClose }: { todo: Todo; onClose: () => vo
       {lightbox && (
         <>
           <div
-            className="fixed inset-0 z-[200] flex items-center justify-center"
-            style={{ background: "rgba(0,0,0,0.85)" }}
+            className="fixed inset-0 z-[200] flex flex-col"
+            style={{ background: "rgba(0,0,0,0.88)" }}
             onClick={() => setLightbox(null)}
           >
-            <img src={lightbox.data} className="rounded-lg object-contain" style={{ maxWidth: "calc(100vw - 80px)", maxHeight: "calc(100vh - 80px)", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }} />
+            <div className="flex justify-end px-3 py-2 shrink-0">
+              <button
+                onClick={e => { e.stopPropagation(); setLightbox(null); }}
+                className="flex items-center justify-center rounded-full text-white"
+                style={{ width: 28, height: 28, background: "rgba(255,255,255,0.18)" }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center px-4 pb-4 min-h-0">
+              <img
+                src={lightbox.data}
+                className="rounded-lg object-contain max-w-full max-h-full"
+                style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
           </div>
-          <button
-            onClick={() => setLightbox(null)}
-            className="fixed z-[201] flex items-center justify-center rounded-full text-white"
-            style={{ top: 12, right: 12, width: 32, height: 32, background: "rgba(255,255,255,0.25)", backdropFilter: "blur(4px)" }}
-          >
-            <X size={14} />
-          </button>
         </>
       )}
     </div>
