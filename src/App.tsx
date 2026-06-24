@@ -248,7 +248,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const PRIORITY_DOT_DETAIL: Record<Priority, string> = { none: "bg-t5", low: "bg-blue-400", medium: "bg-yellow-400", high: "bg-red-400" };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: "none" }}>
+    <div className="flex flex-1 min-h-0">
       {showDeadlinePicker && (
         <DateTimeModal
           title="Set deadline"
@@ -264,6 +264,118 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           }}
         />
       )}
+
+      {/* LEFT COLUMN: Notes, Images, Subtasks — always open */}
+      <div className="flex flex-col flex-1 min-w-0 overflow-y-auto border-r border-s" style={{ scrollbarWidth: "none" }}>
+        {/* Notes */}
+        <div className="flex flex-col shrink-0">
+          <div className="flex items-center gap-1.5 px-4 py-3">
+            <FileText size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
+          </div>
+          <div className="px-4 pb-4 border-t border-s">
+            <textarea
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              onBlur={saveDesc}
+              placeholder="Add notes…"
+              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-3"
+              style={{ minHeight: "120px" }}
+            />
+          </div>
+        </div>
+
+        {/* Images */}
+        <div className="flex flex-col border-t border-s shrink-0">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <Images size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Images</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {taskImages.length > 0 && <span className="text-[10px] text-t5 font-mono">{taskImages.length}</span>}
+              <button
+                onMouseDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); uploadImage(); }}
+                className="p-1 rounded text-t5 hover:text-blue-400 transition-colors hover:bg-s2"
+              >
+                <ImagePlus size={10} />
+              </button>
+            </div>
+          </div>
+          <div className="border-t border-s px-4 py-3">
+            {taskImages.length === 0 ? (
+              <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors">
+                <ImagePlus size={12} /><span>Upload a reference image…</span>
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {taskImages.map(img => (
+                    <div key={img.id} className="group relative" style={{ width: 72, height: 72 }}>
+                      <img
+                        src={img.src}
+                        onClick={() => setLightbox({ filename: img.filename, data: img.src })}
+                        className="w-full h-full object-cover rounded-lg cursor-pointer"
+                        style={{ border: "1px solid var(--c-border)" }}
+                      />
+                      <button
+                        onClick={() => deleteImage(img.id)}
+                        className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ background: "rgba(0,0,0,0.7)" }}
+                      >
+                        <X size={8} className="text-white" />
+                      </button>
+                    </div>
+                ))}
+                <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
+                  <ImagePlus size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Subtasks */}
+        <div className="flex flex-col border-t border-s shrink-0">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <CheckSquare size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {todo.subtasks.length > 0 && (
+                <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
+              )}
+              <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+                {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
+              </TipBtn>
+            </div>
+          </div>
+          <div className="border-t border-s">
+            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mx-4 mt-3 mb-1" />}
+            <div className="overflow-y-auto px-4" style={{ maxHeight: 240, scrollbarWidth: "thin" }}>
+              {todo.subtasks.map((sub) => (
+                <SubtaskRow
+                  key={sub.id}
+                  sub={sub}
+                  onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+                  onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+                  onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
+                />
+              ))}
+            </div>
+            <div className="px-4 pb-4">
+              <AddSubtaskRow onAdd={(text) => {
+                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
+              }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: meta */}
+      <div className="flex flex-col shrink-0 overflow-y-auto" style={{ width: 340, scrollbarWidth: "none" }}>
 
       {/* Created */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
@@ -430,122 +542,8 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         })()}
       </div>
       {editingLog && <TimeLogEditModal sessions={taskSessions} onClose={() => setEditingLog(false)} />}
-      {/* Notes */}
-      <div className="flex flex-col border-t border-s shrink-0">
-        <button onClick={() => toggleSection("notes")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
-          <div className="flex items-center gap-1.5">
-            <FileText size={10} className="text-t4 shrink-0" />
-            <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
-          </div>
-          {openSection === "notes" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-        </button>
-        {openSection === "notes" && (
-          <div className="px-4 pb-4 border-t border-s">
-            <textarea
-              value={desc}
-              onChange={(e) => setDesc(e.target.value)}
-              onBlur={saveDesc}
-              placeholder="Add notes…"
-              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-3"
-              style={{ minHeight: "80px" }}
-            />
-          </div>
-        )}
       </div>
-
-      {/* Subtasks */}
-      <div className="flex flex-col border-t border-s shrink-0">
-        <button onClick={() => toggleSection("subtasks")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
-          <div className="flex items-center gap-1.5">
-            <CheckSquare size={10} className="text-t4 shrink-0" />
-            <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {todo.subtasks.length > 0 && (
-              <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
-            )}
-            <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setShowSubtaskBar(todo.id, !todo.show_subtask_bar); }} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
-              {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
-            </TipBtn>
-            {openSection === "subtasks" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-          </div>
-        </button>
-        {openSection === "subtasks" && (
-          <div className="border-t border-s">
-            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mx-4 mt-3 mb-1" />}
-            <div className="overflow-y-auto px-4" style={{ maxHeight: 200, scrollbarWidth: "thin" }}>
-            {todo.subtasks.map((sub) => (
-              <SubtaskRow
-                key={sub.id}
-                sub={sub}
-                onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
-                onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
-                onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
-              />
-            ))}
-            </div>
-            <div className="px-4 pb-4">
-              <AddSubtaskRow onAdd={(text) => {
-                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
-              }} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Images */}
-      <div className="flex flex-col border-t border-s shrink-0">
-        <button onClick={() => toggleSection("images")} className="flex items-center justify-between px-4 py-3 hover:bg-s1 transition-colors text-left w-full">
-          <div className="flex items-center gap-1.5">
-            <Images size={10} className="text-t4 shrink-0" />
-            <span className="text-[10px] text-t4 uppercase tracking-wider">Images</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {taskImages.length > 0 && <span className="text-[10px] text-t5 font-mono">{taskImages.length}</span>}
-            <button
-              onMouseDown={e => e.stopPropagation()}
-              onClick={e => { e.stopPropagation(); uploadImage(); }}
-              className="p-1 rounded text-t5 hover:text-blue-400 transition-colors hover:bg-s2"
-            >
-              <ImagePlus size={10} />
-            </button>
-            {openSection === "images" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-          </div>
-        </button>
-        {openSection === "images" && (
-          <div className="border-t border-s px-4 py-3">
-            {taskImages.length === 0 ? (
-              <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors">
-                <ImagePlus size={12} /><span>Upload a reference image…</span>
-              </button>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {taskImages.map(img => (
-                    <div key={img.id} className="group relative" style={{ width: 72, height: 72 }}>
-                      <img
-                        src={img.src}
-                        onClick={() => setLightbox({ filename: img.filename, data: img.src })}
-                        className="w-full h-full object-cover rounded-lg cursor-pointer"
-                        style={{ border: "1px solid var(--c-border)" }}
-                      />
-                      <button
-                        onClick={() => deleteImage(img.id)}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ background: "rgba(0,0,0,0.7)" }}
-                      >
-                        <X size={8} className="text-white" />
-                      </button>
-                    </div>
-                ))}
-                <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
-                  <ImagePlus size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* /RIGHT COLUMN */}
 
       {/* Lightbox */}
       {lightbox && (
@@ -2103,7 +2101,7 @@ export default function App() {
       {/* Task detail modal */}
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 420, maxHeight: "82vh", border: "1px solid var(--c-border)" }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 880, height: "85vh", border: "1px solid var(--c-border)" }}>
             <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
