@@ -435,66 +435,58 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         </div>
       </div>
 
-      {/* Timer + Time Log — same row, divided */}
+      {/* Timer + Time Log — stacked */}
       <div className="flex flex-col border-t border-b border-s shrink-0">
-        <div className="grid shrink-0" style={{ gridTemplateColumns: "1fr 1fr" }}>
-          {/* Timer half */}
-          <div className="flex flex-col justify-between px-4 py-3 gap-1.5 border-r border-s" style={{ borderLeft: "none" }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Timer size={10} className="text-t4 shrink-0" />
-                <span className="text-[10px] text-t4 uppercase tracking-wider">Timer</span>
-              </div>
-              <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} side="bottom" onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
-                {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
-              </TipBtn>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                {activeSession ? (
-                  <>
-                    <TipBtn label="Pause" className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }} onClick={() => stop(todo.id)}><Pause size={9} /></TipBtn>
-                    <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onClick={() => finish(todo.id, setStatus)}><CheckCheck size={9} /></TipBtn>
-                  </>
-                ) : (
-                  <>
-                    <TipBtn label="Start timer" className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }} onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={9} /></TipBtn>
-                    {todo.status !== 'done' && (
-                      <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onClick={() => finish(todo.id, setStatus)}><CheckCheck size={9} /></TipBtn>
-                    )}
-                  </>
-                )}
-              </div>
-              {activeSession && <span className="text-[11px] text-t3 font-mono">{fmtElapsed(elapsed)}</span>}
-            </div>
+        {/* Timer — one row */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Timer size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">Timer</span>
           </div>
-          {/* Time log half */}
-          {taskSessions.length > 0 ? (
-            <button onClick={() => toggleSection("timelog")} className="flex flex-col justify-between px-4 py-3 gap-1.5 text-left hover:bg-s1 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Timer size={10} className="text-t4 shrink-0" />
-                  <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
-                </div>
-                {openSection === "timelog" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
-                <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
-                  <Pencil size={9} />
-                </TipBtn>
-              </div>
-            </button>
-          ) : (
-            <div className="flex flex-col justify-between px-3 py-2 gap-1.5">
-              <div className="flex items-center gap-1.5">
-                <Timer size={10} className="text-t4 shrink-0" />
-                <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
-              </div>
-              <span className="text-[11px] text-t5">No sessions</span>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            {activeSession && <span className="text-[11px] text-t3 font-mono">{fmtElapsed(elapsed)}</span>}
+            {activeSession ? (
+              <>
+                <TipBtn label="Pause" className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }} onClick={() => stop(todo.id)}><Pause size={9} /></TipBtn>
+                <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onClick={() => finish(todo.id, setStatus)}><CheckCheck size={9} /></TipBtn>
+              </>
+            ) : (
+              <>
+                <TipBtn label="Start timer" className="p-1 rounded transition-colors" style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "rgba(147,150,255,0.9)" }} onClick={() => { start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={9} /></TipBtn>
+                {todo.status !== 'done' && (
+                  <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onClick={() => finish(todo.id, setStatus)}><CheckCheck size={9} /></TipBtn>
+                )}
+              </>
+            )}
+            <TipBtn label={todo.show_timer ? "Hide on card" : "Show on card"} side="bottom" onClick={() => setShowTimer(todo.id, !todo.show_timer)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+              {todo.show_timer ? <EyeOff size={9} /> : <Eye size={9} />}
+            </TipBtn>
+          </div>
         </div>
+        {/* Time Log — one row, below Timer */}
+        {taskSessions.length > 0 ? (
+          <button onClick={() => toggleSection("timelog")} className="flex items-center justify-between px-4 py-3 text-left hover:bg-s1 transition-colors border-t border-s">
+            <div className="flex items-center gap-1.5">
+              <Timer size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
+              <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
+                <Pencil size={9} />
+              </TipBtn>
+              {openSection === "timelog" ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+            </div>
+          </button>
+        ) : (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-s">
+            <div className="flex items-center gap-1.5">
+              <Timer size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
+            </div>
+            <span className="text-[11px] text-t5">No sessions</span>
+          </div>
+        )}
         {/* Expanded log — full width below the row */}
         {openSection === "timelog" && taskSessions.length > 0 && (() => {
           const DAY_COLORS = [
