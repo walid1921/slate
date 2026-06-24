@@ -573,9 +573,15 @@ For each table, report one of: OK / missing in export / missing in import / sche
 
   return (
     <div className="overflow-y-auto flex-1 py-4 px-4 flex flex-col gap-4">
-      <div className="px-1 py-2 rounded-lg text-[11px] text-t4 leading-relaxed" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}>
-        <span className="text-t3 font-medium">To protect your data: </span>
-        enable Auto-backup below, and before any big app update hit <span className="text-t3">Export…</span> to save a copy to your Desktop or iCloud Drive manually.
+      <div className="px-1 py-2 rounded-lg text-[11px] text-t4 leading-relaxed flex flex-col gap-1.5" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}>
+        <div>
+          <span className="text-t3 font-medium">To protect your data: </span>
+          enable Auto-backup below, and before any big app update hit <span className="text-t3">Export…</span> to save a copy to your Desktop or iCloud Drive manually.
+        </div>
+        <div>
+          <span className="text-t3 font-medium">⚠ Uninstall warning: </span>
+          tools like <span className="text-t3">AppCleaner</span> will sweep <span className="font-mono text-t3">slate-db</span> AND <span className="font-mono text-t3">slate-db-dev</span> folders along with the app. Always Export to somewhere outside <span className="font-mono">~/Library/</span> before uninstalling.
+        </div>
       </div>
       <Section title="Backup">
         <SettingRow label="Auto-backup" hint="Saves a dated JSON to the app data folder once per day on launch">
