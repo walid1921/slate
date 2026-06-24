@@ -5,7 +5,7 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeTextFile, readTextFile, mkdir, writeFile, remove } from "@tauri-apps/plugin-fs";
-import { appDataDir, join } from "@tauri-apps/api/path";
+import { join } from "@tauri-apps/api/path";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { getDb } from "../db";
@@ -17,6 +17,7 @@ import { useDevStore } from "../devStore";
 import { useToastStore, showErrorToast } from "../toastStore";
 import { getBackupDir, buildExportPayload } from "../backup";
 import { getImagesDir } from "../images";
+import { getEnvDir } from "../env";
 
 const guideSections = [
   {
@@ -402,7 +403,7 @@ function DataTab() {
         const payload = await buildExportPayload();
         const bd = new Date();
         const backupDate = `${bd.getFullYear()}-${String(bd.getMonth()+1).padStart(2,"0")}-${String(bd.getDate()).padStart(2,"0")}-${String(bd.getHours()).padStart(2,"0")}-${String(bd.getMinutes()).padStart(2,"0")}`;
-        const dir = await appDataDir();
+        const dir = await getEnvDir();
         await writeTextFile(await join(dir, `slate-backup-${backupDate}.json`), payload);
       }
       const raw = await readTextFile(importFile);
@@ -544,7 +545,7 @@ function DataTab() {
   };
 
   const handleOpenDataFolder = async () => {
-    const dir = await appDataDir();
+    const dir = await getEnvDir();
     await revealItemInDir(dir);
   };
 

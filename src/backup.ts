@@ -1,11 +1,12 @@
 import { writeTextFile, mkdir, readFile } from "@tauri-apps/plugin-fs";
-import { appDataDir, join } from "@tauri-apps/api/path";
+import { join } from "@tauri-apps/api/path";
 import { getDb } from "./db";
 import { useSettingsStore } from "./settingsStore";
 import { bytesToBase64 } from "./images";
+import { getEnvDir } from "./env";
 
 export async function getBackupDir(): Promise<string> {
-  return join(await appDataDir(), "backups");
+  return join(await getEnvDir(), "backups");
 }
 
 export async function buildExportPayload(): Promise<string> {

@@ -1,10 +1,12 @@
 import Database from "@tauri-apps/plugin-sql";
+import { envName, getEnvDir } from "./env";
 
 let _db: Database | null = null;
 
 export async function getDb(): Promise<Database> {
   if (_db) return _db;
-  _db = await Database.load("sqlite:slate.db");
+  await getEnvDir();
+  _db = await Database.load(`sqlite:${envName}/slate.db`);
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS todos (

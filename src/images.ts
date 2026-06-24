@@ -1,8 +1,9 @@
 import { mkdir, readFile, writeFile, remove } from "@tauri-apps/plugin-fs";
-import { appDataDir, join } from "@tauri-apps/api/path";
+import { join } from "@tauri-apps/api/path";
+import { getEnvDir } from "./env";
 
 export async function getImagesDir(): Promise<string> {
-  return join(await appDataDir(), "images");
+  return join(await getEnvDir(), "images");
 }
 
 export function extToMime(filename: string): string {
