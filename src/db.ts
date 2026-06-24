@@ -5,8 +5,11 @@ let _db: Database | null = null;
 
 export async function getDb(): Promise<Database> {
   if (_db) return _db;
-  await getEnvDir();
-  _db = await Database.load(`sqlite:${envName}/slate.db`);
+  const envDir = await getEnvDir();
+  const dbPath = envName === "dev"
+    ? `sqlite:${envDir}/slate.db`
+    : `sqlite:slate.db`;
+  _db = await Database.load(dbPath);
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS todos (

@@ -36,6 +36,9 @@
     "fs:allow-write-file",
     "fs:allow-remove",
     "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "fs:allow-rename",
     "fs:scope-home-recursive",
     "opener:allow-reveal-item-in-dir",
     "core:path:default"
