@@ -440,7 +440,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2"
               style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: "var(--c-text-2)" }}
             >
-              <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
+              <span>{countdown?.overdue ? countdown.label : `${todo.due_date}${todo.due_time ? ` ${todo.due_time}` : ""}${countdown ? ` · ${countdown.label}` : ""}`}</span>
             </button>
           ) : (
             <button
