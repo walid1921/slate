@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff, FolderOpen } from "lucide-react";
+import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff, FolderOpen, Copy, Check } from "lucide-react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -548,6 +548,27 @@ function DataTab() {
     await revealItemInDir(dir);
   };
 
+  const [auditCopied, setAuditCopied] = useState(false);
+  const AUDIT_PROMPT = `Audit DB migrations and import/export completeness in this Slate app.
+
+Verify each of these end-to-end, table by table:
+
+1. Schema (src/db.ts): every table has CREATE TABLE IF NOT EXISTS, and every later-added column has a guarded ALTER TABLE … ADD COLUMN … .catch(() => {}) so existing-user upgrades don't error. Defaults exist for any NOT NULL columns added later. One-time data migrations are guarded by a meta flag so they don't re-run.
+
+2. Export (src/backup.ts → buildExportPayload): every table from db.ts appears in the SELECT list and in the JSON output. Filesystem-stored artifacts (e.g. images dir) are read and inlined as base64 in the JSON.
+
+3. Import (src/components/SettingsPage.tsx → handleImport): every table is DELETE'd before insert; each row is re-inserted with all columns the current schema expects; filesystem artifacts (images dir) are wiped and recreated from the export.
+
+4. Filesystem migration (src/images.ts → migrateImagesToFilesystem or similar): old base64 rows are converted to files and the DB row is updated; runs idempotently on startup.
+
+For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. Don't fix anything — just produce a findings list.`;
+
+  const handleCopyAuditPrompt = async () => {
+    await navigator.clipboard.writeText(AUDIT_PROMPT);
+    setAuditCopied(true);
+    setTimeout(() => setAuditCopied(false), 2000);
+  };
+
   return (
     <div className="overflow-y-auto flex-1 py-4 px-4 flex flex-col gap-4">
       <div className="px-1 py-2 rounded-lg text-[11px] text-t4 leading-relaxed" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}>
@@ -604,6 +625,19 @@ function DataTab() {
             style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
           >
             Open in Finder
+          </button>
+        </SettingRow>
+      </Section>
+
+      <Section title="Maintenance">
+        <SettingRow label="Migration audit prompt" hint="Copy a prompt you can paste into Claude to verify schema, export, and import stay in sync">
+          <button
+            onClick={handleCopyAuditPrompt}
+            className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            {auditCopied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+            <span>{auditCopied ? "Copied" : "Copy prompt"}</span>
           </button>
         </SettingRow>
       </Section>
