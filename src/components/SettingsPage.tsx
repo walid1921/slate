@@ -447,8 +447,8 @@ function DataTab() {
       }
       for (const r of data.reminders) {
         await db.execute(
-          "INSERT INTO reminders (id, text, remind_at, notified, created_at, deleted_at) VALUES (?,?,?,?,?,?)",
-          [r.id, r.text, r.remind_at, r.notified, r.created_at, r.deleted_at ?? null]
+          "INSERT INTO reminders (id, text, remind_at, notified, created_at, deleted_at, task_id) VALUES (?,?,?,?,?,?,?)",
+          [r.id, r.text, r.remind_at, r.notified, r.created_at, r.deleted_at ?? null, r.task_id ?? null]
         );
       }
       for (const n of data.notes) {

@@ -28,6 +28,7 @@ export async function getDb(): Promise<Database> {
   await _db.execute(`ALTER TABLE todos ADD COLUMN due_time            TEXT`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN deadline_notified   INTEGER NOT NULL DEFAULT 0`).catch(() => {});
   await _db.execute(`ALTER TABLE reminders ADD COLUMN deleted_at TEXT`).catch(() => {});
+  await _db.execute(`ALTER TABLE reminders ADD COLUMN task_id INTEGER`).catch(() => {});
   await _db.execute(`ALTER TABLE notes ADD COLUMN deleted_at TEXT`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN description TEXT NOT NULL DEFAULT ''`).catch(() => {});
   await _db.execute(`ALTER TABLE todos ADD COLUMN show_created_at INTEGER NOT NULL DEFAULT 0`).catch(() => {});
@@ -75,7 +76,8 @@ export async function getDb(): Promise<Database> {
       remind_at  TEXT    NOT NULL,
       notified   INTEGER NOT NULL DEFAULT 0,
       created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-      deleted_at TEXT
+      deleted_at TEXT,
+      task_id    INTEGER
     )
   `);
 

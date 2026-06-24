@@ -3,11 +3,12 @@ import { useReminderStore } from "../reminderStore";
 
 interface Props {
   initialText?: string;
+  taskId?: number | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function AddReminderModal({ initialText = "", onClose, onSaved }: Props) {
+export default function AddReminderModal({ initialText = "", taskId = null, onClose, onSaved }: Props) {
   const { add } = useReminderStore();
   const [text, setText] = useState(initialText);
   const [saving, setSaving] = useState(false);
@@ -29,7 +30,7 @@ export default function AddReminderModal({ initialText = "", onClose, onSaved }:
     if (!text.trim() || saving) return;
     setSaving(true);
     try {
-      await add(text.trim(), `${date}T${time}:00`);
+      await add(text.trim(), `${date}T${time}:00`, taskId);
       onSaved();
     } catch {
       setSaving(false);

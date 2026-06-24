@@ -10,6 +10,7 @@ export interface Reminder {
   remind_at: string;
   notified: boolean;
   created_at: string;
+  task_id: number | null;
 }
 
 interface ReminderState {
@@ -21,7 +22,7 @@ interface ReminderState {
   dismissAlert: () => void;
   load: () => Promise<void>;
   loadTrash: () => Promise<void>;
-  add: (text: string, remind_at: string) => Promise<void>;
+  add: (text: string, remind_at: string, task_id?: number | null) => Promise<void>;
   update: (id: number, text: string, remind_at: string) => Promise<void>;
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
@@ -43,7 +44,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     try {
       const db = await getDb();
       const rows = await db.select<Reminder[]>(
-        "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NULL ORDER BY remind_at ASC"
+        "SELECT id, text, remind_at, notified, created_at, task_id FROM reminders WHERE deleted_at IS NULL ORDER BY remind_at ASC"
       );
       set({ reminders: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
     } catch (e) {
@@ -55,17 +56,17 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   loadTrash: async () => {
     const db = await getDb();
     const rows = await db.select<Reminder[]>(
-      "SELECT id, text, remind_at, notified, created_at FROM reminders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+      "SELECT id, text, remind_at, notified, created_at, task_id FROM reminders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
     );
     set({ trash: rows.map((r) => ({ ...r, notified: Boolean(r.notified) })) });
   },
 
-  add: async (text, remind_at) => {
+  add: async (text, remind_at, task_id = null) => {
     try {
       const db = await getDb();
       await db.execute(
-        "INSERT INTO reminders (text, remind_at) VALUES (?, ?)",
-        [text, remind_at]
+        "INSERT INTO reminders (text, remind_at, task_id) VALUES (?, ?, ?)",
+        [text, remind_at, task_id]
       );
       logActivity();
       await get().load();

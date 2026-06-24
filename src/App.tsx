@@ -150,6 +150,8 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClose: () => void; askConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
   const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
+  const { reminders: allReminders, remove: removeReminder } = useReminderStore();
+  const taskReminders = allReminders.filter(r => r.task_id === todo.id);
   const taskSessions = sessions.filter(s => s.task_id === todo.id);
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
   const [elapsed, setElapsed] = useState(0);
@@ -253,7 +255,8 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
     <div className="flex flex-1 min-h-0">
       {showReminderModal && (
         <AddReminderModal
-          initialText={`Hi, don't forget to start this ticket: ${todo.text}`}
+          initialText={`⚠️ Ticket: ${todo.text}`}
+          taskId={todo.id}
           onClose={() => setShowReminderModal(false)}
           onSaved={() => setShowReminderModal(false)}
         />
@@ -445,17 +448,40 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       </div>
 
       {/* Reminder */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
-        <div className="flex items-center gap-1.5">
-          <Bell size={10} className="text-t4 shrink-0" />
-          <span className="text-[10px] text-t4 uppercase tracking-wider">Reminder</span>
+      <div className="flex flex-col border-t border-s shrink-0">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-1.5">
+            <Bell size={10} className="text-t4 shrink-0" />
+            <span className="text-[10px] text-t4 uppercase tracking-wider">
+              Reminder{taskReminders.length > 0 && <span className="text-t5 font-mono normal-case tracking-normal"> ({taskReminders.length})</span>}
+            </span>
+          </div>
+          <button
+            onClick={() => setShowReminderModal(true)}
+            className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors rounded px-1.5 py-0.5 hover:bg-s2"
+          >
+            <Plus size={10} /><span>Set reminder</span>
+          </button>
         </div>
-        <button
-          onClick={() => setShowReminderModal(true)}
-          className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors rounded px-1.5 py-0.5 hover:bg-s2"
-        >
-          <Plus size={10} /><span>Set reminder</span>
-        </button>
+        {taskReminders.length > 0 && (
+          <div className="flex flex-col px-4 pb-3 gap-1">
+            {taskReminders.map(r => {
+              const d = new Date(r.remind_at);
+              const fmt = d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+              return (
+                <div key={r.id} className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className={`truncate ${r.notified ? "text-t5 line-through" : "text-t3"}`}>{fmt}</span>
+                  <button
+                    onClick={() => askConfirm("Delete reminder?", `"${r.text}" will be deleted.`, () => removeReminder(r.id), "Delete", "bg-red-500 hover:bg-red-600 text-white")}
+                    className="text-t6 hover:text-red-400 transition-colors shrink-0"
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Timer + Time Log — stacked */}
