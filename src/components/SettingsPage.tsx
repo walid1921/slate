@@ -365,8 +365,9 @@ function DataTab() {
       const payload = await buildExportPayload();
       const d = new Date();
       const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      const defaultPath = await join(await getEnvDir(), `slate-${today}.json`);
       const filePath = await withDialogFocus(() =>
-        saveDialog({ defaultPath: `slate-${today}.json`, filters: [{ name: "JSON", extensions: ["json"] }] })
+        saveDialog({ defaultPath, filters: [{ name: "JSON", extensions: ["json"] }] })
       );
       if (!filePath) return;
       await writeTextFile(filePath, payload);
