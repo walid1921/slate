@@ -1194,12 +1194,24 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
 
-  const overdue = countdown?.overdue ?? false;
   const done = todo?.status === 'done';
-  const cardBorder = done ? "1px solid rgba(16,185,129,0.45)" : overdue ? "1px solid rgba(239,68,68,0.45)" : "1px solid rgba(59,130,246,0.35)";
-  const cardBg = done ? "rgba(16,185,129,0.07)" : overdue ? "rgba(239,68,68,0.07)" : "rgba(59,130,246,0.07)";
-  const headerBorder = done ? "1px solid rgba(16,185,129,0.2)" : overdue ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(59,130,246,0.15)";
-  const accentColor = done ? "rgba(52,211,153,0.9)" : overdue ? "rgba(248,113,113,0.9)" : "rgba(96,165,250,0.9)";
+  type Tone = "default" | "green" | "orange" | "red";
+  const tone: Tone = done
+    ? "green"
+    : countdown?.urgency === "overdue" || countdown?.urgency === "critical" ? "red"
+    : countdown?.urgency === "warning" ? "orange"
+    : countdown?.urgency === "normal" ? "green"
+    : "default";
+  const TONE: Record<Tone, { border: string; bg: string; headerBorder: string; accent: string }> = {
+    default: { border: "rgba(59,130,246,0.35)", bg: "rgba(59,130,246,0.07)", headerBorder: "rgba(59,130,246,0.15)", accent: "rgba(96,165,250,0.9)" },
+    green: { border: "rgba(16,185,129,0.45)", bg: "rgba(16,185,129,0.07)", headerBorder: "rgba(16,185,129,0.2)", accent: "rgba(52,211,153,0.9)" },
+    orange: { border: "rgba(251,191,36,0.45)", bg: "rgba(251,191,36,0.07)", headerBorder: "rgba(251,191,36,0.2)", accent: "rgba(251,191,36,0.9)" },
+    red: { border: "rgba(239,68,68,0.45)", bg: "rgba(239,68,68,0.07)", headerBorder: "rgba(239,68,68,0.2)", accent: "rgba(248,113,113,0.9)" },
+  };
+  const cardBorder = `1px solid ${TONE[tone].border}`;
+  const cardBg = TONE[tone].bg;
+  const headerBorder = `1px solid ${TONE[tone].headerBorder}`;
+  const accentColor = TONE[tone].accent;
 
   const catIcon = category?.icon ?? "zap";
 
