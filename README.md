@@ -175,6 +175,33 @@ npm run tauri dev
 npm run tauri build
 ```
 
+### Deploy (local)
+
+For day-to-day development on your own machine, `pnpm deploy` builds the app, replaces `/Applications/Slate.app` with the new build, and relaunches it — closest equivalent to a "push to production" for a desktop app.
+
+```bash
+pnpm deploy
+```
+
+Under the hood, `scripts/deploy.sh`:
+
+1. Runs `pnpm tauri build`
+2. Quits the running `Slate` (so SQLite checkpoints the WAL into `slate.db`)
+3. Snapshots the prod data folder to `~/Library/Application Support/slate-db.backup-<timestamp>/` for rollback
+4. Replaces `/Applications/Slate.app` with the new build
+5. Reopens it
+
+**Rolling back a bad deploy:**
+
+```bash
+rm -rf ~/Library/Application\ Support/slate-db
+mv ~/Library/Application\ Support/slate-db.backup-<timestamp> ~/Library/Application\ Support/slate-db
+```
+
+Snapshots accumulate — clean up old ones manually when you're confident a deploy is healthy.
+
+**Dev vs prod data isolation:** dev mode (`pnpm tauri dev`) writes to `~/Library/Application Support/slate-db-dev/`; the production app uses `~/Library/Application Support/slate-db/`. They never share a database, so daily development can't touch your real data.
+
 ---
 
 ## Project Structure
