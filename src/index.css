@@ -70,8 +70,11 @@
   border: 1px solid var(--c-border);
 }
 
-/* Border */
-.border-s { border-color: var(--c-border-subtle); }
+/* Border — color-only modifier (override Tailwind v4 inline-start width) */
+.border-s {
+  border-color: var(--c-border-subtle);
+  border-inline-start-width: 0;
+}
 
 /* Placeholder */
 .placeholder-themed::placeholder { color: var(--c-input-placeholder); }
