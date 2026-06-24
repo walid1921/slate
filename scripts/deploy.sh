@@ -22,6 +22,14 @@ if pgrep -x "Slate" > /dev/null; then
   done
 fi
 
+PROD_DATA="$HOME/Library/Application Support/slate-db"
+if [ -d "$PROD_DATA" ]; then
+  STAMP=$(date +%Y%m%d-%H%M%S)
+  SNAPSHOT="${PROD_DATA}.backup-${STAMP}"
+  echo "Snapshotting prod data to $(basename "$SNAPSHOT")..."
+  cp -R "$PROD_DATA" "$SNAPSHOT"
+fi
+
 echo "Installing to /Applications..."
 rm -rf "$DEST"
 cp -R "$BUILT_APP" "$DEST"
