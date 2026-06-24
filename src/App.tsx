@@ -431,16 +431,22 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           <span className="text-[10px] text-t4 uppercase tracking-wider">Deadline</span>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowDeadlinePicker(true)}
-            className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2"
-            style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: todo.due_date ? "var(--c-text-2)" : "var(--c-text-5)" }}
-          >
-            {todo.due_date
-              ? <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
-              : <span>Set deadline</span>
-            }
-          </button>
+          {todo.due_date ? (
+            <button
+              onClick={() => setShowDeadlinePicker(true)}
+              className="flex items-center gap-1.5 text-[11px] transition-colors hover:text-t1 rounded px-1.5 py-0.5 hover:bg-s2"
+              style={countdown?.overdue ? { color: "rgb(248,113,113)" } : { color: "var(--c-text-2)" }}
+            >
+              <span>{todo.due_date}{todo.due_time ? ` ${todo.due_time}` : ""}{countdown ? ` · ${countdown.label}` : ""}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowDeadlinePicker(true)}
+              className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors rounded px-1.5 py-0.5 hover:bg-s2"
+            >
+              <Plus size={10} /><span>Set deadline</span>
+            </button>
+          )}
           {todo.due_date && (
             <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors"><X size={10} /></button>
           )}
