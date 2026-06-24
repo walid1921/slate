@@ -1070,6 +1070,7 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
 
 
 const PRIORITY_COLOR: Record<Priority, string> = { none: "var(--c-text-5)", low: "rgb(96,165,250)", medium: "rgb(251,191,36)", high: "rgb(248,113,113)" };
+const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2, none: 3 };
 
 function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
   const { todos, categories } = useTodoStore();
@@ -1127,9 +1128,10 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
     setTimeout(() => searchInputRef.current?.focus(), 10);
   };
 
-  const filteredTodos = searchQuery.trim()
+  const filteredTodos = (searchQuery.trim()
     ? activeTodos.filter(t => t.text.toLowerCase().includes(searchQuery.toLowerCase()))
-    : activeTodos;
+    : activeTodos
+  ).slice().sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 
   const now = useNow(todo?.due_date ?? null, todo?.due_time ?? null);
   const countdown = todo?.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
@@ -1192,10 +1194,8 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 return (
                   <button key={t.id} onClick={() => selectTask(t.id)}
                     className="w-full text-left px-3 py-1.5 text-[11px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2">
-                    {tCat
-                      ? <IconDisplay name={tCat.icon ?? "folder"} size={10} style={{ color: `rgba(${tCat.color},0.7)`, flexShrink: 0 }} />
-                      : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
-                    }
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_COLOR[t.priority] }} />
+                    {tCat && <IconDisplay name={tCat.icon ?? "folder"} size={10} style={{ color: `rgba(${tCat.color},0.7)`, flexShrink: 0 }} />}
                     <span className="truncate">{t.text}</span>
                   </button>
                 );
