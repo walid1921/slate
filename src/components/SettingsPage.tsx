@@ -563,7 +563,9 @@ Verify each of these end-to-end, table by table:
 
 4. Filesystem migration (src/images.ts → migrateImagesToFilesystem or similar): old base64 rows are converted to files and the DB row is updated; runs idempotently on startup.
 
-For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. Don't fix anything — just produce a findings list.`;
+5. Env isolation (src/env.ts): getEnvDir() returns slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod. The prod path is mkdir'd if missing. The legacy slate-db/prod/ subfolder layout is migrated up one level (moves children to appDataDir root, removes prod/) only when no slate.db exists at the new location — idempotent. In db.ts, the SQL plugin is loaded with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db), and images.ts / backup.ts both route through getEnvDir().
+
+For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
 
   const handleCopyAuditPrompt = async () => {
     await navigator.clipboard.writeText(AUDIT_PROMPT);
