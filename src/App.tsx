@@ -266,14 +266,14 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       )}
 
       {/* LEFT COLUMN: Notes, Images, Subtasks — always open */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-y-auto border-r border-s" style={{ scrollbarWidth: "none" }}>
+      <div className="flex flex-col flex-1 min-w-0 overflow-y-auto overflow-x-hidden border-r border-s" style={{ scrollbarWidth: "none" }}>
         {/* Notes */}
         <div className="flex flex-col shrink-0">
           <div className="flex items-center gap-1.5 px-4 py-3">
             <FileText size={10} className="text-t4 shrink-0" />
             <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
           </div>
-          <div className="px-4 pb-4 border-t border-s">
+          <div className="px-4 pb-4">
             <textarea
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
@@ -303,7 +303,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               </button>
             </div>
           </div>
-          <div className="border-t border-s px-4 py-3">
+          <div className="px-4 pb-4">
             {taskImages.length === 0 ? (
               <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors">
                 <ImagePlus size={12} /><span>Upload a reference image…</span>
@@ -351,7 +351,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               </TipBtn>
             </div>
           </div>
-          <div className="border-t border-s">
+          <div>
             {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mx-4 mt-3 mb-1" />}
             <div className="overflow-y-auto px-4" style={{ maxHeight: 240, scrollbarWidth: "thin" }}>
               {todo.subtasks.map((sub) => (
@@ -375,10 +375,10 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       </div>
 
       {/* RIGHT COLUMN: meta */}
-      <div className="flex flex-col shrink-0 overflow-y-auto" style={{ width: 340, scrollbarWidth: "none" }}>
+      <div className="flex flex-col shrink-0 overflow-y-auto overflow-x-hidden" style={{ width: 340, scrollbarWidth: "none" }}>
 
       {/* Created */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <div className="flex items-center gap-1.5">
           <Clock size={10} className="text-t4 shrink-0" />
           <span className="text-[10px] text-t4 uppercase tracking-wider">Created</span>
@@ -436,7 +436,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       </div>
 
       {/* Timer + Time Log — stacked */}
-      <div className="flex flex-col border-t border-b border-s shrink-0">
+      <div className="flex flex-col border-t border-s shrink-0">
         {/* Timer — one row */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0">
           <div className="flex items-center gap-1.5">
