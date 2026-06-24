@@ -89,7 +89,8 @@ function buildDueDate(dueDate: string, dueTime: string | null): Date {
   return dueTime ? new Date(`${dueDate}T${dueTime}`) : new Date(`${dueDate}T23:59:59`);
 }
 
-function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { label: string; overdue: boolean } {
+type Urgency = "normal" | "warning" | "critical" | "overdue";
+function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { label: string; overdue: boolean; urgency: Urgency } {
   const target = buildDueDate(dueDate, dueTime);
   const diffMs = target.getTime() - now.getTime();
   const overdue = diffMs < 0;
@@ -101,17 +102,19 @@ function formatCountdown(dueDate: string, dueTime: string | null, now: Date): { 
     const d = target;
     const dateStr = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
     const timeStr = dueTime ? ` ${dueTime}` : "";
-    return { label: `overdue · ${dateStr}${timeStr}`, overdue: true };
+    return { label: `overdue · ${dateStr}${timeStr}`, overdue: true, urgency: "overdue" };
   }
-  if (months >= 2) return { label: `${months}mo`, overdue: false };
-  if (days >= 2) return { label: `${days}d`, overdue: false };
-  if (days === 1) return { label: "tomorrow", overdue: false };
+  const HOUR = 3600 * 1000;
+  const urgency: Urgency = diffMs < 2 * HOUR ? "critical" : diffMs < 24 * HOUR ? "warning" : "normal";
+  if (months >= 2) return { label: `${months}mo`, overdue: false, urgency };
+  if (days >= 2) return { label: `${days}d`, overdue: false, urgency };
+  if (days === 1) return { label: "tomorrow", overdue: false, urgency };
   const hours = Math.floor(totalSecs / 3600) % 24;
   const mins = Math.floor(totalSecs / 60) % 60;
   const secs = totalSecs % 60;
-  if (hours > 0) return { label: `${hours}h ${mins}m`, overdue: false };
-  if (mins > 0) return { label: `${mins}m ${secs}s`, overdue: false };
-  return { label: totalSecs <= 0 ? "now" : `${secs}s`, overdue: false };
+  if (hours > 0) return { label: `${hours}h ${mins}m`, overdue: false, urgency };
+  if (mins > 0) return { label: `${mins}m ${secs}s`, overdue: false, urgency };
+  return { label: totalSecs <= 0 ? "now" : `${secs}s`, overdue: false, urgency };
 }
 
 function useNow(dueDate: string | null, dueTime: string | null): Date {
@@ -1324,12 +1327,20 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
                 <CalendarDays size={9} />
                 {createdLabel}
               </span>
-              {countdown && (
-                <span className={`flex items-center gap-1 text-[9px] ml-auto ${countdown.overdue ? "text-red-400" : "text-t5"}`}>
-                  <Timer size={9} />
-                  {countdown.label}
-                </span>
-              )}
+              {countdown && (() => {
+                const urgencyColor: Record<Urgency, string> = {
+                  normal: "rgb(52,211,153)",
+                  warning: "rgb(251,191,36)",
+                  critical: "rgb(248,113,113)",
+                  overdue: "rgb(248,113,113)",
+                };
+                return (
+                  <span className="flex items-center gap-1 text-[9px] ml-auto" style={{ color: urgencyColor[countdown.urgency] }}>
+                    <Timer size={9} />
+                    {countdown.label}
+                  </span>
+                );
+              })()}
             </div>
 
             {/* Timer row */}
