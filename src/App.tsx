@@ -468,10 +468,9 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           <button onClick={() => toggleSection("timelog")} className="flex items-center justify-between px-4 py-3 text-left hover:bg-s1 transition-colors border-t border-s">
             <div className="flex items-center gap-1.5">
               <Timer size={10} className="text-t4 shrink-0" />
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Time log</span>
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Time log <span className="text-t3 font-mono normal-case tracking-normal">({fmtDuration(totalDurationMs(taskSessions))})</span></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-t3 font-mono">{fmtDuration(totalDurationMs(taskSessions))}</span>
               <TipBtn label="Edit log" onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); setEditingLog(true); }} className="p-0.5 rounded text-t5 hover:text-t2 transition-colors">
                 <Pencil size={9} />
               </TipBtn>
