@@ -29,6 +29,7 @@ import {
   Search,
   ImagePlus,
   Images,
+  Bell,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -154,6 +155,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
   const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
@@ -249,6 +251,13 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
 
   return (
     <div className="flex flex-1 min-h-0">
+      {showReminderModal && (
+        <AddReminderModal
+          initialText={`Hi, don't forget to start this ticket: ${todo.text}`}
+          onClose={() => setShowReminderModal(false)}
+          onSaved={() => setShowReminderModal(false)}
+        />
+      )}
       {showDeadlinePicker && (
         <DateTimeModal
           title="Set deadline"
@@ -433,6 +442,20 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
             <button onClick={() => setDeadline(todo.id, null, null)} className="text-t6 hover:text-red-400 transition-colors"><X size={10} /></button>
           )}
         </div>
+      </div>
+
+      {/* Reminder */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Bell size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Reminder</span>
+        </div>
+        <button
+          onClick={() => setShowReminderModal(true)}
+          className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors rounded px-1.5 py-0.5 hover:bg-s2"
+        >
+          <Plus size={10} /><span>Set reminder</span>
+        </button>
       </div>
 
       {/* Timer + Time Log — stacked */}
