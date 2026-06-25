@@ -8,6 +8,7 @@ export type ViewMode = "list" | "cards";
 export type Theme = "dark" | "light";
 export type TextSize = "small" | "normal" | "large";
 export type WindowMode = "default" | "compact";
+export type AiModel = "claude-haiku-4-5" | "claude-sonnet-4-6" | "claude-opus-4-8" | "claude-fable-5";
 
 export interface Settings {
   theme: Theme;
@@ -23,6 +24,8 @@ export interface Settings {
   windowMode: WindowMode;
   autoBackupEnabled: boolean;
   lastAutoBackup: string | null;
+  aiApiKey: string;
+  aiModel: AiModel;
 }
 
 interface SettingsState extends Settings {
@@ -44,6 +47,8 @@ const DEFAULTS: Settings = {
   windowMode: "default",
   autoBackupEnabled: false,
   lastAutoBackup: null,
+  aiApiKey: "",
+  aiModel: "claude-sonnet-4-6",
 };
 
 export const useSettingsStore = create<SettingsState>()(

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff, FolderOpen, Copy, Check } from "lucide-react";
+import { Lock, WifiOff, BarChartHorizontalBig, UserX, Database, Bell, ShieldOff, FolderOpen, Copy, Check, X } from "lucide-react";
 import logoWithBg from "../assets/logo-with-bg-light.png";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -347,7 +347,26 @@ function DataTab() {
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const showToast = useToastStore((s) => s.show);
-  const { autoBackupEnabled, lastAutoBackup, set } = useSettingsStore();
+  const { autoBackupEnabled, lastAutoBackup, aiApiKey, aiModel, set } = useSettingsStore();
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewResult, setReviewResult] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+
+  const handleRunReview = async () => {
+    setReviewLoading(true);
+    setReviewError(null);
+    setReviewResult(null);
+    try {
+      const { runWeeklyReview } = await import("../weeklyReview");
+      const md = await runWeeklyReview();
+      setReviewResult(md);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setReviewError(msg);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -651,6 +670,77 @@ For each table, report one of: OK / missing in export / missing in import / sche
           </button>
         </SettingRow>
       </Section>
+
+      <Section title="AI Assistant">
+        <SettingRow label="Anthropic API key" hint="Stored locally on this Mac. Never exported. Get one at console.anthropic.com.">
+          <input
+            type="password"
+            value={aiApiKey}
+            onChange={e => set("aiApiKey", e.target.value)}
+            placeholder="sk-ant-…"
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 200 }}
+          />
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Model" hint="Sonnet 4.6 is the recommended balance of quality and cost">
+          <select
+            value={aiModel}
+            onChange={e => set("aiModel", e.target.value as typeof aiModel)}
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            <option value="claude-haiku-4-5">Haiku 4.5 (fast, cheap)</option>
+            <option value="claude-sonnet-4-6">Sonnet 4.6 (recommended)</option>
+            <option value="claude-opus-4-8">Opus 4.8 (most capable)</option>
+            <option value="claude-fable-5">Fable 5 (premium)</option>
+          </select>
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Weekly review" hint="Generate a summary of your last 7 days using your AI key">
+          <button
+            onClick={handleRunReview}
+            disabled={reviewLoading || !aiApiKey.trim()}
+            className="px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors disabled:opacity-40"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            {reviewLoading ? "Running…" : "Run review"}
+          </button>
+        </SettingRow>
+        {reviewError && (
+          <div className="px-4 pb-3 text-[11px] text-red-400">{reviewError}</div>
+        )}
+      </Section>
+
+      {reviewResult !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setReviewResult(null); }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 640, maxHeight: "82vh", border: "1px solid var(--c-border)" }}>
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
+              <span className="text-[13px] font-semibold text-t1">Weekly Review</span>
+              <button onClick={() => setReviewResult(null)} className="text-t4 hover:text-t2 transition-colors"><X size={13} /></button>
+            </div>
+            <div className="overflow-y-auto px-5 py-4 text-[12px] text-t2 leading-relaxed whitespace-pre-wrap" style={{ fontFamily: "ui-sans-serif, system-ui" }}>
+              {reviewResult}
+            </div>
+            <div className="flex justify-end gap-2 px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+              <button
+                onClick={() => { navigator.clipboard.writeText(reviewResult); }}
+                className="px-3 py-1.5 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+                style={{ background: "var(--c-surface-2)" }}
+              >
+                Copy markdown
+              </button>
+              <button
+                onClick={() => setReviewResult(null)}
+                className="px-3 py-1.5 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+                style={{ background: "var(--c-surface-2)" }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {importConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
