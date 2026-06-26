@@ -145,23 +145,44 @@ ${dateRef()}`;
   return toolUse.input as GeneratedTask;
 }
 
-export async function breakDownTask(text: string, description: string): Promise<{ text: string }[]> {
+export async function breakDownTask(
+  text: string,
+  description: string,
+  existingSubtasks: { text: string; done: boolean }[] = [],
+  instruction?: string,
+): Promise<{ text: string }[]> {
   const { client, model } = getClient();
-  const system = `You break down tasks into 3-6 concrete subtasks. Each subtask:
+  const system = `You produce 3-6 concrete subtasks for a task. Each subtask:
 - Starts with a verb (Write, Test, Review, Setup, Deploy, etc.)
 - Is independently completable in under 2 hours
 - Is ordered in logical execution sequence
-- Avoids vague language ("understand X", "think about Y")`;
+- Avoids vague language ("understand X", "think about Y")
 
-  const userMessage = description.trim()
-    ? `Task: ${text}\n\nContext:\n${description}\n\nBreak this down into 3-6 actionable subtasks.`
-    : `Task: ${text}\n\nBreak this down into 3-6 actionable subtasks.`;
+When the user provides existing subtasks:
+- Subtasks marked [done] are completed work — KEEP them verbatim in your output unless they are clearly redundant.
+- Subtasks marked [todo] can be kept, refined for clarity, merged, split, or removed if no longer relevant.
+- Add new subtasks when needed.
+- When a user instruction is provided, follow it strictly — it overrides everything else.`;
+
+  const parts: string[] = [`Task: ${text}`];
+  if (description.trim()) parts.push(`Description:\n${description.trim()}`);
+  if (existingSubtasks.length > 0) {
+    parts.push("Existing subtasks:");
+    for (const s of existingSubtasks) parts.push(`- [${s.done ? "done" : "todo"}] ${s.text}`);
+  }
+  if (instruction && instruction.trim()) {
+    parts.push(`User instruction: ${instruction.trim()}`);
+  } else if (existingSubtasks.length > 0) {
+    parts.push("Refine and complete the breakdown — keep done items, improve or extend todo items as needed.");
+  } else {
+    parts.push("Break this down into 3-6 actionable subtasks.");
+  }
 
   const response = await client.messages.create({
     model,
     max_tokens: 1024,
     system,
-    messages: [{ role: "user", content: userMessage }],
+    messages: [{ role: "user", content: parts.join("\n\n") }],
     tools: [{ name: "emit_subtasks", description: "Emit the subtasks.", input_schema: SUBTASKS_SCHEMA }],
     tool_choice: { type: "tool", name: "emit_subtasks" },
   });

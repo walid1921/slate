@@ -45,6 +45,7 @@ import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import AITaskReviewModal from "./components/AITaskReviewModal";
+import AISubtasksModal from "./components/AISubtasksModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import IHKPage from "./components/IHKPage";
@@ -164,16 +165,22 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
+  const [showSubtasksAiModal, setShowSubtasksAiModal] = useState(false);
 
   const handleBreakdown = async () => {
     if (breakdownLoading) return;
+    // When subtasks already exist, open the refinement modal so the user can
+    // describe what to change before regenerating.
+    if (todo.subtasks.length > 0) {
+      setShowSubtasksAiModal(true);
+      return;
+    }
     setBreakdownLoading(true);
     try {
       const { breakDownTask } = await import("./taskAI");
       const generated = await breakDownTask(todo.text, todo.description);
-      const startId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-      const newSubs: SubTask[] = generated.map((g, i) => ({ id: startId + i, text: g.text, done: false }));
-      await setSubtasks(todo.id, [...todo.subtasks, ...newSubs]);
+      const newSubs: SubTask[] = generated.map((g, i) => ({ id: i + 1, text: g.text, done: false }));
+      await setSubtasks(todo.id, newSubs);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       useToastStore.getState().show("error", msg);
@@ -282,6 +289,18 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           taskId={todo.id}
           onClose={() => setShowReminderModal(false)}
           onSaved={() => setShowReminderModal(false)}
+        />
+      )}
+      {showSubtasksAiModal && (
+        <AISubtasksModal
+          taskText={todo.text}
+          taskDescription={todo.description}
+          existing={todo.subtasks}
+          onClose={() => setShowSubtasksAiModal(false)}
+          onApply={async (subs) => {
+            await setSubtasks(todo.id, subs);
+            setShowSubtasksAiModal(false);
+          }}
         />
       )}
       {showDeadlinePicker && (
