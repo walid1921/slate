@@ -1614,7 +1614,7 @@ export default function App() {
   useEffect(() => {
     let lastTickMs: number | null = null;
     const POLL_MS = 30_000;
-    const SLEEP_GAP_MS = 90_000; // gap > 90s between polls ⇒ system was asleep
+    const SLEEP_GAP_MS = 60_000; // gap > 60s between polls ⇒ system was asleep (2× polling interval)
     const tick = async () => {
       const now = Date.now();
       const prev = lastTickMs;
