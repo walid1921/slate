@@ -92,18 +92,6 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
             {error && <div className="text-[11px] text-red-400 mt-1">{error}</div>}
           </div>
 
-          {/* Existing subtasks reference */}
-          {existing.length > 0 && (
-            <div className="flex flex-col gap-1">
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Current ({existing.length})</span>
-              <div className="flex flex-col gap-0.5 px-3 py-2 rounded" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border-subtle)" }}>
-                {existing.map(s => (
-                  <span key={s.id} className={`text-[11px] ${s.done ? "text-t5 line-through" : "text-t3"}`}>{s.text}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Proposed subtasks (editable) */}
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
