@@ -1617,8 +1617,18 @@ export default function App() {
       toast: () => useToastStore.getState().show("success", "TEST PERSIST", { persistent: true }),
       ephemeralToast: () => useToastStore.getState().show("success", "TEST EPHEMERAL"),
       notify: () => notify("Slate test", "If you see this, notifications work"),
+      checkNotifyPermission: async () => {
+        const { isPermissionGranted, requestPermission } = await import("@tauri-apps/plugin-notification");
+        const granted = await isPermissionGranted();
+        console.log("[notify] isPermissionGranted:", granted);
+        if (!granted) {
+          console.log("[notify] requesting permission…");
+          const perm = await requestPermission();
+          console.log("[notify] requestPermission returned:", perm);
+        }
+      },
     };
-    console.log("[dev] window.__slateTest = { toast(), ephemeralToast(), notify() }");
+    console.log("[dev] window.__slateTest = { toast(), ephemeralToast(), notify(), checkNotifyPermission() }");
   }, []);
 
   // Idle detection + sleep detection: poll macOS for idle time while a timer is running
