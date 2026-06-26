@@ -8,35 +8,60 @@ export interface TaskSession {
   task_id: number;
   started_at: string;
   ended_at: string | null;
+  deducted_ms: number;
 }
 
 function nowIso(): string {
   return new Date().toISOString().slice(0, 19) + "Z";
 }
 
+function toIso(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 19) + "Z";
+}
+
 export type StartResult = "ok" | "blocked";
+export type IdleAction = "keep" | "subtract" | "stop";
+
+export interface IdleReview {
+  id: string;
+  sessionId: number;
+  taskId: number;
+  idleStartMs: number;
+  idleEndMs: number;
+  durationMs: number;
+  createdAt: number;
+}
 
 interface TimerStore {
   sessions: TaskSession[];
   blockedMsg: string | null;
   pendingTaskId: number | null;
+  idleReviews: IdleReview[];
+  currentIdleStartMs: number | null;
   clearBlockedMsg: () => void;
   load: () => Promise<void>;
   start: (taskId: number) => Promise<StartResult>;
   stop: (taskId: number) => Promise<void>;
   finish: (taskId: number, setStatus: (id: number, s: "done") => Promise<void>) => Promise<void>;
   runningTaskId: () => number | null;
+  runningSession: () => TaskSession | null;
   updateSession: (id: number, started_at: string, ended_at: string | null) => Promise<void>;
   deleteSession: (id: number) => Promise<void>;
+  observeIdle: (idleSeconds: number, thresholdSeconds: number) => void;
+  applyIdleAction: (reviewId: string, action: IdleAction) => Promise<void>;
+  dismissReview: (reviewId: string) => void;
 }
 
 export const useTimerStore = create<TimerStore>((set, get) => ({
   sessions: [],
   blockedMsg: null,
   pendingTaskId: null,
+  idleReviews: [],
+  currentIdleStartMs: null,
   clearBlockedMsg: () => set({ blockedMsg: null, pendingTaskId: null }),
 
   runningTaskId: () => get().sessions.find(s => !s.ended_at)?.task_id ?? null,
+  runningSession: () => get().sessions.find(s => !s.ended_at) ?? null,
 
   load: async () => {
     try {
@@ -44,7 +69,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
       // Cap any orphaned open sessions at started_at + 4 hours to prevent corrupt time logs
       const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
       const open = await db.select<TaskSession[]>(
-        "SELECT id, task_id, started_at, ended_at FROM task_sessions WHERE ended_at IS NULL"
+        "SELECT id, task_id, started_at, ended_at, deducted_ms FROM task_sessions WHERE ended_at IS NULL"
       );
       for (const s of open) {
         const elapsed = Date.now() - new Date(s.started_at).getTime();
@@ -54,9 +79,9 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
         }
       }
       const rows = await db.select<TaskSession[]>(
-        "SELECT id, task_id, started_at, ended_at FROM task_sessions ORDER BY started_at ASC"
+        "SELECT id, task_id, started_at, ended_at, deducted_ms FROM task_sessions ORDER BY started_at ASC"
       );
-      set({ sessions: rows });
+      set({ sessions: rows.map(r => ({ ...r, deducted_ms: r.deducted_ms ?? 0 })) });
     } catch (e) {
       console.error("load timer sessions failed:", e);
       showErrorToast("Failed to load timers");
@@ -80,6 +105,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
         [taskId, nowIso()]
       );
       logActivity();
+      set({ currentIdleStartMs: null });
       await get().load();
       return "ok";
     } catch (e) {
@@ -96,6 +122,7 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
         "UPDATE task_sessions SET ended_at = ? WHERE task_id = ? AND ended_at IS NULL",
         [nowIso(), taskId]
       );
+      set({ currentIdleStartMs: null });
       await get().load();
     } catch (e) {
       console.error("stop timer failed:", e);
@@ -133,12 +160,80 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
         [nowIso(), taskId]
       );
       logActivity();
+      set({ currentIdleStartMs: null });
       await get().load();
       await setStatus(taskId, "done");
     } catch (e) {
       console.error("finish timer failed:", e);
       showErrorToast("Couldn't finish task — please try again");
     }
+  },
+
+  observeIdle: (idleSeconds, thresholdSeconds) => {
+    const running = get().runningSession();
+    if (!running) {
+      if (get().currentIdleStartMs !== null) set({ currentIdleStartMs: null });
+      return;
+    }
+    const now = Date.now();
+    const idleStart = now - idleSeconds * 1000;
+    if (idleSeconds >= thresholdSeconds) {
+      // user is idle; record start if not already
+      if (get().currentIdleStartMs === null) {
+        set({ currentIdleStartMs: idleStart });
+      }
+    } else {
+      // user is active again; close out any open idle period
+      const start = get().currentIdleStartMs;
+      if (start !== null) {
+        const end = idleStart; // last activity time
+        const dur = end - start;
+        if (dur >= thresholdSeconds * 1000) {
+          const review: IdleReview = {
+            id: `${running.id}-${start}`,
+            sessionId: running.id,
+            taskId: running.task_id,
+            idleStartMs: start,
+            idleEndMs: end,
+            durationMs: dur,
+            createdAt: now,
+          };
+          // dedupe by id
+          const existing = get().idleReviews.find(r => r.id === review.id);
+          if (!existing) set({ idleReviews: [...get().idleReviews, review] });
+        }
+        set({ currentIdleStartMs: null });
+      }
+    }
+  },
+
+  applyIdleAction: async (reviewId, action) => {
+    const review = get().idleReviews.find(r => r.id === reviewId);
+    if (!review) return;
+    try {
+      const db = await getDb();
+      if (action === "subtract") {
+        await db.execute(
+          "UPDATE task_sessions SET deducted_ms = deducted_ms + ? WHERE id = ?",
+          [review.durationMs, review.sessionId]
+        );
+      } else if (action === "stop") {
+        await db.execute(
+          "UPDATE task_sessions SET ended_at = ? WHERE id = ?",
+          [toIso(review.idleStartMs), review.sessionId]
+        );
+      }
+      // "keep" → no-op
+      set({ idleReviews: get().idleReviews.filter(r => r.id !== reviewId) });
+      await get().load();
+    } catch (e) {
+      console.error("apply idle action failed:", e);
+      showErrorToast("Couldn't apply idle action");
+    }
+  },
+
+  dismissReview: (reviewId) => {
+    set({ idleReviews: get().idleReviews.filter(r => r.id !== reviewId) });
   },
 }));
 
@@ -164,7 +259,8 @@ export function fmtElapsed(ms: number): string {
 
 export function sessionDurationMs(s: TaskSession): number {
   const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now();
-  return end - new Date(s.started_at).getTime();
+  const raw = end - new Date(s.started_at).getTime();
+  return Math.max(0, raw - (s.deducted_ms ?? 0));
 }
 
 export function totalDurationMs(sessions: TaskSession[]): number {

@@ -38,12 +38,14 @@ export async function getDb(): Promise<Database> {
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS task_sessions (
-      id         INTEGER PRIMARY KEY AUTOINCREMENT,
-      task_id    INTEGER NOT NULL,
-      started_at TEXT    NOT NULL,
-      ended_at   TEXT
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id     INTEGER NOT NULL,
+      started_at  TEXT    NOT NULL,
+      ended_at    TEXT,
+      deducted_ms INTEGER NOT NULL DEFAULT 0
     )
   `);
+  await _db.execute(`ALTER TABLE task_sessions ADD COLUMN deducted_ms INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS task_categories (

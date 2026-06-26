@@ -347,7 +347,7 @@ function DataTab() {
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const showToast = useToastStore((s) => s.show);
-  const { autoBackupEnabled, lastAutoBackup, aiApiKey, aiModel, set } = useSettingsStore();
+  const { autoBackupEnabled, lastAutoBackup, aiApiKey, aiModel, idleThresholdMinutes, set } = useSettingsStore();
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -460,8 +460,8 @@ function DataTab() {
       }
       for (const s of (data.taskSessions ?? [])) {
         await db.execute(
-          "INSERT INTO task_sessions (id, task_id, started_at, ended_at) VALUES (?,?,?,?)",
-          [s.id, s.task_id, s.started_at, s.ended_at ?? null]
+          "INSERT INTO task_sessions (id, task_id, started_at, ended_at, deducted_ms) VALUES (?,?,?,?,?)",
+          [s.id, s.task_id, s.started_at, s.ended_at ?? null, s.deducted_ms ?? 0]
         );
       }
       for (const m of (data.ihkModules ?? [])) {
@@ -576,6 +576,8 @@ Verify each of these end-to-end, table by table:
 
 6. AI feature tables — verify the ihk_polished table (PRIMARY KEY week_key, no category column) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at. The one-time legacy-drop migration (gated by meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE.
 
+7. task_sessions has a new deducted_ms column (INTEGER NOT NULL DEFAULT 0) — verify the guarded ALTER, that load() / SELECT includes it, that sessionDurationMs subtracts it, and that handleImport re-inserts it (defaulting to 0 for legacy backups).
+
 For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
 
   const handleCopyAuditPrompt = async () => {
@@ -660,6 +662,23 @@ For each table, report one of: OK / missing in export / missing in import / sche
             {auditCopied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
             <span>{auditCopied ? "Copied" : "Copy prompt"}</span>
           </button>
+        </SettingRow>
+      </Section>
+
+      <Section title="Timer">
+        <SettingRow label="Idle threshold" hint="When your timer is running and you go idle for this long, you'll be asked whether to keep, subtract, or stop the session at that point.">
+          <select
+            value={idleThresholdMinutes}
+            onChange={e => set("idleThresholdMinutes", Number(e.target.value))}
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            <option value={3}>3 min</option>
+            <option value={5}>5 min</option>
+            <option value={10}>10 min</option>
+            <option value={15}>15 min</option>
+            <option value={30}>30 min</option>
+          </select>
         </SettingRow>
       </Section>
 

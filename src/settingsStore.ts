@@ -26,6 +26,7 @@ export interface Settings {
   lastAutoBackup: string | null;
   aiApiKey: string;
   aiModel: AiModel;
+  idleThresholdMinutes: number;
 }
 
 interface SettingsState extends Settings {
@@ -49,6 +50,7 @@ const DEFAULTS: Settings = {
   lastAutoBackup: null,
   aiApiKey: "",
   aiModel: "claude-sonnet-4-6",
+  idleThresholdMinutes: 5,
 };
 
 export const useSettingsStore = create<SettingsState>()(

@@ -46,6 +46,7 @@ import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import AITaskReviewModal from "./components/AITaskReviewModal";
 import AISubtasksModal from "./components/AISubtasksModal";
+import IdleBanner from "./components/IdleBanner";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import IHKPage from "./components/IHKPage";
@@ -1608,6 +1609,26 @@ export default function App() {
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); migrateImagesToFilesystem(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
+  // Idle detection: poll macOS for idle time while a timer is running
+  useEffect(() => {
+    const tick = async () => {
+      try {
+        const timer = useTimerStore.getState();
+        if (!timer.runningSession()) return;
+        const idleSeconds = await invoke<number>("get_idle_seconds");
+        const threshold = Math.max(60, (useSettingsStore.getState().idleThresholdMinutes || 5) * 60);
+        timer.observeIdle(idleSeconds, threshold);
+      } catch (e) {
+        console.warn("idle poll failed", e);
+      }
+    };
+    void tick();
+    const id = setInterval(tick, 30_000);
+    const onFocus = () => { void tick(); };
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(id); window.removeEventListener("focus", onFocus); };
+  }, []);
+
   // Background notification checker — runs every 30s
   useEffect(() => {
     checkDue();
@@ -2063,6 +2084,11 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* Idle reviews (one banner per pending review) */}
+            {useTimerStore(s => s.idleReviews).map(r => (
+              <IdleBanner key={r.id} review={r} />
+            ))}
 
             {/* Activity heatmap + focus */}
             <div className="flex gap-3 items-stretch" style={{ minHeight: 230 }}>

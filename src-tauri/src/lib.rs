@@ -11,6 +11,25 @@ fn set_auto_hide(state: tauri::State<AutoHide>, enabled: bool) {
     state.0.store(enabled, Ordering::Relaxed);
 }
 
+#[cfg(target_os = "macos")]
+#[link(name = "ApplicationServices", kind = "framework")]
+extern "C" {
+    fn CGEventSourceSecondsSinceLastEventType(state_id: i32, event_type: u32) -> f64;
+}
+
+#[tauri::command]
+fn get_idle_seconds() -> f64 {
+    #[cfg(target_os = "macos")]
+    {
+        // kCGEventSourceStateCombinedSessionState = 0; kCGAnyInputEventType = u32::MAX
+        unsafe { CGEventSourceSecondsSinceLastEventType(0, u32::MAX) }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        0.0
+    }
+}
+
 #[tauri::command]
 fn close_quick_note(app: AppHandle) {
     if let Some(window) = app.get_webview_window("quick-note") {
@@ -112,7 +131,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide, show_reminder_overlay, close_reminder_overlay])
+        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide, show_reminder_overlay, close_reminder_overlay, get_idle_seconds])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
