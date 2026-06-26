@@ -1518,6 +1518,7 @@ export default function App() {
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
+  const idleReviews = useTimerStore(s => s.idleReviews);
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -2101,7 +2102,7 @@ export default function App() {
             </div>
 
             {/* Idle reviews (one banner per pending review) */}
-            {useTimerStore(s => s.idleReviews).map(r => (
+            {idleReviews.map(r => (
               <IdleBanner key={r.id} review={r} />
             ))}
 
