@@ -1631,6 +1631,16 @@ export default function App() {
           useToastStore.getState().show("success", `Timer stopped — Mac was asleep ${sleptMin} min`);
           return;
         }
+        // Detect display sleep / screen lock — auto-stop at the last input moment
+        const displayAsleep = await invoke<boolean>("is_display_asleep");
+        if (displayAsleep) {
+          const idleSec = await invoke<number>("get_idle_seconds");
+          const stopMs = now - idleSec * 1000;
+          const stopIso = new Date(stopMs).toISOString().slice(0, 19) + "Z";
+          await timer.updateSession(running.id, running.started_at, stopIso);
+          useToastStore.getState().show("success", "Timer stopped — display went to sleep");
+          return;
+        }
         const idleSeconds = await invoke<number>("get_idle_seconds");
         const threshold = Math.max(60, (useSettingsStore.getState().idleThresholdMinutes || 5) * 60);
         timer.observeIdle(idleSeconds, threshold);

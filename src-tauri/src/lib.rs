@@ -15,6 +15,8 @@ fn set_auto_hide(state: tauri::State<AutoHide>, enabled: bool) {
 #[link(name = "ApplicationServices", kind = "framework")]
 extern "C" {
     fn CGEventSourceSecondsSinceLastEventType(state_id: i32, event_type: u32) -> f64;
+    fn CGMainDisplayID() -> u32;
+    fn CGDisplayIsAsleep(display: u32) -> i32;
 }
 
 #[tauri::command]
@@ -27,6 +29,18 @@ fn get_idle_seconds() -> f64 {
     #[cfg(not(target_os = "macos"))]
     {
         0.0
+    }
+}
+
+#[tauri::command]
+fn is_display_asleep() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        unsafe { CGDisplayIsAsleep(CGMainDisplayID()) != 0 }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
     }
 }
 
@@ -131,7 +145,7 @@ pub fn run() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide, show_reminder_overlay, close_reminder_overlay, get_idle_seconds])
+        .invoke_handler(tauri::generate_handler![close_quick_note, set_auto_hide, show_reminder_overlay, close_reminder_overlay, get_idle_seconds, is_display_asleep])
         .setup(|app| {
             let shortcut = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
             app.global_shortcut().register(shortcut)?;
