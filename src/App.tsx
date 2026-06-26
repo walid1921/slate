@@ -403,7 +403,13 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
             </div>
           </div>
           <div>
-            <div className="overflow-y-auto px-4" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
+            <div className="px-4 pt-1 pb-2">
+              <AddSubtaskRow onAdd={(text) => {
+                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+                setSubtasks(todo.id, [{ id: newId, text, done: false }, ...todo.subtasks]);
+              }} />
+            </div>
+            <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
               {todo.subtasks.map((sub) => (
                 <SubtaskRow
                   key={sub.id}
@@ -413,12 +419,6 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
                   onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
                 />
               ))}
-            </div>
-            <div className="px-4 pb-4">
-              <AddSubtaskRow onAdd={(text) => {
-                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
-              }} />
             </div>
           </div>
         </div>
