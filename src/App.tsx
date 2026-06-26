@@ -765,13 +765,13 @@ function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggl
 
   return (
     <div
-      className="flex items-center gap-2 py-0.5 min-h-[22px]"
+      className="flex items-start gap-2 py-0.5 min-h-[22px]"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
         onClick={onToggle}
-        className={`w-3.5 h-3.5 rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
+        className={`w-3.5 h-3.5 mt-[2px] rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
         style={sub.done ? { background: "rgba(16,185,129,0.15)" } : {}}
       >
         {sub.done && <Check size={8} className="text-emerald-400" />}
