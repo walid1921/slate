@@ -47,6 +47,7 @@ import AddReminderModal from "./components/AddReminderModal";
 import AITaskReviewModal from "./components/AITaskReviewModal";
 import AISubtasksModal from "./components/AISubtasksModal";
 import IdleBanner from "./components/IdleBanner";
+import AutoStopOverlay from "./components/AutoStopOverlay";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import IHKPage from "./components/IHKPage";
@@ -1643,10 +1644,17 @@ export default function App() {
           const stopIso = new Date(prev).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
           const sleptMin = Math.round((now - prev) / 60000);
-          const msg = `Mac was asleep ${sleptMin} min`;
-          console.log("[idle] system sleep detected — stopping timer.", msg);
-          await notify("Slate · Timer stopped", msg);
-          useToastStore.getState().show("success", `Timer stopped — ${msg}`, { persistent: true });
+          const detail = `Mac was asleep ${sleptMin} min`;
+          console.log("[idle] system sleep detected — stopping timer.", detail);
+          await notify("Slate · Timer stopped", detail);
+          const sessionMs = prev - new Date(running.started_at).getTime();
+          timer.setAutoStop({
+            taskId: running.task_id,
+            reason: "system_sleep",
+            sessionDurationMs: Math.max(0, sessionMs),
+            stoppedAtMs: prev,
+            detail,
+          });
           return;
         }
         // Detect display sleep / screen lock — auto-stop at the last input moment
@@ -1654,10 +1662,17 @@ export default function App() {
           const stopMs = now - idleProbe * 1000;
           const stopIso = new Date(stopMs).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
-          const msg = "Display went to sleep";
-          console.log("[idle] display sleep detected — stopping timer.", msg);
-          await notify("Slate · Timer stopped", msg);
-          useToastStore.getState().show("success", `Timer stopped — ${msg}`, { persistent: true });
+          const detail = "Display went to sleep";
+          console.log("[idle] display sleep detected — stopping timer.", detail);
+          await notify("Slate · Timer stopped", detail);
+          const sessionMs = stopMs - new Date(running.started_at).getTime();
+          timer.setAutoStop({
+            taskId: running.task_id,
+            reason: "display_sleep",
+            sessionDurationMs: Math.max(0, sessionMs),
+            stoppedAtMs: stopMs,
+            detail,
+          });
           return;
         }
         const threshold = Math.max(60, (useSettingsStore.getState().idleThresholdMinutes || 5) * 60);
@@ -2841,8 +2856,15 @@ export default function App() {
     <GlobalTooltip />
     <TimerBlockedBanner />
     <GlobalToast />
+    <GlobalAutoStop />
     </div>
   );
+}
+
+function GlobalAutoStop() {
+  const autoStopEvent = useTimerStore(s => s.autoStopEvent);
+  if (!autoStopEvent) return null;
+  return <AutoStopOverlay event={autoStopEvent} />;
 }
 
 function GlobalToast() {

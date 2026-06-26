@@ -32,13 +32,25 @@ export interface IdleReview {
   createdAt: number;
 }
 
+export type AutoStopReason = "display_sleep" | "system_sleep";
+
+export interface AutoStopEvent {
+  taskId: number;
+  reason: AutoStopReason;
+  sessionDurationMs: number;
+  stoppedAtMs: number;
+  detail: string; // human-readable, e.g. "Mac was asleep 23 min"
+}
+
 interface TimerStore {
   sessions: TaskSession[];
   blockedMsg: string | null;
   pendingTaskId: number | null;
   idleReviews: IdleReview[];
   currentIdleStartMs: number | null;
+  autoStopEvent: AutoStopEvent | null;
   clearBlockedMsg: () => void;
+  setAutoStop: (e: AutoStopEvent | null) => void;
   load: () => Promise<void>;
   start: (taskId: number) => Promise<StartResult>;
   stop: (taskId: number) => Promise<void>;
@@ -58,7 +70,9 @@ export const useTimerStore = create<TimerStore>((set, get) => ({
   pendingTaskId: null,
   idleReviews: [],
   currentIdleStartMs: null,
+  autoStopEvent: null,
   clearBlockedMsg: () => set({ blockedMsg: null, pendingTaskId: null }),
+  setAutoStop: (e) => set({ autoStopEvent: e }),
 
   runningTaskId: () => get().sessions.find(s => !s.ended_at)?.task_id ?? null,
   runningSession: () => get().sessions.find(s => !s.ended_at) ?? null,
