@@ -373,6 +373,50 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           </div>
         </div>
 
+        {/* Subtasks */}
+        <div className="flex flex-col border-t border-s shrink-0">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <CheckSquare size={10} className="text-t4 shrink-0" />
+                <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
+              </div>
+              {todo.subtasks.length > 0 && (
+                <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[180px]">
+                  <SubtaskProgressBar subtasks={todo.subtasks} showCount />
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
+                <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
+              </TipBtn>
+              <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+                {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
+              </TipBtn>
+            </div>
+          </div>
+          <div>
+            <div className="overflow-y-auto px-4" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
+              {todo.subtasks.map((sub) => (
+                <SubtaskRow
+                  key={sub.id}
+                  sub={sub}
+                  onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+                  onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+                  onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
+                />
+              ))}
+            </div>
+            <div className="px-4 pb-4">
+              <AddSubtaskRow onAdd={(text) => {
+                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
+              }} />
+            </div>
+          </div>
+        </div>
+
         {/* Images */}
         <div className="flex flex-col border-t border-s shrink-0">
           <div className="flex items-center justify-between px-4 py-3">
@@ -420,47 +464,6 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
                 </button>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Subtasks */}
-        <div className="flex flex-col border-t border-s shrink-0">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-1.5">
-              <CheckSquare size={10} className="text-t4 shrink-0" />
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {todo.subtasks.length > 0 && (
-                <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
-              )}
-              <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
-                <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
-              </TipBtn>
-              <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
-                {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
-              </TipBtn>
-            </div>
-          </div>
-          <div>
-            {todo.subtasks.length > 0 && <SubtaskProgressBar subtasks={todo.subtasks} className="mx-4 mt-3 mb-1" />}
-            <div className="overflow-y-auto px-4" style={{ maxHeight: 240, scrollbarWidth: "thin" }}>
-              {todo.subtasks.map((sub) => (
-                <SubtaskRow
-                  key={sub.id}
-                  sub={sub}
-                  onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
-                  onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
-                  onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
-                />
-              ))}
-            </div>
-            <div className="px-4 pb-4">
-              <AddSubtaskRow onAdd={(text) => {
-                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-                setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
-              }} />
-            </div>
           </div>
         </div>
       </div>
@@ -2413,7 +2416,7 @@ export default function App() {
       {/* Task detail modal */}
       {selectedTodo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }} onMouseDown={e => { if (e.target === e.currentTarget) setSelectedTodoId(null); }}>
-          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 880, height: "85vh", border: "1px solid var(--c-border)" }}>
+          <div className="dropdown rounded-xl shadow-2xl flex flex-col" style={{ width: 880, height: "88vh", border: "1px solid var(--c-border)" }}>
             <div className="flex items-center gap-2 px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>
               <TaskTitleInput todo={selectedTodo} />
               <button onClick={() => setSelectedTodoId(null)} className="text-t4 hover:text-t2 transition-colors shrink-0"><X size={13} /></button>
