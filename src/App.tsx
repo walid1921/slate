@@ -166,6 +166,26 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [showSubtasksAiModal, setShowSubtasksAiModal] = useState(false);
+  const [descGenLoading, setDescGenLoading] = useState(false);
+
+  const handleGenerateDescription = async () => {
+    if (descGenLoading || desc.trim().length > 0) return;
+    setDescGenLoading(true);
+    try {
+      const { generateTaskDescription } = await import("./taskAI");
+      const generated = await generateTaskDescription(
+        todo.text,
+        todo.subtasks.map(s => ({ text: s.text, done: s.done })),
+      );
+      setDesc(generated);
+      setDescription(todo.id, generated);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      useToastStore.getState().show("error", msg);
+    } finally {
+      setDescGenLoading(false);
+    }
+  };
 
   const handleBreakdown = async () => {
     if (breakdownLoading) return;
@@ -323,9 +343,21 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       <div className="flex flex-col flex-1 min-w-0 overflow-y-auto overflow-x-hidden border-r border-s" style={{ scrollbarWidth: "none" }}>
         {/* Notes */}
         <div className="flex flex-col shrink-0">
-          <div className="flex items-center gap-1.5 px-4 py-3">
-            <FileText size={10} className="text-t4 shrink-0" />
-            <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <FileText size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
+            </div>
+            {desc.trim().length === 0 && (
+              <TipBtn
+                label={descGenLoading ? "Generating…" : "Generate description (AI)"}
+                side="bottom"
+                onClick={handleGenerateDescription}
+                className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
+              >
+                <Sparkles size={10} className={descGenLoading ? "animate-pulse text-indigo-400" : ""} />
+              </TipBtn>
+            )}
           </div>
           <div className="px-4 pb-4">
             <textarea

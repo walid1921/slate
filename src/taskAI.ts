@@ -72,6 +72,14 @@ const SUBTASKS_SCHEMA = {
   required: ["subtasks"],
 };
 
+const DESCRIPTION_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    description: { type: "string", description: "1-3 sentence markdown description for the task." },
+  },
+  required: ["description"],
+};
+
 const DEADLINE_PRIORITY_SCHEMA = {
   type: "object" as const,
   properties: {
@@ -143,6 +151,39 @@ ${dateRef()}`;
   const toolUse = response.content.find(b => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return a task.");
   return toolUse.input as GeneratedTask;
+}
+
+export async function generateTaskDescription(
+  text: string,
+  existingSubtasks: { text: string; done: boolean }[] = [],
+): Promise<string> {
+  const { client, model } = getClient();
+  const system = `You write short task descriptions in markdown.
+- 1-3 sentences total
+- Explain WHAT the task is and WHY it matters
+- Concrete and specific — no generic productivity advice or filler
+- Markdown allowed (bold, lists, inline code) but keep it minimal
+- Do not restate the title verbatim — add context the title doesn't already convey`;
+
+  const parts: string[] = [`Task title: ${text}`];
+  if (existingSubtasks.length > 0) {
+    parts.push("Existing subtasks (for context, do not enumerate):");
+    for (const s of existingSubtasks) parts.push(`- ${s.text}`);
+  }
+  parts.push("Write a short markdown description for this task.");
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 512,
+    system,
+    messages: [{ role: "user", content: parts.join("\n\n") }],
+    tools: [{ name: "emit_description", description: "Emit the description.", input_schema: DESCRIPTION_SCHEMA }],
+    tool_choice: { type: "tool", name: "emit_description" },
+  });
+
+  const toolUse = response.content.find(b => b.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return a description.");
+  return (toolUse.input as { description: string }).description;
 }
 
 export async function breakDownTask(
