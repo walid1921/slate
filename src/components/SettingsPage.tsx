@@ -192,8 +192,9 @@ function Divider() {
 }
 
 function GeneralTab() {
-  const { theme, textSize, windowMode, set } = useSettingsStore();
+  const { theme, textSize, windowMode, aiApiKey, aiModel, idleThresholdMinutes, set } = useSettingsStore();
   const [loginEnabled, setLoginEnabled] = useState(false);
+  const [auditCopied, setAuditCopied] = useState(false);
 
   useEffect(() => {
     isEnabled().then(setLoginEnabled).catch(() => {});
@@ -202,6 +203,32 @@ function GeneralTab() {
   const toggleLogin = async (v: boolean) => {
     if (v) await enable(); else await disable();
     setLoginEnabled(v);
+  };
+
+  const AUDIT_PROMPT = `Audit DB migrations and import/export completeness in this Slate app.
+
+Verify each of these end-to-end, table by table:
+
+1. Schema (src/db.ts): every table has CREATE TABLE IF NOT EXISTS, and every later-added column has a guarded ALTER TABLE … ADD COLUMN … .catch(() => {}) so existing-user upgrades don't error. Defaults exist for any NOT NULL columns added later. One-time data migrations are guarded by a meta flag so they don't re-run.
+
+2. Export (src/backup.ts → buildExportPayload): every table from db.ts appears in the SELECT list and in the JSON output. Filesystem-stored artifacts (e.g. images dir) are read and inlined as base64 in the JSON.
+
+3. Import (src/components/SettingsPage.tsx → handleImport): every table is DELETE'd before insert; each row is re-inserted with all columns the current schema expects; filesystem artifacts (images dir) are wiped and recreated from the export.
+
+4. Filesystem migration (src/images.ts → migrateImagesToFilesystem or similar): old base64 rows are converted to files and the DB row is updated; runs idempotently on startup.
+
+5. Env isolation (src/env.ts): getEnvDir() returns slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod. The prod path is mkdir'd if missing. The legacy slate-db/prod/ subfolder layout is migrated up one level (moves children to appDataDir root, removes prod/) only when no slate.db exists at the new location — idempotent. In db.ts, the SQL plugin is loaded with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db), and images.ts / backup.ts both route through getEnvDir().
+
+6. AI feature tables — verify the ihk_polished table (PRIMARY KEY week_key, no category column) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at. The one-time legacy-drop migration (gated by meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE.
+
+7. task_sessions has a new deducted_ms column (INTEGER NOT NULL DEFAULT 0) — verify the guarded ALTER, that load() / SELECT includes it, that sessionDurationMs subtracts it, and that handleImport re-inserts it (defaulting to 0 for legacy backups).
+
+For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
+
+  const handleCopyAuditPrompt = async () => {
+    await navigator.clipboard.writeText(AUDIT_PROMPT);
+    setAuditCopied(true);
+    setTimeout(() => setAuditCopied(false), 2000);
   };
 
   return (
@@ -296,6 +323,63 @@ function GeneralTab() {
         </SettingRow>
       </Section>
 
+      <Section title="Timer">
+        <SettingRow label="Idle threshold" hint="When your timer is running and you go idle for this long, you'll be asked whether to keep, subtract, or stop the session at that point.">
+          <select
+            value={idleThresholdMinutes}
+            onChange={e => set("idleThresholdMinutes", Number(e.target.value))}
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            <option value={3}>3 min</option>
+            <option value={5}>5 min</option>
+            <option value={10}>10 min</option>
+            <option value={15}>15 min</option>
+            <option value={30}>30 min</option>
+          </select>
+        </SettingRow>
+      </Section>
+
+      <Section title="AI Assistant">
+        <SettingRow label="Anthropic API key" hint="Stored locally on this Mac. Never exported. Get one at console.anthropic.com.">
+          <input
+            type="password"
+            value={aiApiKey}
+            onChange={e => set("aiApiKey", e.target.value)}
+            placeholder="sk-ant-…"
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 200 }}
+          />
+        </SettingRow>
+        <Divider />
+        <SettingRow label="Model" hint="Sonnet 4.6 is the recommended balance of quality and cost">
+          <select
+            value={aiModel}
+            onChange={e => set("aiModel", e.target.value as typeof aiModel)}
+            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            <option value="claude-haiku-4-5">Haiku 4.5 (fast, cheap)</option>
+            <option value="claude-sonnet-4-6">Sonnet 4.6 (recommended)</option>
+            <option value="claude-opus-4-8">Opus 4.8 (most capable)</option>
+            <option value="claude-fable-5">Fable 5 (premium)</option>
+          </select>
+        </SettingRow>
+      </Section>
+
+      <Section title="Maintenance">
+        <SettingRow label="Migration audit prompt" hint="Copy a prompt you can paste into Claude to verify schema, export, and import stay in sync">
+          <button
+            onClick={handleCopyAuditPrompt}
+            className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
+            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+          >
+            {auditCopied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
+            <span>{auditCopied ? "Copied" : "Copy prompt"}</span>
+          </button>
+        </SettingRow>
+      </Section>
+
     </div>
   );
 }
@@ -347,7 +431,7 @@ function DataTab() {
   const [importFile, setImportFile] = useState<string | null>(null);
   const [importConfirm, setImportConfirm] = useState(false);
   const showToast = useToastStore((s) => s.show);
-  const { autoBackupEnabled, lastAutoBackup, aiApiKey, aiModel, idleThresholdMinutes, set } = useSettingsStore();
+  const { autoBackupEnabled, lastAutoBackup, set } = useSettingsStore();
 
   const withDialogFocus = async <T,>(fn: () => Promise<T>): Promise<T> => {
     const win = getCurrentWindow();
@@ -559,33 +643,6 @@ function DataTab() {
     await revealItemInDir(dir);
   };
 
-  const [auditCopied, setAuditCopied] = useState(false);
-  const AUDIT_PROMPT = `Audit DB migrations and import/export completeness in this Slate app.
-
-Verify each of these end-to-end, table by table:
-
-1. Schema (src/db.ts): every table has CREATE TABLE IF NOT EXISTS, and every later-added column has a guarded ALTER TABLE … ADD COLUMN … .catch(() => {}) so existing-user upgrades don't error. Defaults exist for any NOT NULL columns added later. One-time data migrations are guarded by a meta flag so they don't re-run.
-
-2. Export (src/backup.ts → buildExportPayload): every table from db.ts appears in the SELECT list and in the JSON output. Filesystem-stored artifacts (e.g. images dir) are read and inlined as base64 in the JSON.
-
-3. Import (src/components/SettingsPage.tsx → handleImport): every table is DELETE'd before insert; each row is re-inserted with all columns the current schema expects; filesystem artifacts (images dir) are wiped and recreated from the export.
-
-4. Filesystem migration (src/images.ts → migrateImagesToFilesystem or similar): old base64 rows are converted to files and the DB row is updated; runs idempotently on startup.
-
-5. Env isolation (src/env.ts): getEnvDir() returns slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod. The prod path is mkdir'd if missing. The legacy slate-db/prod/ subfolder layout is migrated up one level (moves children to appDataDir root, removes prod/) only when no slate.db exists at the new location — idempotent. In db.ts, the SQL plugin is loaded with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db), and images.ts / backup.ts both route through getEnvDir().
-
-6. AI feature tables — verify the ihk_polished table (PRIMARY KEY week_key, no category column) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at. The one-time legacy-drop migration (gated by meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE.
-
-7. task_sessions has a new deducted_ms column (INTEGER NOT NULL DEFAULT 0) — verify the guarded ALTER, that load() / SELECT includes it, that sessionDurationMs subtracts it, and that handleImport re-inserts it (defaulting to 0 for legacy backups).
-
-For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
-
-  const handleCopyAuditPrompt = async () => {
-    await navigator.clipboard.writeText(AUDIT_PROMPT);
-    setAuditCopied(true);
-    setTimeout(() => setAuditCopied(false), 2000);
-  };
-
   return (
     <div className="overflow-y-auto flex-1 py-4 px-4 flex flex-col gap-4">
       <div className="px-1 py-2 rounded-lg text-[11px] text-t4 leading-relaxed flex flex-col gap-1.5" style={{ background: "var(--c-surface-1)", border: "1px solid var(--c-border)" }}>
@@ -649,63 +706,6 @@ For each table, report one of: OK / missing in export / missing in import / sche
           >
             Open in Finder
           </button>
-        </SettingRow>
-      </Section>
-
-      <Section title="Maintenance">
-        <SettingRow label="Migration audit prompt" hint="Copy a prompt you can paste into Claude to verify schema, export, and import stay in sync">
-          <button
-            onClick={handleCopyAuditPrompt}
-            className="flex items-center gap-1.5 px-3 py-1 rounded text-[11px] text-t2 hover:text-t1 transition-colors"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          >
-            {auditCopied ? <Check size={11} className="text-green-400" /> : <Copy size={11} />}
-            <span>{auditCopied ? "Copied" : "Copy prompt"}</span>
-          </button>
-        </SettingRow>
-      </Section>
-
-      <Section title="Timer">
-        <SettingRow label="Idle threshold" hint="When your timer is running and you go idle for this long, you'll be asked whether to keep, subtract, or stop the session at that point.">
-          <select
-            value={idleThresholdMinutes}
-            onChange={e => set("idleThresholdMinutes", Number(e.target.value))}
-            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          >
-            <option value={3}>3 min</option>
-            <option value={5}>5 min</option>
-            <option value={10}>10 min</option>
-            <option value={15}>15 min</option>
-            <option value={30}>30 min</option>
-          </select>
-        </SettingRow>
-      </Section>
-
-      <Section title="AI Assistant">
-        <SettingRow label="Anthropic API key" hint="Stored locally on this Mac. Never exported. Get one at console.anthropic.com.">
-          <input
-            type="password"
-            value={aiApiKey}
-            onChange={e => set("aiApiKey", e.target.value)}
-            placeholder="sk-ant-…"
-            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)", width: 200 }}
-          />
-        </SettingRow>
-        <Divider />
-        <SettingRow label="Model" hint="Sonnet 4.6 is the recommended balance of quality and cost">
-          <select
-            value={aiModel}
-            onChange={e => set("aiModel", e.target.value as typeof aiModel)}
-            className="px-2 py-1 rounded text-[11px] text-t2 outline-none"
-            style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-          >
-            <option value="claude-haiku-4-5">Haiku 4.5 (fast, cheap)</option>
-            <option value="claude-sonnet-4-6">Sonnet 4.6 (recommended)</option>
-            <option value="claude-opus-4-8">Opus 4.8 (most capable)</option>
-            <option value="claude-fable-5">Fable 5 (premium)</option>
-          </select>
         </SettingRow>
       </Section>
 
