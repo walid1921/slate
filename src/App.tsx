@@ -1609,12 +1609,27 @@ export default function App() {
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); migrateImagesToFilesystem(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
-  // Idle detection: poll macOS for idle time while a timer is running
+  // Idle detection + sleep detection: poll macOS for idle time while a timer is running
   useEffect(() => {
+    let lastTickMs: number | null = null;
+    const POLL_MS = 30_000;
+    const SLEEP_GAP_MS = 90_000; // gap > 90s between polls ⇒ system was asleep
     const tick = async () => {
+      const now = Date.now();
+      const prev = lastTickMs;
+      lastTickMs = now;
       try {
         const timer = useTimerStore.getState();
-        if (!timer.runningSession()) return;
+        const running = timer.runningSession();
+        if (!running) return;
+        // Detect system sleep — auto-stop at the last known active moment
+        if (prev !== null && now - prev > SLEEP_GAP_MS) {
+          const stopIso = new Date(prev).toISOString().slice(0, 19) + "Z";
+          await timer.updateSession(running.id, running.started_at, stopIso);
+          const sleptMin = Math.round((now - prev) / 60000);
+          useToastStore.getState().show("success", `Timer stopped — Mac was asleep ${sleptMin} min`);
+          return;
+        }
         const idleSeconds = await invoke<number>("get_idle_seconds");
         const threshold = Math.max(60, (useSettingsStore.getState().idleThresholdMinutes || 5) * 60);
         timer.observeIdle(idleSeconds, threshold);
@@ -1623,7 +1638,7 @@ export default function App() {
       }
     };
     void tick();
-    const id = setInterval(tick, 30_000);
+    const id = setInterval(tick, POLL_MS);
     const onFocus = () => { void tick(); };
     window.addEventListener("focus", onFocus);
     return () => { clearInterval(id); window.removeEventListener("focus", onFocus); };
