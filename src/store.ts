@@ -77,7 +77,7 @@ interface State {
   reorderCategories: (ids: number[]) => Promise<void>;
   checkDueTodos: () => Promise<void>;
   loadTrash: () => Promise<void>;
-  add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null, category_id?: number, description?: string) => Promise<void>;
+  add: (text: string, priority?: Priority, due_date?: string | null, due_time?: string | null, category_id?: number, description?: string) => Promise<number | undefined>;
   toggle: (id: number) => Promise<void>;
   remove: (id: number) => Promise<void>;
   restore: (id: number) => Promise<void>;
@@ -227,19 +227,21 @@ export const useTodoStore = create<State>((set, get) => ({
 
   add: async (text, priority = "none", due_date = null, due_time = null, category_id = 1, description = "") => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed) return undefined;
     try {
       const db = await getDb();
       await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
-      await db.execute(
+      const result = await db.execute(
         "INSERT INTO todos (text, priority, due_date, due_time, position, category_id, description) VALUES (?, ?, ?, ?, 0, ?, ?)",
         [trimmed, priority, due_date, due_time, category_id, description]
       );
       logActivity();
       await get().load();
+      return result.lastInsertId;
     } catch (e) {
       console.error("add todo failed:", e);
       showErrorToast("Couldn't save task — please try again");
+      return undefined;
     }
   },
 

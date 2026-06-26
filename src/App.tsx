@@ -30,6 +30,7 @@ import {
   ImagePlus,
   Images,
   Bell,
+  Sparkles,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -43,6 +44,7 @@ import { useNotesStore } from "./notesStore";
 import { initNotifications } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
+import AITaskReviewModal from "./components/AITaskReviewModal";
 import RemindersPage from "./components/RemindersPage";
 import NotesPage from "./components/NotesPage";
 import IHKPage from "./components/IHKPage";
@@ -1461,6 +1463,12 @@ export default function App() {
   const [addTaskMenuOpen, setAddTaskMenuOpen] = useState(false);
   const addTaskBtnRef = useRef<HTMLButtonElement>(null);
   const [pendingModal, setPendingModal] = useState<{ type: "task" | "reminder"; text: string } | null>(null);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiTaskPreview, setAiTaskPreview] = useState<import("./taskAI").GeneratedTask | null>(null);
+  const aiInputRef = useRef<HTMLTextAreaElement>(null);
   const [cmdIdx, setCmdIdx] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ title: string; message: string; onConfirm: () => void; confirmLabel?: string; confirmClassName?: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1606,6 +1614,38 @@ export default function App() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
+
+  const enterAiMode = useCallback(() => {
+    setAiMode(true);
+    setAiPrompt("");
+    setAiError(null);
+    setTimeout(() => aiInputRef.current?.focus(), 30);
+  }, []);
+
+  const exitAiMode = useCallback(() => {
+    setAiMode(false);
+    setAiPrompt("");
+    setAiError(null);
+    setAiLoading(false);
+    setTimeout(() => inputRef.current?.focus(), 30);
+  }, []);
+
+  const runAiGenerate = useCallback(async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt || aiLoading) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const { generateTaskFromPrompt } = await import("./taskAI");
+      const activeCat = useTodoStore.getState().categories.find(c => c.id === activeCategoryId);
+      const generated = await generateTaskFromPrompt(prompt, activeCat?.name ?? "General");
+      setAiTaskPreview(generated);
+    } catch (e: unknown) {
+      setAiError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiPrompt, aiLoading]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1802,30 +1842,81 @@ export default function App() {
             className="flex items-center gap-3 px-5 shrink-0 border-b transition-colors"
             style={{
               height: 48,
-              borderBottomColor: inputFocused ? "rgba(180,180,190,0.35)" : "var(--c-border-subtle)",
-              boxShadow: inputFocused ? "0 1px 0 0 rgba(180,180,190,0.1)" : "none",
+              borderBottomColor: (inputFocused || aiMode) ? "rgba(180,180,190,0.35)" : "var(--c-border-subtle)",
+              boxShadow: (inputFocused || aiMode) ? "0 1px 0 0 rgba(180,180,190,0.1)" : "none",
             }}
           >
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputVal}
-              onChange={(e) => { setInputVal(e.target.value); setQuery(e.target.value); setCmdIdx(0); }}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="Add task · /tm deadline · /rm reminder…"
-              className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
-            />
-            {inputVal && (
-              <button
-                onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
-                className="text-t4 hover:text-t2 transition-colors shrink-0"
-              >
-                <X size={11} />
-              </button>
+            {aiMode ? (
+              <>
+                <Sparkles size={13} className="text-indigo-400 shrink-0" />
+                <textarea
+                  ref={aiInputRef}
+                  value={aiPrompt}
+                  onChange={e => setAiPrompt(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAiGenerate(); }
+                    else if (e.key === "Escape") { e.preventDefault(); exitAiMode(); }
+                  }}
+                  placeholder={aiLoading ? "Generating…" : "Describe what you want to do — I'll fill in a task for you"}
+                  disabled={aiLoading}
+                  rows={1}
+                  className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none resize-none py-2 disabled:opacity-50"
+                />
+                {aiLoading ? (
+                  <span className="text-[11px] text-t4 shrink-0">Generating…</span>
+                ) : (
+                  <>
+                    <button
+                      onClick={runAiGenerate}
+                      disabled={!aiPrompt.trim()}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-40 shrink-0"
+                    >
+                      Generate
+                    </button>
+                    <button
+                      onClick={exitAiMode}
+                      className="text-t4 hover:text-t2 transition-colors shrink-0"
+                    >
+                      <X size={11} />
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputVal}
+                  onChange={(e) => { setInputVal(e.target.value); setQuery(e.target.value); setCmdIdx(0); }}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  placeholder="Add task · /tm deadline · /rm reminder…"
+                  className="flex-1 bg-transparent text-t1 placeholder-themed text-sm outline-none"
+                />
+                {inputVal && (
+                  <button
+                    onClick={() => { setInputVal(""); setQuery(""); inputRef.current?.focus(); }}
+                    className="text-t4 hover:text-t2 transition-colors shrink-0"
+                  >
+                    <X size={11} />
+                  </button>
+                )}
+                <TipBtn
+                  label="AI prompt → task"
+                  side="bottom"
+                  onClick={enterAiMode}
+                  className="text-t4 hover:text-indigo-400 transition-colors shrink-0"
+                >
+                  <Sparkles size={13} />
+                </TipBtn>
+              </>
             )}
           </div>
+          {aiMode && aiError && (
+            <div className="px-5 py-2 text-[11px] text-red-400 shrink-0" style={{ borderBottom: "1px solid var(--c-border-subtle)" }}>{aiError}</div>
+          )}
 
           {showModulePicker && (
             <div className="absolute left-0 right-0 z-50 py-1" style={{ top: 48, background: "rgba(20,20,24,0.55)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--c-border-subtle)" }}>
@@ -2566,6 +2657,15 @@ export default function App() {
             setPendingModal(null);
             navigate("reminders");
           }}
+        />
+      )}
+
+      {aiTaskPreview && (
+        <AITaskReviewModal
+          task={aiTaskPreview}
+          defaultCategoryId={activeCategoryId}
+          onClose={() => { setAiTaskPreview(null); exitAiMode(); }}
+          onCreated={() => { setAiTaskPreview(null); exitAiMode(); navigate("todos"); }}
         />
       )}
 
