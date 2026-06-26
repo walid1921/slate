@@ -556,10 +556,15 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
                 onOpenPolish={() => setPolishModal({
                   weekKey: key,
                   weekLabel: fmtWeekRange(year, kw),
-                  entriesByCategory: IHK_CATEGORIES.map((catName, catIdx) => ({
-                    categoryName: catName,
-                    entries: wEntries.filter(e => e.category === catIdx).map(e => ({ date: e.date, text: e.text })),
-                  })),
+                  entriesByCategory: IHK_CATEGORIES.map((catName, catIdx) => {
+                    const catEntries = wEntries.filter(e => e.category === catIdx).map(e => ({ date: e.date, text: e.text }));
+                    // Always append a daily stand-up entry to Betrieb when the week has any work
+                    if (catIdx === 0 && catEntries.length > 0) {
+                      const lastDate = catEntries[catEntries.length - 1].date;
+                      catEntries.push({ date: lastDate, text: "Teilnahme an täglichen Stand-ups" });
+                    }
+                    return { categoryName: catName, entries: catEntries };
+                  }),
                 })}
                 onDeletePolish={() => deletePolish(key)}
               />
