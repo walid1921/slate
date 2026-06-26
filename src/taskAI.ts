@@ -189,27 +189,39 @@ const DEV_ITEMS_SCHEMA = {
 };
 
 export async function generateDevChecklistItems(
-  sectionName: string,
+  pageName: string,
   categoryName: string,
   existingItemTexts: string[],
   instruction: string,
 ): Promise<GeneratedDevItem[]> {
   const { client, model } = getClient();
-  const system = `You generate items for a software-engineering checklist.
+  const system = `You generate items for a software-engineering checklist organized by Page → Category.
 
+CONTEXT RULES (critical — items must fit BOTH the Page and the Category):
+- The Page often names a specific platform, framework, or product scope. When it does, every item must be tailored to that ecosystem's conventions, file structure, vocabulary, and best practices. Use the actual technology names — not generic placeholders.
+  Examples:
+  * Page "Shopware" + Category "Frontend" → Twig templates, theme inheritance, JS plugin classes, storefront vs admin (Vue), webpack entries
+  * Page "Shopware" + Category "Backend" → DAL entities, Service decoration, event subscribers, scheduled tasks
+  * Page "Odoo" + Category "Backend" → models inheriting models.Model, ORM (_inherit, related, compute), security/ir.model.access.csv, manifest version pinning
+  * Page "Odoo" + Category "Frontend" → OWL components, XML views inheritance via xpath, QWeb templates, web client assets
+  * Page "Magento" + Category "Backend" → DI configuration, plugins (around/before/after), repositories, declarative schema
+  * Page "WordPress" + Category "Security" → nonces, capability checks, sanitize/escape, REST permission_callback
+  * Page "General" + any category → platform-agnostic best practices that apply broadly
+- The Category narrows the topic (Design, Frontend, Backend, Database, Security, DevOps, Testing, Performance, Accessibility, SEO, etc.).
+- The Existing items list shows what's already covered — never duplicate (case-insensitive substring or paraphrase counts as a duplicate).
+
+OUTPUT RULES:
 - Items are imperative or noun-phrase, under 80 chars, concrete and actionable.
 - Each item has a 1-2 sentence description explaining what to check and why it matters.
 - Priority: high = critical/blocking quality, medium = important best practice, low = nice-to-have.
-- Do NOT duplicate items already in the list (case-insensitive substring or near-paraphrase counts as duplicate).
-- Match the topic of the section + category. Don't drift.
 - Follow the user's instruction strictly — quantity, focus, depth.`;
 
   const parts: string[] = [
-    `Section: ${sectionName}`,
+    `Page: ${pageName}`,
     `Category: ${categoryName}`,
   ];
   if (existingItemTexts.length > 0) {
-    parts.push(`Already in the list (DO NOT duplicate):\n${existingItemTexts.map(t => `- ${t}`).join("\n")}`);
+    parts.push(`Already in the list (DO NOT duplicate any of these):\n${existingItemTexts.map(t => `- ${t}`).join("\n")}`);
   }
   parts.push(`Instruction: ${instruction.trim()}`);
 
