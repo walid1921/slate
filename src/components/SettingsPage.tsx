@@ -344,7 +344,7 @@ For each table, report one of: OK / missing in export / missing in import / sche
           </p>
           <ol className="list-decimal pl-4 flex flex-col gap-1.5">
             <li>
-              <span className="text-t3 font-medium">You stay logged in but stop using the Mac.</span> When you've been idle longer than the threshold above, a yellow banner appears on Home with three choices: <span className="text-t3">Keep</span> the time, <span className="text-t3">Subtract</span> the idle minutes, or <span className="text-t3">Stop</span> the session at the moment you went idle.
+              <span className="text-t3 font-medium">You stay logged in but stop using the Mac.</span> When you've been idle longer than the threshold above, a blur overlay appears across the app with three choices: <span className="text-t3">Keep</span> the time, <span className="text-t3">Subtract</span> the idle minutes, or <span className="text-t3">Stop</span> the session at the moment you went idle.
             </li>
             <li>
               <span className="text-t3 font-medium">Your display turns off or the screen locks.</span> Pressing the power button, hot-corner sleep, or screen lock auto-stops the timer at the last input moment. A blur-overlay greets you when you return with the task name, session length, and a one-click <span className="text-t3">Start new session</span> button.
