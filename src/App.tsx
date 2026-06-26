@@ -1610,6 +1610,16 @@ export default function App() {
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); migrateImagesToFilesystem(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
+  // Dev helpers exposed on window so we can test the feedback paths from the console
+  useEffect(() => {
+    (window as unknown as { __slateTest: unknown }).__slateTest = {
+      toast: () => useToastStore.getState().show("success", "TEST PERSIST", { persistent: true }),
+      ephemeralToast: () => useToastStore.getState().show("success", "TEST EPHEMERAL"),
+      notify: () => notify("Slate test", "If you see this, notifications work"),
+    };
+    console.log("[dev] window.__slateTest = { toast(), ephemeralToast(), notify() }");
+  }, []);
+
   // Idle detection + sleep detection: poll macOS for idle time while a timer is running
   useEffect(() => {
     console.log("[idle] poll effect mounted — first tick now, then every 30s");
