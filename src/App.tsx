@@ -1416,26 +1416,8 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
               <SubtaskProgressBar subtasks={todo.subtasks} showCount />
             )}
 
-            {/* Description */}
-            {todo.description?.trim() ? (
-              <p
-                className="text-[10px] leading-[1.5]"
-                style={{
-                  color: "var(--c-text-4)",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical" as const,
-                  overflow: "hidden",
-                }}
-              >
-                {todo.description}
-              </p>
-            ) : (
-              <p className="text-[10px] italic" style={{ color: "var(--c-text-6)" }}>No description</p>
-            )}
-
             {/* Dates */}
-            <div className="flex items-center gap-3 mt-auto">
+            <div className="flex items-center gap-3">
               <span className="flex items-center gap-1 text-[9px]" style={{ color: "var(--c-text-5)" }}>
                 <CalendarDays size={9} />
                 {createdLabel}
@@ -1456,29 +1438,28 @@ function FocusCard({ onOpenTask }: { onOpenTask: (id: number) => void }) {
               })()}
             </div>
 
-            {/* Timer row */}
+            {/* Big centered timer */}
             <div
-              className="flex items-center gap-2 pt-2"
-              style={{ borderTop: headerBorder }}
+              className="flex flex-col items-center justify-center gap-3 flex-1 py-3"
               onClick={e => e.stopPropagation()}
             >
-              <span className="text-[11px] text-t3 font-mono min-w-[36px]">
+              <span className="font-mono text-[34px] leading-none tracking-tight" style={{ color: activeSession ? accentColor : "var(--c-text-2)" }}>
                 {activeSession ? fmtElapsed(elapsed) : (taskSessions.length > 0 ? fmtDuration(totalDurationMs(taskSessions)) : "0s")}
               </span>
               {taskSessions.length > 0 && (
-                <span className="text-[9px] text-t5">{taskSessions.filter(s => s.ended_at).length} session{taskSessions.filter(s => s.ended_at).length !== 1 ? "s" : ""}</span>
+                <span className="text-[10px] text-t5">{taskSessions.filter(s => s.ended_at).length} session{taskSessions.filter(s => s.ended_at).length !== 1 ? "s" : ""}</span>
               )}
-              <div className="flex items-center gap-1.5 ml-auto">
+              <div className="flex items-center gap-3 mt-1">
                 {activeSession ? (
                   <>
-                    <TipBtn label="Pause" className="p-1 rounded text-t3 hover:text-t1 transition-colors" style={{ background: "var(--c-surface-3)", border: "1px solid var(--c-border)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}><Pause size={9} /></TipBtn>
-                    <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={9} /></TipBtn>
+                    <TipBtn label="Pause" className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80" style={{ width: 40, height: 40, background: "var(--c-surface-3)", border: "1px solid var(--c-border)", color: "var(--c-text-2)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); stop(todo.id); }}><Pause size={18} /></TipBtn>
+                    <TipBtn label="Mark done" className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80" style={{ width: 40, height: 40, background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.4)", color: "rgba(16,185,129,1)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={18} /></TipBtn>
                   </>
                 ) : (
                   <>
-                    <TipBtn label="Start timer" className="p-1 rounded transition-colors" style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)", color: "rgba(96,165,250,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={9} /></TipBtn>
+                    <TipBtn label="Start timer" className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80" style={{ width: 40, height: 40, background: "rgba(59,130,246,0.18)", border: "1px solid rgba(59,130,246,0.4)", color: "rgba(96,165,250,1)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); start(todo.id); if (todo.status === 'done') setStatus(todo.id, 'in_progress'); }}><Play size={18} /></TipBtn>
                     {todo.status !== 'done' && taskSessions.length > 0 && (
-                      <TipBtn label="Mark done" className="p-1 rounded transition-colors" style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "rgba(16,185,129,0.9)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={9} /></TipBtn>
+                      <TipBtn label="Mark done" className="flex items-center justify-center rounded-lg transition-colors hover:opacity-80" style={{ width: 40, height: 40, background: "rgba(16,185,129,0.18)", border: "1px solid rgba(16,185,129,0.4)", color: "rgba(16,185,129,1)" }} onMouseDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); finish(todo.id, setStatus); }}><CheckCheck size={18} /></TipBtn>
                     )}
                   </>
                 )}
