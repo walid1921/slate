@@ -79,6 +79,7 @@ const guideSections = [
       { keys: ["Blue dot"], desc: "Upcoming reminder" },
       { keys: ["Grey dot · sent"], desc: "Notification already fired" },
       { keys: ["Red dot on Clock icon"], desc: "A reminder notification fired — click to dismiss" },
+      { keys: ["Task detail → Reminder → Set reminder"], desc: "Creates a reminder linked to the task — pre-filled with '⚠️ Ticket: {task name}'; appears in the task's Reminder section" },
     ],
   },
   {
@@ -127,6 +128,8 @@ const guideSections = [
       { keys: ["Play / Pause"], desc: "Start or pause the timer; each session is logged with start and end time" },
       { keys: ["Done"], desc: "Stop the timer and mark the task as done" },
       { keys: ["Card color"], desc: "Blue by default · Red when deadline is overdue · Green when task is done" },
+      { keys: ["Countdown color"], desc: "Green when more than 24h remain · Orange when 2–24h left · Red when under 2h or overdue" },
+      { keys: ["Task dropdown"], desc: "Tasks listed with a priority dot — sorted high → medium → low → none so urgent work is on top" },
       { keys: ["Time log"], desc: "Open the task detail to see all sessions, total time, and session count" },
     ],
   },
@@ -142,6 +145,37 @@ const guideSections = [
       { keys: ["Send to Tasks button"], desc: "Copy all items in the active category to the Tasks page as a new category" },
       { keys: ["Reset button (↺)"], desc: "Restore the full default dev checklist — wipes all custom content and re-seeds preset pages, categories, and items" },
       { keys: ["Trash"], desc: "Deleted dev items are recoverable from the Deleted view — grouped by page and category" },
+    ],
+  },
+  {
+    title: "Task Detail Modal",
+    items: [
+      { keys: ["Two-column layout"], desc: "Left: Notes, Images, Subtasks (always open). Right: Created, Priority, Deadline, Reminder, Timer, Time Log" },
+      { keys: ["Notes"], desc: "Markdown-style description — auto-saves on blur" },
+      { keys: ["Images"], desc: "Drag-free upload (Reference image button) — thumbnails grid, click for lightbox view, X to delete (with confirm). Files are stored on disk, only paths in the DB" },
+      { keys: ["Subtasks"], desc: "Toggle done, edit inline, drag to reorder; progress bar can be shown on the card via the eye icon" },
+      { keys: ["Time Log"], desc: "Every session with start → end times grouped by day; pencil opens the editor to adjust or delete sessions" },
+    ],
+  },
+  {
+    title: "Timer & Idle Detection",
+    items: [
+      { keys: ["Play on a task"], desc: "Starts a session. Only one timer can run at a time — starting another will block until the running one stops" },
+      { keys: ["Idle threshold (Settings → General → Timer)"], desc: "When idle longer than this while a timer is running, a blur overlay asks: Keep · Subtract · Stop at the moment you went idle" },
+      { keys: ["Display off / screen lock"], desc: "Detected within 30s — timer auto-stops at last input. A blur overlay greets you on return with task info and a one-click Start new session button" },
+      { keys: ["Mac sleep (lid close, sleep schedule)"], desc: "Detected when polling resumes after a > 60s gap — session is closed at the last poll before sleep, so duration excludes sleep time" },
+      { keys: ["Session editor (task detail → Time Log → pencil)"], desc: "Manually adjust start/end times or delete individual sessions" },
+    ],
+  },
+  {
+    title: "AI Features",
+    items: [
+      { keys: ["Settings → General → AI Assistant"], desc: "Set your Anthropic API key (stored locally, never exported) and pick a model — Sonnet 4.6 recommended" },
+      { keys: ["✨ on the Home input"], desc: "Describe a task in natural language → AI generates title, description, priority, deadline, and 3-6 subtasks for you to review before creating" },
+      { keys: ["✨ in task detail → Subtasks"], desc: "First click breaks the task down into 3-6 subtasks; subsequent clicks open a refinement modal where you describe what to change or add" },
+      { keys: ["✨ in task detail → Notes"], desc: "Generates a markdown description from the task title and existing subtasks — only shown when the description is empty" },
+      { keys: ["✨ on each IHK week"], desc: "Polishes all entries for the week into a German Berichtsheft document with one section per category. Saved per-week, regeneratable with a custom instruction" },
+      { keys: ["✨ next to Dev → Add item"], desc: "Generates checklist items tailored to the active Page + Category. Existing items are sent as context so the AI doesn't duplicate them" },
     ],
   },
 ];
