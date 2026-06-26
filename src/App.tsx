@@ -485,6 +485,31 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         </div>
       </div>
 
+      {/* Status */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5">
+          <CheckSquare size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Status</span>
+        </div>
+        <div className="flex gap-1">
+          {KANBAN_COLS.map((c) => (
+            <TipBtn
+              key={c.id}
+              label={c.label}
+              side="bottom"
+              onClick={() => setStatus(todo.id, c.id)}
+              className="px-2 py-0.5 rounded-full text-[10px] font-medium transition-all"
+              style={todo.status === c.id
+                ? { background: `rgba(${c.color},0.18)`, color: `rgba(${c.color},1)`, border: `1px solid rgba(${c.color},0.45)` }
+                : { background: "var(--c-surface-2)", color: "var(--c-text-5)", border: "1px solid var(--c-border-subtle)" }
+              }
+            >
+              {c.label}
+            </TipBtn>
+          ))}
+        </div>
+      </div>
+
       {/* Priority */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
         <div className="flex items-center gap-1.5">
