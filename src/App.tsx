@@ -1519,7 +1519,6 @@ export default function App() {
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
-  const idleReviews = useTimerStore(s => s.idleReviews);
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
   const [focusedIdx, setFocusedIdx] = useState<number>(-1);
@@ -2128,11 +2127,6 @@ export default function App() {
                 ))}
               </div>
             </div>
-
-            {/* Idle reviews (one banner per pending review) */}
-            {idleReviews.map(r => (
-              <IdleBanner key={r.id} review={r} />
-            ))}
 
             {/* Activity heatmap + focus */}
             <div className="flex gap-3 items-stretch" style={{ minHeight: 230 }}>
@@ -2842,6 +2836,7 @@ export default function App() {
     <TimerBlockedBanner />
     <GlobalToast />
     <GlobalAutoStop />
+    <GlobalIdleReview />
     </div>
   );
 }
@@ -2850,6 +2845,13 @@ function GlobalAutoStop() {
   const autoStopEvent = useTimerStore(s => s.autoStopEvent);
   if (!autoStopEvent) return null;
   return <AutoStopOverlay event={autoStopEvent} />;
+}
+
+function GlobalIdleReview() {
+  const reviews = useTimerStore(s => s.idleReviews);
+  if (reviews.length === 0) return null;
+  // Render only the first; once acted on, the next becomes the first.
+  return <IdleBanner review={reviews[0]} />;
 }
 
 function GlobalToast() {
