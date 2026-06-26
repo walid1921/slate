@@ -87,6 +87,29 @@ function today(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+function dateRef(): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const t = new Date();
+  const weekday = t.toLocaleDateString("en-US", { weekday: "long" });
+  const days: Record<string, Date> = {};
+  // next 14 days
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(t);
+    d.setDate(t.getDate() + i);
+    const name = d.toLocaleDateString("en-US", { weekday: "long" });
+    if (!days[name]) days[name] = d;
+  }
+  const lines: string[] = [
+    `- today: ${toIso(t)} (${weekday})`,
+    `- tomorrow: ${toIso(new Date(t.getTime() + 86400000))}`,
+  ];
+  ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].forEach(name => {
+    if (days[name]) lines.push(`- next ${name}: ${toIso(days[name])}`);
+  });
+  return lines.join("\n");
+}
+
 export async function generateTaskFromPrompt(userPrompt: string, contextCategory: string): Promise<GeneratedTask> {
   const { client, model } = getClient();
   const system = `You generate structured task definitions from user prompts. Produce exactly one task with title, description, priority, deadline, and 3-6 subtasks.
@@ -94,10 +117,19 @@ export async function generateTaskFromPrompt(userPrompt: string, contextCategory
 - Title: imperative, concise (under 80 chars), no filler
 - Description: 1-3 sentences explaining what and why, markdown allowed
 - Priority: infer from urgency cues — high = blocking/critical, medium = important, low = nice-to-have, none = neutral
-- Deadline: parse natural language relative to today (${today()}). Use null when no deadline is implied. If only a date is implied, leave due_time as null.
+- Deadline: ACTIVELY extract deadlines from the prompt. Set due_date whenever the user provides ANY temporal cue, including:
+    * Explicit dates ("June 30", "by 2026-07-01")
+    * Weekdays ("by Friday", "Monday", "next Tuesday") — pick from the reference table below
+    * Relative ("today", "tomorrow", "this week", "next week", "end of week")
+    * Urgency words ("asap", "urgent", "blocking", "now") → today
+  Set due_time when the prompt mentions a time ("5pm" → "17:00", "end of day" → "18:00", "morning" → "09:00").
+  Only leave due_date null when there is GENUINELY no time cue at all.
 - Subtasks: 3-6 concrete steps. Each starts with a verb. Each is independently doable in under 2 hours.
 
-Current category context: "${contextCategory}". Today is ${today()}.`;
+Current category context: "${contextCategory}".
+
+Date reference (use these exact ISO dates — do not compute your own):
+${dateRef()}`;
 
   const response = await client.messages.create({
     model,

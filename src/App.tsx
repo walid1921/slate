@@ -163,6 +163,24 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [desc, setDesc] = useState(todo.description);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+
+  const handleBreakdown = async () => {
+    if (breakdownLoading) return;
+    setBreakdownLoading(true);
+    try {
+      const { breakDownTask } = await import("./taskAI");
+      const generated = await breakDownTask(todo.text, todo.description);
+      const startId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+      const newSubs: SubTask[] = generated.map((g, i) => ({ id: startId + i, text: g.text, done: false }));
+      await setSubtasks(todo.id, [...todo.subtasks, ...newSubs]);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      useToastStore.getState().show("error", msg);
+    } finally {
+      setBreakdownLoading(false);
+    }
+  };
   const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
   const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
@@ -363,6 +381,9 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               {todo.subtasks.length > 0 && (
                 <span className="text-[10px] text-t5 font-mono">{todo.subtasks.filter(s => s.done).length}/{todo.subtasks.length}</span>
               )}
+              <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
+                <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
+              </TipBtn>
               <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
                 {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
               </TipBtn>
