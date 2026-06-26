@@ -41,7 +41,7 @@ import { listen } from "@tauri-apps/api/event";
 import { useTodoStore, Priority, Todo, TaskCategory, TodoStatus, SubTask } from "./store";
 import { useReminderStore } from "./reminderStore";
 import { useNotesStore } from "./notesStore";
-import { initNotifications } from "./notifications";
+import { initNotifications, notify } from "./notifications";
 import DateTimeModal from "./components/DateTimeModal";
 import AddReminderModal from "./components/AddReminderModal";
 import AITaskReviewModal from "./components/AITaskReviewModal";
@@ -1628,7 +1628,10 @@ export default function App() {
           const stopIso = new Date(prev).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
           const sleptMin = Math.round((now - prev) / 60000);
-          useToastStore.getState().show("success", `Timer stopped — Mac was asleep ${sleptMin} min`);
+          const msg = `Mac was asleep ${sleptMin} min`;
+          console.log("[idle] system sleep detected — stopping timer.", msg);
+          await notify("Slate · Timer stopped", msg);
+          useToastStore.getState().show("success", `Timer stopped — ${msg}`);
           return;
         }
         // Detect display sleep / screen lock — auto-stop at the last input moment
@@ -1638,7 +1641,10 @@ export default function App() {
           const stopMs = now - idleSec * 1000;
           const stopIso = new Date(stopMs).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
-          useToastStore.getState().show("success", "Timer stopped — display went to sleep");
+          const msg = "Display went to sleep";
+          console.log("[idle] display sleep detected — stopping timer.", msg);
+          await notify("Slate · Timer stopped", msg);
+          useToastStore.getState().show("success", `Timer stopped — ${msg}`);
           return;
         }
         const idleSeconds = await invoke<number>("get_idle_seconds");
