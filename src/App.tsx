@@ -367,27 +367,23 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               onChange={(e) => setDesc(e.target.value)}
               onBlur={saveDesc}
               placeholder="Add notes…"
-              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-3"
-              style={{ minHeight: "120px" }}
+              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-2"
+              style={{ height: 100, minHeight: 100, maxHeight: 100 }}
             />
           </div>
         </div>
 
         {/* Subtasks */}
         <div className="flex flex-col border-t border-s shrink-0">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <CheckSquare size={10} className="text-t4 shrink-0" />
-                <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
-              </div>
-              {todo.subtasks.length > 0 && (
-                <div className="flex items-center gap-2 flex-1 min-w-0 max-w-[180px]">
-                  <SubtaskProgressBar subtasks={todo.subtasks} showCount />
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-3 px-4 py-3">
             <div className="flex items-center gap-1.5 shrink-0">
+              <CheckSquare size={10} className="text-t4 shrink-0" />
+              <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
+            </div>
+            {todo.subtasks.length > 0 && (
+              <SubtaskProgressBar subtasks={todo.subtasks} showCount className="flex-1 max-w-[180px]" />
+            )}
+            <div className="flex items-center gap-1.5 ml-auto shrink-0">
               <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
                 <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
               </TipBtn>
