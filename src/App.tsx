@@ -1631,7 +1631,7 @@ export default function App() {
           const msg = `Mac was asleep ${sleptMin} min`;
           console.log("[idle] system sleep detected — stopping timer.", msg);
           await notify("Slate · Timer stopped", msg);
-          useToastStore.getState().show("success", `Timer stopped — ${msg}`);
+          useToastStore.getState().show("success", `Timer stopped — ${msg}`, { persistent: true });
           return;
         }
         // Detect display sleep / screen lock — auto-stop at the last input moment
@@ -1644,7 +1644,7 @@ export default function App() {
           const msg = "Display went to sleep";
           console.log("[idle] display sleep detected — stopping timer.", msg);
           await notify("Slate · Timer stopped", msg);
-          useToastStore.getState().show("success", `Timer stopped — ${msg}`);
+          useToastStore.getState().show("success", `Timer stopped — ${msg}`, { persistent: true });
           return;
         }
         const idleSeconds = await invoke<number>("get_idle_seconds");
@@ -2834,9 +2834,9 @@ export default function App() {
 }
 
 function GlobalToast() {
-  const { kind, message, clear } = useToastStore();
+  const { kind, message, persistent, clear } = useToastStore();
   if (!kind) return null;
-  return <Toast type={kind} message={message ?? undefined} onDone={clear} />;
+  return <Toast type={kind} message={message ?? undefined} persistent={persistent} onDone={clear} />;
 }
 
 function TimerBlockedBanner() {

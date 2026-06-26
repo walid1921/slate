@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle, Download, Upload, Send } from "lucide-react";
+import { AlertCircle, CheckCircle, Download, Upload, Send, X } from "lucide-react";
 
 export type ToastType = "exported" | "imported" | "exported-imported" | "error" | "success";
 
 interface ToastProps {
   type: ToastType;
   message?: string;
+  persistent?: boolean;
   onDone: () => void;
 }
 
@@ -37,15 +38,23 @@ const CONFIG: Record<ToastType, { icon: React.ReactNode; title: string; sub: str
   },
 };
 
-export function Toast({ type, message, onDone }: ToastProps) {
+export function Toast({ type, message, persistent, onDone }: ToastProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const show = setTimeout(() => setVisible(true), 10);
+    if (persistent) {
+      return () => { clearTimeout(show); };
+    }
     const hide = setTimeout(() => setVisible(false), 2800);
     const done = setTimeout(() => onDone(), 3300);
     return () => { clearTimeout(show); clearTimeout(hide); clearTimeout(done); };
-  }, []);
+  }, [persistent]);
+
+  const dismiss = () => {
+    setVisible(false);
+    setTimeout(() => onDone(), 250);
+  };
 
   const { icon, title, sub: defaultSub } = CONFIG[type];
   const sub = message ?? defaultSub;
@@ -69,7 +78,7 @@ export function Toast({ type, message, onDone }: ToastProps) {
         minWidth: 220,
         boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
         border: "1px solid var(--c-border)",
-        pointerEvents: "none",
+        pointerEvents: persistent ? "auto" : "none",
       }}
     >
       {icon}
@@ -77,6 +86,15 @@ export function Toast({ type, message, onDone }: ToastProps) {
         <span className="text-[13px] font-medium text-t1">{title}</span>
         <span className="text-[11px] text-t4">{sub}</span>
       </div>
+      {persistent && (
+        <button
+          onClick={dismiss}
+          className="ml-2 text-t5 hover:text-t2 transition-colors"
+          title="Dismiss"
+        >
+          <X size={12} />
+        </button>
+      )}
     </div>
   );
 }
