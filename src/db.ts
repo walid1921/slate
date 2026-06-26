@@ -137,6 +137,17 @@ export async function getDb(): Promise<Database> {
   await _db.execute(`UPDATE ihk_entries SET position = id WHERE position = 0`).catch(() => {});
 
   await _db.execute(`
+    CREATE TABLE IF NOT EXISTS ihk_polished (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      week_key     TEXT    NOT NULL,
+      category     INTEGER NOT NULL,
+      content      TEXT    NOT NULL,
+      generated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(week_key, category)
+    )
+  `);
+
+  await _db.execute(`
     CREATE TABLE IF NOT EXISTS dev_categories (
       id        INTEGER PRIMARY KEY AUTOINCREMENT,
       name      TEXT    NOT NULL,

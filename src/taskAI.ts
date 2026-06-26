@@ -153,6 +153,61 @@ ${dateRef()}`;
   return toolUse.input as GeneratedTask;
 }
 
+const POLISH_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    content: { type: "string", description: "Polished Berichtsheft markdown content." },
+  },
+  required: ["content"],
+};
+
+export async function polishIHKEntries(
+  categoryName: string,
+  entries: { date: string; text: string }[],
+  previousVersion?: string,
+  instruction?: string,
+): Promise<string> {
+  const { client, model } = getClient();
+  const system = `You polish IHK Berichtsheft (German apprenticeship report) entries.
+
+Rules:
+- Output language: GERMAN, regardless of input language. Translate if needed.
+- Tone: formal but readable, in the style typical of an IT/Fachinformatiker Berichtsheft.
+- Format: one polished entry per original entry, as a markdown bullet list. Preserve the order.
+- Each polished line should be more descriptive than the original — add the technical context, what was done, and (briefly) why it matters. Don't invent facts that aren't implied by the original entry.
+- For Berufsschule entries (school topics), use the format "Fach: behandelte Themen" when a subject is given (e.g. "Wirtschaft: Marktformen und Preisbildung").
+- For Betrieb / Schulung entries, use the style "Implementierung von X mit Y" or "Einarbeitung in Z" — concrete, neutral, past or present nominal form.
+- Do not add a heading, do not add an intro or outro. Output only the markdown list.
+- Keep length proportional to input — do not pad or repeat.`;
+
+  const parts: string[] = [`Category: ${categoryName}`, "Original entries:"];
+  for (const e of entries) parts.push(`- (${e.date}) ${e.text}`);
+  if (previousVersion) {
+    parts.push("Previously polished version (for reference):");
+    parts.push(previousVersion);
+  }
+  if (instruction && instruction.trim()) {
+    parts.push(`User instruction (overrides defaults): ${instruction.trim()}`);
+  } else if (previousVersion) {
+    parts.push("Refine the previously polished version. Improve clarity and consistency. Keep the overall structure.");
+  } else {
+    parts.push("Polish these entries into Berichtsheft-quality German.");
+  }
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: parts.join("\n\n") }],
+    tools: [{ name: "emit_polish", description: "Emit the polished content.", input_schema: POLISH_SCHEMA }],
+    tool_choice: { type: "tool", name: "emit_polish" },
+  });
+
+  const toolUse = response.content.find(b => b.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return polished content.");
+  return (toolUse.input as { content: string }).content;
+}
+
 export async function generateTaskDescription(
   text: string,
   existingSubtasks: { text: string; done: boolean }[] = [],

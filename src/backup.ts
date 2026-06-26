@@ -12,7 +12,7 @@ export async function getBackupDir(): Promise<string> {
 export async function buildExportPayload(): Promise<string> {
   const db = await getDb();
   const [todos, reminders, notes, taskSessions, taskCategories, deletedCategories,
-         ihkEntries, ihkModules, ihkWeeks, activity, devItems, devCategories, devSections,
+         ihkEntries, ihkModules, ihkWeeks, ihkPolished, activity, devItems, devCategories, devSections,
          rawImages] =
     await Promise.all([
       db.select("SELECT * FROM todos"),
@@ -24,6 +24,7 @@ export async function buildExportPayload(): Promise<string> {
       db.select("SELECT * FROM ihk_entries"),
       db.select("SELECT * FROM ihk_modules"),
       db.select("SELECT * FROM ihk_weeks"),
+      db.select("SELECT * FROM ihk_polished"),
       db.select("SELECT * FROM activity"),
       db.select("SELECT * FROM dev_items"),
       db.select("SELECT * FROM dev_categories"),
@@ -44,8 +45,8 @@ export async function buildExportPayload(): Promise<string> {
   }));
 
   return JSON.stringify(
-    { version: 3, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions,
-      taskCategories, deletedCategories, ihkEntries, ihkModules, ihkWeeks, activity,
+    { version: 4, exportedAt: new Date().toISOString(), todos, reminders, notes, taskSessions,
+      taskCategories, deletedCategories, ihkEntries, ihkModules, ihkWeeks, ihkPolished, activity,
       devItems, devCategories, devSections, taskImages },
     null, 2
   );
