@@ -239,25 +239,42 @@ function GeneralTab() {
     setLoginEnabled(v);
   };
 
-  const AUDIT_PROMPT = `Audit DB migrations and import/export completeness in this Slate app.
+  const AUDIT_PROMPT = `Audit DB migrations, import/export completeness, and on-disk storage paths in this Slate app. Produce a findings list — don't fix anything.
 
 Verify each of these end-to-end, table by table:
 
-1. Schema (src/db.ts): every table has CREATE TABLE IF NOT EXISTS, and every later-added column has a guarded ALTER TABLE … ADD COLUMN … .catch(() => {}) so existing-user upgrades don't error. Defaults exist for any NOT NULL columns added later. One-time data migrations are guarded by a meta flag so they don't re-run.
+1. Schema (src/db.ts): every table has CREATE TABLE IF NOT EXISTS; every later-added column has a guarded ALTER TABLE … ADD COLUMN … .catch(() => {}) so existing-user upgrades don't 400. NOT NULL columns added later have a DEFAULT. One-time data migrations are gated by a meta-flag so they don't re-run.
 
-2. Export (src/backup.ts → buildExportPayload): every table from db.ts appears in the SELECT list and in the JSON output. Filesystem-stored artifacts (e.g. images dir) are read and inlined as base64 in the JSON.
+2. Export (src/backup.ts → buildExportPayload): every table from db.ts appears in the SELECT list AND in the JSON output. Filesystem artifacts (images files) are read and inlined as base64 in the JSON.
 
-3. Import (src/components/SettingsPage.tsx → handleImport): every table is DELETE'd before insert; each row is re-inserted with all columns the current schema expects; filesystem artifacts (images dir) are wiped and recreated from the export.
+3. Import (src/components/SettingsPage.tsx → handleImport): every table is DELETE'd before re-insert; each row is INSERTed with every column the current schema expects (legacy backups missing newer columns should default sanely); filesystem artifacts (images dir) are wiped + recreated from the export.
 
-4. Filesystem migration (src/images.ts → migrateImagesToFilesystem or similar): old base64 rows are converted to files and the DB row is updated; runs idempotently on startup.
+4. Filesystem image migration (src/images.ts → migrateImagesToFilesystem): old base64 rows are converted to on-disk files, the path column is updated, and the data column is cleared. Runs idempotently on startup.
 
-5. Env isolation (src/env.ts): getEnvDir() returns slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod. The prod path is mkdir'd if missing. The legacy slate-db/prod/ subfolder layout is migrated up one level (moves children to appDataDir root, removes prod/) only when no slate.db exists at the new location — idempotent. In db.ts, the SQL plugin is loaded with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db), and images.ts / backup.ts both route through getEnvDir().
+5. Env isolation (src/env.ts):
+   - getEnvDir() returns ~/Library/Application Support/slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod
+   - The prod path is mkdir'd if missing
+   - Legacy slate-db/prod/ subfolder layout is migrated up to slate-db/ root one time only (skipped if slate.db already exists at root) — idempotent
+   - db.ts loads SQLite with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db)
+   - images.ts and backup.ts both route through getEnvDir() so each env has its own images/ and backups/
 
-6. AI feature tables — verify the ihk_polished table (PRIMARY KEY week_key, no category column) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at. The one-time legacy-drop migration (gated by meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE.
+6. Per-feature schema checks:
+   - ihk_polished: PRIMARY KEY week_key (no category column). One-time legacy-drop migration (meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE. Confirm CREATE / SELECT in export / DELETE+INSERT in import.
+   - task_sessions.deducted_ms: INTEGER NOT NULL DEFAULT 0. Guarded ALTER. sessionDurationMs() subtracts deducted_ms. Import re-inserts deducted_ms (defaulting to 0 for legacy backups).
+   - reminders.task_id: INTEGER (nullable). Guarded ALTER. Used to link reminders to tasks; SELECT/load returns it; handleImport passes p.task_id ?? null.
+   - task_images: stores path (filesystem) and data (legacy base64). data is cleared after filesystem migration. New rows insert with data = ''. Import writes base64 → file, stores filePath in path column.
 
-7. task_sessions has a new deducted_ms column (INTEGER NOT NULL DEFAULT 0) — verify the guarded ALTER, that load() / SELECT includes it, that sessionDurationMs subtracts it, and that handleImport re-inserts it (defaulting to 0 for legacy backups).
+7. Auto-stop signal flow (timerStore.ts + App.tsx polling loop):
+   - 30s polling tick checks idle seconds (CGEventSourceSecondsSinceLastEventType) + display state (CGDisplayIsAsleep) + gap-to-previous-tick (system sleep proxy)
+   - observeIdle() queues an IdleReview when an idle period exceeding the threshold closes (user becomes active again)
+   - System sleep (gap > 60s): updateSession to end at the previous tick → setAutoStop event
+   - Display sleep (CGDisplayIsAsleep): updateSession to end at last-input moment → setAutoStop event
+   - The autoStopEvent + idleReviews state survives correctly across stop/start/finish
+   - sessionDurationMs accounts for deducted_ms everywhere durations are displayed (cards, time log, week totals)
 
-For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
+8. Settings persistence (settingsStore.ts): zustand persist with name "slate-settings". New keys in DEFAULTS (idleThresholdMinutes, aiApiKey, aiModel, autoBackupEnabled, lastAutoBackup) are merged onto persisted state without overriding stored user values. aiApiKey is plain in localStorage; confirm it's NOT included in JSON exports.
+
+For each numbered item, report one of: OK / missing in export / missing in import / schema concern / migration concern / cross-env risk. Be specific about file:line when reporting concerns.`;
 
   const handleCopyAuditPrompt = async () => {
     await navigator.clipboard.writeText(AUDIT_PROMPT);

@@ -26,12 +26,13 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ## Privacy & Safety
 
-- **All data is stored locally** — everything lives in a SQLite database on your machine (`~/Library/Application Support/slate-db/`). Nothing is synced or uploaded.
-- **No internet connection needed** — fully offline by default.
+- **All data is stored locally** — everything lives in SQLite + on-disk image files on your machine. Nothing is synced or uploaded.
+- **Offline by default** — no internet needed for any core feature.
 - **No account or login** — open and start using immediately.
-- **No telemetry, analytics, or network requests** — Slate has no backend and never phones home.
+- **No telemetry, analytics, or network requests** — Slate has no backend.
+- **AI features are opt-in.** They require an Anthropic API key in **Settings → General → AI Assistant**. When enabled, ✨ buttons send the relevant context (task text, IHK entries, etc.) to `api.anthropic.com` to generate output. Your API key is stored locally and is never included in exports.
 - **Permissions requested:**
-  - Notifications — used only when a reminder or deadline fires
+  - Notifications — used when a reminder fires, a deadline passes, or the timer auto-stops
   - Autostart — only if you enable it in Settings
   - No camera, microphone, location, contacts, or any other sensitive permissions
 
@@ -39,11 +40,19 @@ Built with Tauri 2, React, TypeScript, SQLite, and Tailwind CSS v4.
 
 ## Data & Recovery
 
-Slate's SQLite database **persists across builds and reinstalls** — it lives at `~/Library/Application Support/slate-db/` and is never wiped automatically.
+Slate keeps **separate data folders per environment** — so dev mode can't touch your real data:
 
-- **After importing data or if the app shows a loading spinner on launch:** re-import your JSON backup from **Settings → Data → Import**. The app now recovers gracefully from load errors and won't get stuck.
-- **To start with a completely fresh database:** quit Slate, delete `~/Library/Application Support/slate-db/`, then relaunch. The app will create a new empty database on next start.
-- **To back up your data:** use **Settings → Data → Export** — this produces a single JSON file containing all tasks, categories, reminders, notes, time logs, and IHK entries.
+- **Production:** `~/Library/Application Support/slate-db/`
+- **Development:** `~/Library/Application Support/slate-db-dev/`
+
+Each folder contains `slate.db` (the SQLite database), `images/` (uploaded reference images stored as files, only paths in the DB), and `backups/` (auto-backup JSON snapshots if you enable the feature).
+
+- **Auto-backup** — enable in **Settings → Data → Backup**. Writes a dated JSON snapshot to the `backups/` folder once per day on launch.
+- **Manual backup** — **Settings → Data → Export** — produces a single JSON file containing every table (tasks, categories, reminders, notes, time logs, IHK entries + polished versions, dev checklist, images as base64). Save it somewhere outside `~/Library/` if you want it to survive an uninstall.
+- **Restore** — **Settings → Data → Import** — replaces the current database from a JSON export. Optionally saves a one-shot backup of the current data before importing.
+- **Fresh start** — quit Slate, delete the appropriate `slate-db*` folder, relaunch. A new empty database is created.
+
+> ⚠ **Uninstaller tools like AppCleaner sweep the data folders** along with the app. **Export to outside `~/Library/` before uninstalling.**
 
 ---
 
@@ -60,18 +69,30 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 ### Tasks (Kanban Board)
 - Tasks are organised into **categories** (tabs) and across three status columns: **To Do**, **In Progress**, **Done**
 - Drag cards between columns or reorder within a column
-- Click a card to open the task detail panel — edit title, description, deadline, and priority
+- Click a card to open the **two-column task detail modal** — left side: Notes, Images, Subtasks (always open); right side: Created, Priority, Deadline, Reminder, Timer, Time Log
 - Set deadlines at creation (`/tm`) or later via the detail panel — live countdown shows days · hours · minutes · seconds; deadline picker pre-fills and locks the task's category
 - Overdue tasks show a soft red background and "overdue · date time" label
 - Priority levels: none / low / medium / high — colour-coded dot inline with the task name
-- **Timer:** each task can have a timer — show/hide the timer controls on the card via the Eye icon in the detail panel; start, pause, finish, or extend sessions; all sessions are logged with start/end times and shown as a collapsible time log in the detail panel; total time and session count are tracked
+- **Subtasks** — toggle done, edit inline, drag to reorder; optional progress bar on the card
+- **Images** — upload reference images; thumbnails grid with lightbox view, X to delete (with confirm). Stored as files on disk, only paths in the DB
+- **Reminder integration** — "Set reminder" inside the task detail creates a reminder linked to the task and shows it in the task's Reminder section
+- **Timer:** start, pause, finish, or extend sessions; all sessions are logged with start/end times. Total time can be shown on the card. See the Timer & Idle Detection section for auto-stop behaviour
 - Creation date can be shown/hidden per task via the Eye icon in the detail panel
 - **Categories:** create, rename, recolour, change icon, reorder by dragging tabs, or delete — right-click any tab for a context menu; each category has a searchable icon picker with 85+ Lucide icons
 - Add tasks or clear columns directly from each column header
 - Red dot on a category tab = one or more overdue tasks in that category
 
+### Timer & Idle Detection
+- One timer runs at a time — starting another blocks until the running one stops
+- **Idle threshold** (Settings → General → Timer) — when no input is detected for longer than the threshold while a timer is running, a blur overlay asks: **Keep** the time, **Subtract** the idle minutes, or **Stop** the session at the moment you went idle
+- **Display sleep / screen lock** — detected within 30 s; timer auto-stops at the last input moment. A blur overlay greets you on return with task info and a one-click "Start new session"
+- **Mac sleep** (lid close, sleep schedule) — detected when polling resumes after a > 60 s gap; session is closed at the last poll before sleep so the recorded duration excludes the sleep period
+- Each auto-stop also fires a macOS notification so you see it even when Slate is hidden
+- Sessions can be edited or deleted manually from the task detail Time Log section
+
 ### Reminders
 - Add with `/rm reminder text` — navigates to Reminders automatically
+- Or set from inside a task detail — creates a reminder linked to the task, pre-filled with `⚠️ Ticket: {task name}`
 - Full-screen notification overlay when a reminder fires — dismiss or reschedule in one click
 - Live status: upcoming (indigo dot), overdue (red dot), sent (grey dot)
 - Inline editing for text and scheduled time
@@ -99,19 +120,39 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 - **Reset (↺)** — wipes all custom content and restores the full default checklist
 - Deleted dev items are recoverable from the Deleted view, grouped by page and category
 
+### AI Features (opt-in)
+
+Slate integrates with the Anthropic API via your own key. Sonnet 4.6 is the recommended default — typical cost for personal use is under $5/month across all features. Set up in **Settings → General → AI Assistant**.
+
+- **✨ on the Home input bar** — describe a task in natural language; AI generates a title, description, priority, deadline, and 3-6 subtasks for review before creating
+- **✨ in task detail → Subtasks** — first click breaks the task down; subsequent clicks open a refinement modal where you type what to change or add
+- **✨ in task detail → Notes** — generates a markdown description when empty, using the task title and existing subtasks as context
+- **✨ on each IHK week** — polishes all entries for the week into a German Berichtsheft document with one section per category (Betrieb/Schulung/Berufsschule). Saved per-week, regeneratable with a custom instruction. *"Teilnahme an täglichen Stand-ups"* is always appended to Betrieb when the week has any entries
+- **✨ next to Dev → Add item** — generates checklist items tailored to the active Page + Category (e.g. Shopware → Backend produces Shopware-specific items, not generic ones). Existing items are sent as context so the AI doesn't duplicate them
+
 ### Trash
 - Soft-delete for tasks, reminders, notes, and dev items — everything lands here first
 - Tasks grouped by category; dev items grouped by page and category — expand to review before deleting permanently
 - Restore individual items or permanently delete a whole group
 
 ### Settings
+
+**General tab**
 - **Theme** — Dark or Light
 - **Text size** — Small, Normal, Large
 - **Window mode** — Default or Compact
 - **Autostart** — Launch Slate at login
-- **Data** — Export / import all data as JSON (tasks, categories, reminders, notes, time logs, IHK entries, dev checklist); open data folder in Finder
-- **Guide** — Full in-app reference for all commands and shortcuts
-- **Privacy** — Summary of all data and permission decisions
+- **Timer** — Idle threshold (3 / 5 / 10 / 15 / 30 min) + a short guide explaining the timer protection model
+- **AI Assistant** — Anthropic API key + model picker (Haiku 4.5 / Sonnet 4.6 / Opus 4.8 / Fable 5)
+- **Maintenance** — Copy a migration audit prompt for periodic schema / export / import verification
+
+**Data tab**
+- **Backup** — Auto-backup toggle + Export / Import buttons
+- **Storage** — Open the active environment's data folder in Finder
+
+**Guide tab** — Full in-app reference for slash commands, shortcuts, and every feature
+
+**Privacy tab** — Summary of data storage and permission decisions
 
 ---
 
@@ -145,12 +186,15 @@ Slate's SQLite database **persists across builds and reinstalls** — it lives a
 | Layer | Technology |
 |---|---|
 | Desktop shell | [Tauri 2](https://tauri.app) |
-| UI | React 18 + TypeScript |
+| UI | React 19 + TypeScript |
 | Styling | Tailwind CSS v4 |
 | Database | SQLite via `tauri-plugin-sql` |
-| State | Zustand |
+| State | Zustand (with `persist` middleware for Settings) |
 | Icons | lucide-react |
 | Drag & drop | @dnd-kit/core + @dnd-kit/sortable |
+| Markdown | react-markdown |
+| AI (opt-in) | `@anthropic-ai/sdk` — Claude API, bring your own key |
+| Native APIs | `CGEventSourceSecondsSinceLastEventType` (idle), `CGDisplayIsAsleep` (display state), `NSWorkspace` (window visibility) |
 
 ---
 
