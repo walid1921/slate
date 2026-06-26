@@ -164,6 +164,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
@@ -226,6 +227,14 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   }, [activeSession?.id]);
 
   useEffect(() => { setDesc(todo.description); }, [todo.id]);
+
+  // Auto-resize the Notes textarea to fit content (no internal scroll)
+  useEffect(() => {
+    const el = notesRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [desc]);
 
   useEffect(() => {
     if (desc === todo.description) return;
@@ -363,12 +372,13 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           </div>
           <div className="px-4 pb-4">
             <textarea
+              ref={notesRef}
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               onBlur={saveDesc}
               placeholder="Add notes…"
-              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-2"
-              style={{ height: 100, minHeight: 100, maxHeight: 100 }}
+              className="bg-transparent text-[13px] text-t2 outline-none resize-none placeholder-themed leading-relaxed w-full pt-2 overflow-hidden"
+              style={{ minHeight: 80 }}
             />
           </div>
         </div>
