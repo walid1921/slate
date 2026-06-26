@@ -1612,6 +1612,7 @@ export default function App() {
 
   // Idle detection + sleep detection: poll macOS for idle time while a timer is running
   useEffect(() => {
+    console.log("[idle] poll effect mounted — first tick now, then every 30s");
     let lastTickMs: number | null = null;
     const POLL_MS = 30_000;
     const SLEEP_GAP_MS = 60_000; // gap > 60s between polls ⇒ system was asleep (2× polling interval)
