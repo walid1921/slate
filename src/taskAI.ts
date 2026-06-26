@@ -161,27 +161,32 @@ const POLISH_SCHEMA = {
   required: ["content"],
 };
 
-export async function polishIHKEntries(
-  categoryName: string,
-  entries: { date: string; text: string }[],
+export async function polishIHKWeek(
+  weekLabel: string,
+  entriesByCategory: { categoryName: string; entries: { date: string; text: string }[] }[],
   previousVersion?: string,
   instruction?: string,
 ): Promise<string> {
   const { client, model } = getClient();
-  const system = `You polish IHK Berichtsheft (German apprenticeship report) entries.
+  const system = `You polish a full week of IHK Berichtsheft (German apprenticeship report) entries.
 
 Rules:
 - Output language: GERMAN, regardless of input language. Translate if needed.
 - Tone: formal but readable, in the style typical of an IT/Fachinformatiker Berichtsheft.
-- Format: one polished entry per original entry, as a markdown bullet list. Preserve the order.
-- Each polished line should be more descriptive than the original — add the technical context, what was done, and (briefly) why it matters. Don't invent facts that aren't implied by the original entry.
+- Structure: produce a markdown document with one '## Section' heading per non-empty category, in the order given. Skip empty categories entirely.
+- Inside each section: one polished entry per original entry as a markdown bullet list. Preserve the order.
+- Each polished line should be more descriptive than the original — add technical context, what was done, and (briefly) why it matters. Don't invent facts that aren't implied by the original entry.
 - For Berufsschule entries (school topics), use the format "Fach: behandelte Themen" when a subject is given (e.g. "Wirtschaft: Marktformen und Preisbildung").
 - For Betrieb / Schulung entries, use the style "Implementierung von X mit Y" or "Einarbeitung in Z" — concrete, neutral, past or present nominal form.
-- Do not add a heading, do not add an intro or outro. Output only the markdown list.
+- Do not add a top-level title, do not add an intro or outro. Output only the section headings and lists.
 - Keep length proportional to input — do not pad or repeat.`;
 
-  const parts: string[] = [`Category: ${categoryName}`, "Original entries:"];
-  for (const e of entries) parts.push(`- (${e.date}) ${e.text}`);
+  const parts: string[] = [`Week: ${weekLabel}`];
+  for (const cat of entriesByCategory) {
+    if (cat.entries.length === 0) continue;
+    parts.push(`Category: ${cat.categoryName}`);
+    for (const e of cat.entries) parts.push(`- (${e.date}) ${e.text}`);
+  }
   if (previousVersion) {
     parts.push("Previously polished version (for reference):");
     parts.push(previousVersion);
@@ -196,7 +201,7 @@ Rules:
 
   const response = await client.messages.create({
     model,
-    max_tokens: 2048,
+    max_tokens: 4096,
     system,
     messages: [{ role: "user", content: parts.join("\n\n") }],
     tools: [{ name: "emit_polish", description: "Emit the polished content.", input_schema: POLISH_SCHEMA }],

@@ -136,14 +136,17 @@ export async function getDb(): Promise<Database> {
   // Seed position from id for existing rows so order is preserved
   await _db.execute(`UPDATE ihk_entries SET position = id WHERE position = 0`).catch(() => {});
 
+  // One-time: drop legacy per-category ihk_polished, replaced with per-week schema
+  const polishV2 = await _db.select<{ value: string }[]>(`SELECT value FROM meta WHERE key = 'ihk_polish_per_week_v1'`);
+  if (!polishV2.length) {
+    await _db.execute(`DROP TABLE IF EXISTS ihk_polished`).catch(() => {});
+    await _db.execute(`INSERT OR IGNORE INTO meta (key,value) VALUES ('ihk_polish_per_week_v1','1')`);
+  }
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS ihk_polished (
-      id           INTEGER PRIMARY KEY AUTOINCREMENT,
-      week_key     TEXT    NOT NULL,
-      category     INTEGER NOT NULL,
-      content      TEXT    NOT NULL,
-      generated_at TEXT    NOT NULL DEFAULT (datetime('now')),
-      UNIQUE(week_key, category)
+      week_key     TEXT PRIMARY KEY,
+      content      TEXT NOT NULL,
+      generated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 

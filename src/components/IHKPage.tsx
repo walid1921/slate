@@ -5,9 +5,7 @@ import { getDb } from "../db";
 import AIIHKPolishModal from "./AIIHKPolishModal";
 
 interface PolishedEntry {
-  id: number;
   week_key: string;
-  category: number;
   content: string;
   generated_at: string;
 }
@@ -76,13 +74,7 @@ function buildCatCopyText(entries: IHKEntry[]): string {
   return entries.map(e => `- ${e.text}`).join("\n");
 }
 
-function CatHeader({ catName, catIdx, rgb, entries, polished, onOpenPolish, onDeletePolish, onConfirm }: {
-  catName: string; catIdx: number; rgb: string; entries: IHKEntry[];
-  polished: PolishedEntry | null;
-  onOpenPolish: () => void;
-  onDeletePolish: () => void;
-  onConfirm: (title: string, msg: string, fn: () => void) => void;
-}) {
+function CatHeader({ catName, catIdx, rgb, entries }: { catName: string; catIdx: number; rgb: string; entries: IHKEntry[] }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     if (entries.length === 0) return;
@@ -100,26 +92,6 @@ function CatHeader({ catName, catIdx, rgb, entries, polished, onOpenPolish, onDe
         <button onClick={copy} className="w-5 h-5 flex items-center justify-center rounded text-t5 hover:text-t2 transition-colors" title="Copy entries">
           {copied ? <Check size={9} style={{ color: `rgba(${rgb},0.9)` }} /> : <Copy size={9} />}
         </button>
-      )}
-      {entries.length > 0 && (
-        polished ? (
-          <>
-            <button onClick={onOpenPolish} className="w-5 h-5 flex items-center justify-center rounded transition-colors" title="View AI-polished version" style={{ color: "rgba(147,150,255,0.9)" }}>
-              <FileText size={9} />
-            </button>
-            <button
-              onClick={() => onConfirm("Delete polished version?", "The AI-polished content for this section will be deleted. The original entries remain.", onDeletePolish)}
-              className="w-5 h-5 flex items-center justify-center rounded text-t5 hover:text-red-400 transition-colors"
-              title="Delete polished version"
-            >
-              <X size={9} />
-            </button>
-          </>
-        ) : (
-          <button onClick={onOpenPolish} className="w-5 h-5 flex items-center justify-center rounded text-t5 hover:text-indigo-400 transition-colors" title="Polish with AI">
-            <Sparkles size={9} />
-          </button>
-        )
       )}
     </div>
   );
@@ -309,9 +281,9 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
   onFillFrom?: (key: string) => void;
   onConfirm: (title: string, msg: string, fn: () => void) => void;
   modules: IHKModule[];
-  polished: Map<string, PolishedEntry>;
-  onOpenPolish: (catIdx: number, entries: IHKEntry[]) => void;
-  onDeletePolish: (catIdx: number) => void;
+  polished: PolishedEntry | null;
+  onOpenPolish: () => void;
+  onDeletePolish: () => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const { start } = getWeekRange(year, kw);
@@ -343,6 +315,38 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
         )}
         <span className="w-2 h-2 rounded-full shrink-0" style={{ background: weekDotColor(entries, sent) }} />
         <span className="ml-auto text-[10px] text-t5">{entries.length} {entries.length === 1 ? "entry" : "entries"}</span>
+        {entries.length > 0 && (
+          polished ? (
+            <>
+              <button
+                onClick={e => { e.stopPropagation(); onOpenPolish(); }}
+                className="w-6 h-6 flex items-center justify-center rounded transition-colors hover:bg-s2"
+                title="View AI-polished version"
+                style={{ color: "rgba(147,150,255,0.9)" }}
+              >
+                <FileText size={11} />
+              </button>
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onConfirm("Delete polished version?", "The AI-polished content for this week will be deleted. The original entries remain.", onDeletePolish);
+                }}
+                className="w-6 h-6 flex items-center justify-center rounded text-t5 hover:text-red-400 transition-colors hover:bg-s2"
+                title="Delete polished version"
+              >
+                <X size={10} />
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={e => { e.stopPropagation(); onOpenPolish(); }}
+              className="w-6 h-6 flex items-center justify-center rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
+              title="Polish with AI"
+            >
+              <Sparkles size={11} />
+            </button>
+          )
+        )}
         {expanded && (
           <>
             <button onClick={e => { e.stopPropagation(); onToggleSent(); }}
@@ -364,20 +368,9 @@ function WeekBlock({ year, kw, entries, isCurrentWeek, expanded, sent, onToggle,
           {IHK_CATEGORIES.map((catName, catIdx) => {
             const catEntries = entries.filter(e => e.category === catIdx);
             const [rgb] = CAT_COLORS[catIdx];
-            const weekKey = buildWeekKey(year, kw);
-            const polishedEntry = polished.get(`${weekKey}|${catIdx}`) ?? null;
             return (
               <div key={catIdx} className="border-b border-s last:border-b-0">
-                <CatHeader
-                  catName={catName}
-                  catIdx={catIdx}
-                  rgb={rgb}
-                  entries={catEntries}
-                  polished={polishedEntry}
-                  onOpenPolish={() => onOpenPolish(catIdx, catEntries)}
-                  onDeletePolish={() => onDeletePolish(catIdx)}
-                  onConfirm={onConfirm}
-                />
+                <CatHeader catName={catName} catIdx={catIdx} rgb={rgb} entries={catEntries} />
                 <div className="px-1 py-1">
                   {catEntries.length === 0 && <p className="px-3 py-1.5 text-[11px] text-t6 italic">Nothing added yet</p>}
                   <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd(catIdx)}>
@@ -458,34 +451,34 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
   const currentKey = buildWeekKey(currentYear, currentKW);
   const [openWeek, setOpenWeek] = useState<string | null>(null);
   const [polished, setPolished] = useState<Map<string, PolishedEntry>>(new Map());
-  const [polishModal, setPolishModal] = useState<{ weekKey: string; weekLabel: string; categoryIdx: number; entries: { date: string; text: string }[] } | null>(null);
+  const [polishModal, setPolishModal] = useState<{ weekKey: string; weekLabel: string; entriesByCategory: { categoryName: string; entries: { date: string; text: string }[] }[] } | null>(null);
 
   const loadPolished = useCallback(async () => {
     const db = await getDb();
     const rows = await db.select<PolishedEntry[]>(
-      "SELECT id, week_key, category, content, generated_at FROM ihk_polished",
+      "SELECT week_key, content, generated_at FROM ihk_polished",
     );
     const map = new Map<string, PolishedEntry>();
-    for (const r of rows) map.set(`${r.week_key}|${r.category}`, r);
+    for (const r of rows) map.set(r.week_key, r);
     setPolished(map);
   }, []);
 
   useEffect(() => { load().then(() => registerWeek(currentKey)); loadPolished(); }, []);
 
-  const savePolish = async (weekKey: string, categoryIdx: number, content: string) => {
+  const savePolish = async (weekKey: string, content: string) => {
     const db = await getDb();
     await db.execute(
-      `INSERT INTO ihk_polished (week_key, category, content, generated_at)
-       VALUES (?, ?, ?, datetime('now'))
-       ON CONFLICT(week_key, category) DO UPDATE SET content = excluded.content, generated_at = excluded.generated_at`,
-      [weekKey, categoryIdx, content],
+      `INSERT INTO ihk_polished (week_key, content, generated_at)
+       VALUES (?, ?, datetime('now'))
+       ON CONFLICT(week_key) DO UPDATE SET content = excluded.content, generated_at = excluded.generated_at`,
+      [weekKey, content],
     );
     await loadPolished();
   };
 
-  const deletePolish = async (weekKey: string, categoryIdx: number) => {
+  const deletePolish = async (weekKey: string) => {
     const db = await getDb();
-    await db.execute("DELETE FROM ihk_polished WHERE week_key = ? AND category = ?", [weekKey, categoryIdx]);
+    await db.execute("DELETE FROM ihk_polished WHERE week_key = ?", [weekKey]);
     await loadPolished();
   };
 
@@ -559,14 +552,16 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
                 onFillFrom={handleFillFrom}
                 onConfirm={onConfirm}
                 modules={modules}
-                polished={polished}
-                onOpenPolish={(catIdx, catEntries) => setPolishModal({
+                polished={polished.get(key) ?? null}
+                onOpenPolish={() => setPolishModal({
                   weekKey: key,
                   weekLabel: fmtWeekRange(year, kw),
-                  categoryIdx: catIdx,
-                  entries: catEntries.map(e => ({ date: e.date, text: e.text })),
+                  entriesByCategory: IHK_CATEGORIES.map((catName, catIdx) => ({
+                    categoryName: catName,
+                    entries: wEntries.filter(e => e.category === catIdx).map(e => ({ date: e.date, text: e.text })),
+                  })),
                 })}
-                onDeletePolish={(catIdx) => deletePolish(key, catIdx)}
+                onDeletePolish={() => deletePolish(key)}
               />
             ))}
           </div>
@@ -575,13 +570,11 @@ export default function IHKPage({ onConfirm }: { onConfirm: (title: string, msg:
       {polishModal && (
         <AIIHKPolishModal
           weekLabel={polishModal.weekLabel}
-          categoryName={IHK_CATEGORIES[polishModal.categoryIdx]}
-          categoryIdx={polishModal.categoryIdx}
           weekKey={polishModal.weekKey}
-          entries={polishModal.entries}
-          saved={polished.get(`${polishModal.weekKey}|${polishModal.categoryIdx}`) ?? null}
+          entriesByCategory={polishModal.entriesByCategory}
+          saved={polished.get(polishModal.weekKey) ?? null}
           onClose={() => setPolishModal(null)}
-          onSaved={async (content) => { await savePolish(polishModal.weekKey, polishModal.categoryIdx, content); }}
+          onSaved={async (content) => { await savePolish(polishModal.weekKey, content); }}
         />
       )}
     </div>

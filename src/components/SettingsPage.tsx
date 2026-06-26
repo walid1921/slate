@@ -483,9 +483,11 @@ function DataTab() {
         );
       }
       for (const p of (data.ihkPolished ?? [])) {
+        // Skip legacy per-category rows; only the per-week shape is supported now
+        if (p.category != null && p.category !== -1 && p.week_key == null) continue;
         await db.execute(
-          "INSERT OR IGNORE INTO ihk_polished (id, week_key, category, content, generated_at) VALUES (?,?,?,?,?)",
-          [p.id, p.week_key, p.category, p.content, p.generated_at ?? new Date().toISOString()],
+          "INSERT OR IGNORE INTO ihk_polished (week_key, content, generated_at) VALUES (?,?,?)",
+          [p.week_key, p.content, p.generated_at ?? new Date().toISOString()],
         );
       }
       for (const a of (data.activity ?? [])) {
@@ -572,7 +574,7 @@ Verify each of these end-to-end, table by table:
 
 5. Env isolation (src/env.ts): getEnvDir() returns slate-db-dev/ in dev (import.meta.env.DEV === true) and the Tauri appDataDir (slate-db/) in prod. The prod path is mkdir'd if missing. The legacy slate-db/prod/ subfolder layout is migrated up one level (moves children to appDataDir root, removes prod/) only when no slate.db exists at the new location — idempotent. In db.ts, the SQL plugin is loaded with an absolute path for dev (sqlite:<absolute>/slate.db) and a relative path for prod (sqlite:slate.db), and images.ts / backup.ts both route through getEnvDir().
 
-6. AI feature tables — verify the ihk_polished table (UNIQUE(week_key, category)) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at.
+6. AI feature tables — verify the ihk_polished table (PRIMARY KEY week_key, no category column) is created in db.ts, SELECTed in buildExportPayload, DELETE'd before import in handleImport, and re-inserted with all columns including generated_at. The one-time legacy-drop migration (gated by meta flag 'ihk_polish_per_week_v1') drops the prior per-category table before the new CREATE.
 
 For each table, report one of: OK / missing in export / missing in import / schema concern / migration concern. For item 5, report whether env isolation and the legacy-layout migration are correct, idempotent, and don't risk cross-env data loss. Don't fix anything — just produce a findings list.`;
 
