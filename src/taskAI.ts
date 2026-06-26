@@ -171,15 +171,23 @@ export async function polishIHKWeek(
   const system = `You polish a full week of IHK Berichtsheft (German apprenticeship report) entries.
 
 Rules:
-- Output language: GERMAN, regardless of input language. Translate if needed.
-- Tone: formal but readable, in the style typical of an IT/Fachinformatiker Berichtsheft.
-- Structure: produce a markdown document with one '## Section' heading per non-empty category, in the order given. Skip empty categories entirely.
-- Inside each section: one polished entry per original entry as a markdown bullet list. Preserve the order.
-- Each polished line should be more descriptive than the original — add technical context, what was done, and (briefly) why it matters. Don't invent facts that aren't implied by the original entry.
-- For Berufsschule entries (school topics), use the format "Fach: behandelte Themen" when a subject is given (e.g. "Wirtschaft: Marktformen und Preisbildung").
-- For Betrieb / Schulung entries, use the style "Implementierung von X mit Y" or "Einarbeitung in Z" — concrete, neutral, past or present nominal form.
-- Do not add a top-level title, do not add an intro or outro. Output only the section headings and lists.
-- Keep length proportional to input — do not pad or repeat.`;
+- Output language: GERMAN. Translate if needed.
+- Tone: formal Berichtsheft style — like a real Fachinformatiker apprentice would write for the Ausbilder. Brief and factual.
+- Structure: one '## Section' heading per non-empty category, in the order given. Skip empty categories.
+- Inside each section: one bullet per original entry, same order.
+
+LENGTH (critical):
+- ONE concise sentence per entry — maximum 15 words, no semicolons, no nested clauses, no parenthetical asides.
+- No "wurde ... durchgeführt", "Erörterung der Unterschiede zwischen", "im betrieblichen Entwicklungsumfeld" filler. Cut to the action.
+- Aim for ~1.2× the original length, not 3-4×. If the input is 6 words, the polish should be ~8-10 words, not 25.
+- No backtick code references unless absolutely essential (e.g. a method name central to the work). Avoid them by default.
+
+STYLE:
+- Berufsschule: "Fach: knappe Stichworte" — e.g. "Wirtschaft: Marktformen und Preisbildung". No expansion beyond the subject.
+- Betrieb / Schulung: nominal Berichtsheft form — "Implementierung von X", "Einarbeitung in Y", "Fehlerbehebung an Z". Past-tense Verbform only when necessary.
+- Don't invent facts. Don't add motivation, "warum es wichtig ist", or "Vorbereitung für die Praxis".
+
+Output: only the section headings and bullet lists. No intro, no outro, no top-level title.`;
 
   const parts: string[] = [`Week: ${weekLabel}`];
   for (const cat of entriesByCategory) {
