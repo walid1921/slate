@@ -338,6 +338,25 @@ For each table, report one of: OK / missing in export / missing in import / sche
             <option value={30}>30 min</option>
           </select>
         </SettingRow>
+        <div className="px-4 pb-3 pt-1 text-[11px] text-t4 leading-relaxed flex flex-col gap-2">
+          <p>
+            <span className="text-t2 font-medium">How the timer protects your time.</span> Slate polls macOS every 30 seconds while a timer is running and handles three cases:
+          </p>
+          <ol className="list-decimal pl-4 flex flex-col gap-1.5">
+            <li>
+              <span className="text-t3 font-medium">You stay logged in but stop using the Mac.</span> When you've been idle longer than the threshold above, a yellow banner appears on Home with three choices: <span className="text-t3">Keep</span> the time, <span className="text-t3">Subtract</span> the idle minutes, or <span className="text-t3">Stop</span> the session at the moment you went idle.
+            </li>
+            <li>
+              <span className="text-t3 font-medium">Your display turns off or the screen locks.</span> Pressing the power button, hot-corner sleep, or screen lock auto-stops the timer at the last input moment. A blur-overlay greets you when you return with the task name, session length, and a one-click <span className="text-t3">Start new session</span> button.
+            </li>
+            <li>
+              <span className="text-t3 font-medium">Your Mac sleeps</span> (lid close, sleep schedule, low battery). Detected via the gap between polls when the system resumes — the timer is closed at the moment of sleep so the recorded duration matches actual work time.
+            </li>
+          </ol>
+          <p className="text-t5">
+            Brief lid closes under 60 seconds and screen blinks under 30 seconds don't trigger auto-stop. Every detection also fires a macOS notification so you see it even if Slate is hidden.
+          </p>
+        </div>
       </Section>
 
       <Section title="AI Assistant">

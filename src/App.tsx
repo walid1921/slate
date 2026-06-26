@@ -1611,29 +1611,8 @@ export default function App() {
   const { load: loadDev, trashedItems: devTrashedItems, trashedCategories: devTrashedCategories, trashedSections: devTrashedSections, categories: devCategories, sections: devSections, loadTrashed: loadDevTrash, restoreItem: restoreDevItem, permanentDeleteItem: permanentDeleteDevItem, clearDevTrash, resetDevContent } = useDevStore();
   useEffect(() => { load(); loadReminders(); loadNotes(); loadIHK(); loadCategories(); loadTimers(); loadDev(); initNotifications(); logActivity(); runAutoBackup(true); migrateImagesToFilesystem(); }, [load, loadReminders, loadNotes, loadIHK, loadCategories, loadTimers, loadDev]);
 
-  // Dev helpers exposed on window so we can test the feedback paths from the console
-  useEffect(() => {
-    (window as unknown as { __slateTest: unknown }).__slateTest = {
-      toast: () => useToastStore.getState().show("success", "TEST PERSIST", { persistent: true }),
-      ephemeralToast: () => useToastStore.getState().show("success", "TEST EPHEMERAL"),
-      notify: () => notify("Slate test", "If you see this, notifications work"),
-      checkNotifyPermission: async () => {
-        const { isPermissionGranted, requestPermission } = await import("@tauri-apps/plugin-notification");
-        const granted = await isPermissionGranted();
-        console.log("[notify] isPermissionGranted:", granted);
-        if (!granted) {
-          console.log("[notify] requesting permission…");
-          const perm = await requestPermission();
-          console.log("[notify] requestPermission returned:", perm);
-        }
-      },
-    };
-    console.log("[dev] window.__slateTest = { toast(), ephemeralToast(), notify(), checkNotifyPermission() }");
-  }, []);
-
   // Idle detection + sleep detection: poll macOS for idle time while a timer is running
   useEffect(() => {
-    console.log("[idle] poll effect mounted — first tick now, then every 30s");
     let lastTickMs: number | null = null;
     const POLL_MS = 30_000;
     const SLEEP_GAP_MS = 60_000; // gap > 60s between polls ⇒ system was asleep (2× polling interval)
@@ -1644,18 +1623,15 @@ export default function App() {
       try {
         const timer = useTimerStore.getState();
         const running = timer.runningSession();
-        const gap = prev === null ? 0 : Math.round((now - prev) / 1000);
+        if (!running) return;
         const idleProbe = await invoke<number>("get_idle_seconds").catch(() => -1);
         const displayProbe = await invoke<boolean>("is_display_asleep").catch(() => false);
-        console.log(`[poll] gap=${gap}s idle=${idleProbe.toFixed(1)}s displayAsleep=${displayProbe} running=${!!running}`);
-        if (!running) return;
         // Detect system sleep — auto-stop at the last known active moment
         if (prev !== null && now - prev > SLEEP_GAP_MS) {
           const stopIso = new Date(prev).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
           const sleptMin = Math.round((now - prev) / 60000);
           const detail = `Mac was asleep ${sleptMin} min`;
-          console.log("[idle] system sleep detected — stopping timer.", detail);
           await notify("Slate · Timer stopped", detail);
           const sessionMs = prev - new Date(running.started_at).getTime();
           timer.setAutoStop({
@@ -1673,7 +1649,6 @@ export default function App() {
           const stopIso = new Date(stopMs).toISOString().slice(0, 19) + "Z";
           await timer.updateSession(running.id, running.started_at, stopIso);
           const detail = "Display went to sleep";
-          console.log("[idle] display sleep detected — stopping timer.", detail);
           await notify("Slate · Timer stopped", detail);
           const sessionMs = stopMs - new Date(running.started_at).getTime();
           timer.setAutoStop({
