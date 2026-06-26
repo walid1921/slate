@@ -161,6 +161,72 @@ const POLISH_SCHEMA = {
   required: ["content"],
 };
 
+export interface GeneratedDevItem {
+  text: string;
+  description: string;
+  priority: Priority;
+}
+
+const DEV_ITEMS_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    items: {
+      type: "array",
+      minItems: 1,
+      maxItems: 20,
+      items: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "Imperative checklist item, under 80 chars. Start with a verb or noun phrase." },
+          description: { type: "string", description: "1-2 sentence rationale explaining what to check and why it matters. Markdown allowed." },
+          priority: { type: "string", enum: ["none", "low", "medium", "high"] },
+        },
+        required: ["text", "description", "priority"],
+      },
+    },
+  },
+  required: ["items"],
+};
+
+export async function generateDevChecklistItems(
+  sectionName: string,
+  categoryName: string,
+  existingItemTexts: string[],
+  instruction: string,
+): Promise<GeneratedDevItem[]> {
+  const { client, model } = getClient();
+  const system = `You generate items for a software-engineering checklist.
+
+- Items are imperative or noun-phrase, under 80 chars, concrete and actionable.
+- Each item has a 1-2 sentence description explaining what to check and why it matters.
+- Priority: high = critical/blocking quality, medium = important best practice, low = nice-to-have.
+- Do NOT duplicate items already in the list (case-insensitive substring or near-paraphrase counts as duplicate).
+- Match the topic of the section + category. Don't drift.
+- Follow the user's instruction strictly — quantity, focus, depth.`;
+
+  const parts: string[] = [
+    `Section: ${sectionName}`,
+    `Category: ${categoryName}`,
+  ];
+  if (existingItemTexts.length > 0) {
+    parts.push(`Already in the list (DO NOT duplicate):\n${existingItemTexts.map(t => `- ${t}`).join("\n")}`);
+  }
+  parts.push(`Instruction: ${instruction.trim()}`);
+
+  const response = await client.messages.create({
+    model,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: parts.join("\n\n") }],
+    tools: [{ name: "emit_items", description: "Emit the generated items.", input_schema: DEV_ITEMS_SCHEMA }],
+    tool_choice: { type: "tool", name: "emit_items" },
+  });
+
+  const toolUse = response.content.find(b => b.type === "tool_use");
+  if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return items.");
+  return (toolUse.input as { items: GeneratedDevItem[] }).items;
+}
+
 export async function polishIHKWeek(
   weekLabel: string,
   entriesByCategory: { categoryName: string; entries: { date: string; text: string }[] }[],

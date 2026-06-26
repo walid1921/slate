@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Plus, X, Send, Pencil, Trash2 } from "lucide-react";
+import { Plus, X, Send, Pencil, Trash2, Sparkles } from "lucide-react";
+import DevAIItemsModal from "./DevAIItemsModal";
 import { IconDisplay } from "./IconPicker";
 import CategoryModal from "./CategoryModal";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -172,6 +173,7 @@ export default function DevPage() {
   const [showSend, setShowSend] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DevItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<DevItem | null>(null);
+  const [aiItemsOpen, setAiItemsOpen] = useState(false);
   const [catContextMenu, setCatContextMenu] = useState<{ cat: DevCategory; x: number; y: number } | null>(null);
   const [catEditModal, setCatEditModal] = useState<DevCategory | null>(null);
   const [sectionContextMenu, setSectionContextMenu] = useState<{ section: DevSection; x: number; y: number } | null>(null);
@@ -376,9 +378,32 @@ export default function DevPage() {
 
       {/* Add item */}
       {activeCat && (
-        <div className="shrink-0 px-4 py-2.5" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
-          <AddItemRow rgb={activeCat.color} onAdd={(t, priority) => addItem(t, activeCat.id, priority)} />
+        <div className="shrink-0 flex items-center gap-2 px-4 py-2.5" style={{ borderTop: "1px solid var(--c-border-subtle)" }}>
+          <div className="flex-1 min-w-0">
+            <AddItemRow rgb={activeCat.color} onAdd={(t, priority) => addItem(t, activeCat.id, priority)} />
+          </div>
+          <button
+            onClick={() => setAiItemsOpen(true)}
+            className="shrink-0 p-1.5 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
+            title="Generate items with AI"
+          >
+            <Sparkles size={12} />
+          </button>
         </div>
+      )}
+
+      {aiItemsOpen && activeCat && (
+        <DevAIItemsModal
+          sectionName={sections.find(s => s.id === activeCat.section_id)?.name ?? ""}
+          categoryName={activeCat.name}
+          existingItemTexts={items.filter(i => i.category_id === activeCat.id).map(i => i.text)}
+          onClose={() => setAiItemsOpen(false)}
+          onApply={async (generated) => {
+            for (const it of generated) {
+              await addItem(it.text, activeCat.id, it.priority, it.description);
+            }
+          }}
+        />
       )}
 
       {/* Add category modal */}

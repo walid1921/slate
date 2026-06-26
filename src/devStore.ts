@@ -41,7 +41,7 @@ interface DevStore {
   loading: boolean;
   load: () => Promise<void>;
   loadTrashed: () => Promise<void>;
-  addItem: (text: string, categoryId: number, priority?: DevPriority) => Promise<void>;
+  addItem: (text: string, categoryId: number, priority?: DevPriority, description?: string) => Promise<void>;
   toggleItem: (id: number) => Promise<void>;
   deleteItem: (id: number) => Promise<void>;
   updateItemText: (id: number, text: string) => Promise<void>;
@@ -97,15 +97,15 @@ export const useDevStore = create<DevStore>((set, get) => ({
     }
   },
 
-  addItem: async (text, categoryId, priority = "none") => {
+  addItem: async (text, categoryId, priority = "none", description = "") => {
     const trimmed = text.trim();
     if (!trimmed) return;
     try {
       const db = await getDb();
       const pos = get().items.filter(i => i.category_id === categoryId).length;
       await db.execute(
-        "INSERT INTO dev_items (text, category_id, priority, position) VALUES (?, ?, ?, ?)",
-        [trimmed, categoryId, priority, pos]
+        "INSERT INTO dev_items (text, category_id, priority, position, description) VALUES (?, ?, ?, ?, ?)",
+        [trimmed, categoryId, priority, pos, description]
       );
       await get().load();
     } catch (e) {
