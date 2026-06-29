@@ -793,9 +793,26 @@ function SubtaskProgressBar({ subtasks, className, showCount }: { subtasks: SubT
   return <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>{fill}</div>;
 }
 
+const CAT_COLORS = [
+  "rgba(99,102,241,0.85)",   // indigo
+  "rgba(16,185,129,0.85)",   // emerald
+  "rgba(245,158,11,0.85)",   // amber
+  "rgba(59,130,246,0.85)",   // blue
+  "rgba(168,85,247,0.85)",   // purple
+  "rgba(20,184,166,0.85)",   // teal
+  "rgba(251,146,60,0.85)",   // orange
+  "rgba(236,72,153,0.85)",   // pink
+];
+function catColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return CAT_COLORS[h % CAT_COLORS.length];
+}
+
 function SubtaskCategoryHeader({ name, done, total, onRename }: { name: string; done: number; total: number; onRename: (n: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(name);
+  const color = catColor(name);
   useEffect(() => { if (!editing) setVal(name); }, [name, editing]);
   const commit = () => {
     const trimmed = val.trim();
@@ -805,6 +822,7 @@ function SubtaskCategoryHeader({ name, done, total, onRename }: { name: string; 
   };
   return (
     <div className="flex items-center gap-2 pt-3 pb-1">
+      <div className="w-1 h-3 rounded-full shrink-0" style={{ background: color }} />
       {editing ? (
         <input
           value={val}
@@ -812,21 +830,22 @@ function SubtaskCategoryHeader({ name, done, total, onRename }: { name: string; 
           onBlur={commit}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(name); setEditing(false); } e.stopPropagation(); }}
           onPointerDown={e => e.stopPropagation()}
-          className="text-[10px] font-semibold uppercase tracking-wider bg-transparent outline-none text-t2 border-b min-w-0 flex-1"
-          style={{ borderColor: "var(--c-border)" }}
+          className="text-[10px] font-semibold uppercase tracking-wider bg-transparent outline-none border-b min-w-0 flex-1"
+          style={{ borderColor: color, color }}
           autoFocus
         />
       ) : (
         <button
           onPointerDown={e => e.stopPropagation()}
           onClick={e => { e.stopPropagation(); setEditing(true); }}
-          className="text-[10px] text-t3 uppercase tracking-wider font-semibold truncate hover:text-t1 transition-colors text-left"
+          className="text-[10px] uppercase tracking-wider font-semibold truncate transition-opacity hover:opacity-70 text-left"
+          style={{ color }}
         >
           {name}
         </button>
       )}
       <span className="text-[9px] text-t5 font-mono shrink-0">{done}/{total}</span>
-      <div className="flex-1 h-px" style={{ background: "var(--c-border-subtle)" }} />
+      <div className="flex-1 h-px" style={{ background: color, opacity: 0.25 }} />
     </div>
   );
 }
