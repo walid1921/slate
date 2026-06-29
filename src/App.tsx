@@ -442,11 +442,14 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
                     return (
                       <div key={sub.id}>
                         {showHeader && (
-                          <div className="flex items-center gap-2 pt-3 pb-1 select-none">
-                            <span className="text-[10px] text-t4 uppercase tracking-wider font-semibold truncate">{sub.category}</span>
-                            <span className="text-[9px] text-t5 font-mono shrink-0">{catDone}/{catItems.length}</span>
-                            <div className="flex-1 h-px" style={{ background: "var(--c-border-subtle)" }} />
-                          </div>
+                          <SubtaskCategoryHeader
+                            name={sub.category!}
+                            done={catDone}
+                            total={catItems.length}
+                            onRename={(newName) => setSubtasks(todo.id, todo.subtasks.map(s =>
+                              s.category === sub.category ? { ...s, category: newName || undefined } : s
+                            ))}
+                          />
                         )}
                         <SubtaskRow
                           sub={sub}
@@ -788,6 +791,44 @@ function SubtaskProgressBar({ subtasks, className, showCount }: { subtasks: SubT
     </div>
   );
   return <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>{fill}</div>;
+}
+
+function SubtaskCategoryHeader({ name, done, total, onRename }: { name: string; done: number; total: number; onRename: (n: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(name);
+  useEffect(() => { if (!editing) setVal(name); }, [name, editing]);
+  const commit = () => {
+    const trimmed = val.trim();
+    if (trimmed && trimmed !== name) onRename(trimmed);
+    else setVal(name);
+    setEditing(false);
+  };
+  return (
+    <div className="flex items-center gap-2 pt-3 pb-1">
+      {editing ? (
+        <input
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(name); setEditing(false); } e.stopPropagation(); }}
+          onPointerDown={e => e.stopPropagation()}
+          className="text-[10px] font-semibold uppercase tracking-wider bg-transparent outline-none text-t2 border-b min-w-0 flex-1"
+          style={{ borderColor: "var(--c-border)" }}
+          autoFocus
+        />
+      ) : (
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); setEditing(true); }}
+          className="text-[10px] text-t3 uppercase tracking-wider font-semibold truncate hover:text-t1 transition-colors text-left"
+        >
+          {name}
+        </button>
+      )}
+      <span className="text-[9px] text-t5 font-mono shrink-0">{done}/{total}</span>
+      <div className="flex-1 h-px" style={{ background: "var(--c-border-subtle)" }} />
+    </div>
+  );
 }
 
 function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
