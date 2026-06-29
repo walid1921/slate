@@ -60,8 +60,6 @@ const SUBTASKS_SCHEMA = {
   properties: {
     subtasks: {
       type: "array",
-      minItems: 3,
-      maxItems: 6,
       items: {
         type: "object",
         properties: { text: { type: "string" } },
@@ -367,7 +365,7 @@ When the user provides existing subtasks:
 
   const response = await client.messages.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 8096,
     system,
     messages: [{ role: "user", content: parts.join("\n\n") }],
     tools: [{ name: "emit_subtasks", description: "Emit the subtasks.", input_schema: SUBTASKS_SCHEMA }],
@@ -376,7 +374,9 @@ When the user provides existing subtasks:
 
   const toolUse = response.content.find(b => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return subtasks.");
-  return (toolUse.input as { subtasks: { text: string }[] }).subtasks;
+  const subtasks = (toolUse.input as { subtasks?: { text: string }[] }).subtasks;
+  if (!Array.isArray(subtasks)) throw new Error("AI returned an unexpected response — try again.");
+  return subtasks;
 }
 
 export interface SuggestedDeadlinePriority {
