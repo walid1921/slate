@@ -372,11 +372,14 @@ When the user provides existing subtasks:
     tool_choice: { type: "tool", name: "emit_subtasks" },
   });
 
+  if (response.stop_reason === "max_tokens") throw new Error("Response too long — ask for fewer items or split across multiple generations.");
   const toolUse = response.content.find(b => b.type === "tool_use");
   if (!toolUse || toolUse.type !== "tool_use") throw new Error("AI did not return subtasks.");
-  const subtasks = (toolUse.input as { subtasks?: { text: string }[] }).subtasks;
-  if (!Array.isArray(subtasks)) throw new Error("AI returned an unexpected response — try again.");
-  return subtasks;
+  const input = toolUse.input as Record<string, unknown>;
+  console.error("[breakDownTask] tool input:", JSON.stringify(input));
+  const subtasks = input.subtasks;
+  if (!Array.isArray(subtasks)) throw new Error(`AI returned an unexpected shape: ${JSON.stringify(input)}`);
+  return subtasks as { text: string }[];
 }
 
 export interface SuggestedDeadlinePriority {
