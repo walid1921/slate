@@ -204,7 +204,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
     try {
       const { breakDownTask } = await import("./taskAI");
       const generated = await breakDownTask(todo.text, todo.description);
-      const newSubs: SubTask[] = generated.map((g, i) => ({ id: i + 1, text: g.text, done: false }));
+      const newSubs: SubTask[] = generated.map((g, i) => ({ id: i + 1, text: g.text, done: false, category: g.category || undefined }));
       await setSubtasks(todo.id, newSubs);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

@@ -62,7 +62,10 @@ const SUBTASKS_SCHEMA = {
       type: "array",
       items: {
         type: "object",
-        properties: { text: { type: "string" } },
+        properties: {
+          text: { type: "string" },
+          category: { type: "string", description: "Optional group/phase label. Omit for ungrouped items." },
+        },
         required: ["text"],
       },
     },
@@ -335,13 +338,15 @@ export async function breakDownTask(
   description: string,
   existingSubtasks: { text: string; done: boolean }[] = [],
   instruction?: string,
-): Promise<{ text: string }[]> {
+): Promise<{ text: string; category?: string }[]> {
   const { client, model } = getClient();
-  const system = `You produce 3-6 concrete subtasks for a task. Each subtask:
+  const system = `You produce concrete subtasks for a task. Each subtask:
 - Starts with a verb (Write, Test, Review, Setup, Deploy, etc.)
-- Is independently completable in under 2 hours
+- Is independently completable
 - Is ordered in logical execution sequence
 - Avoids vague language ("understand X", "think about Y")
+
+Optionally assign a "category" to group related subtasks under a shared label (e.g. a phase name, area, or theme). Use the same category string for consecutive related items. Omit category for ungrouped items.
 
 When the user provides existing subtasks:
 - Subtasks marked [done] are completed work — KEEP them verbatim in your output unless they are clearly redundant.
@@ -379,7 +384,7 @@ When the user provides existing subtasks:
   console.error("[breakDownTask] tool input:", JSON.stringify(input));
   const subtasks = input.subtasks;
   if (!Array.isArray(subtasks)) throw new Error(`AI returned an unexpected shape: ${JSON.stringify(input)}`);
-  return subtasks as { text: string }[];
+  return subtasks as { text: string; category?: string }[];
 }
 
 export interface SuggestedDeadlinePriority {

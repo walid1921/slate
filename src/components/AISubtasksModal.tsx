@@ -14,7 +14,7 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
   const [instruction, setInstruction] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proposed, setProposed] = useState<string[]>(existing.map(s => s.text));
+  const [proposed, setProposed] = useState<{ text: string; category?: string }[]>(existing.map(s => ({ text: s.text, category: s.category })));
   const [hasGenerated, setHasGenerated] = useState(false);
   const instructionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -34,7 +34,7 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
         existing.map(s => ({ text: s.text, done: s.done })),
         instruction.trim() || undefined,
       );
-      setProposed(result.map(s => s.text));
+      setProposed(result.map(s => ({ text: s.text, category: s.category })));
       setHasGenerated(true);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -44,11 +44,11 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
   };
 
   const handleApply = () => {
-    const cleaned = proposed.map(s => s.trim()).filter(Boolean);
+    const cleaned = proposed.filter(s => s.text.trim());
     if (cleaned.length === 0) return;
-    const subs: SubTask[] = cleaned.map((text, i) => {
-      const prev = existing.find(s => s.text.trim() === text);
-      return { id: i + 1, text, done: prev?.done ?? false };
+    const subs: SubTask[] = cleaned.map((item, i) => {
+      const prev = existing.find(s => s.text.trim() === item.text.trim());
+      return { id: i + 1, text: item.text.trim(), done: prev?.done ?? false, category: item.category || undefined };
     });
     onApply(subs);
   };
@@ -97,7 +97,7 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-t4 uppercase tracking-wider">{hasGenerated ? "Proposed" : "Edit before applying"} ({proposed.length})</span>
               <button
-                onClick={() => setProposed([...proposed, ""])}
+                onClick={() => setProposed([...proposed, { text: "", category: undefined }])}
                 className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 <Plus size={10} /><span>Add</span>
@@ -105,23 +105,28 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
             </div>
             <div className="flex flex-col gap-1.5 mt-1">
               {proposed.map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={s}
-                    onChange={e => {
-                      const next = [...proposed];
-                      next[i] = e.target.value;
-                      setProposed(next);
-                    }}
-                    className="flex-1 px-2.5 py-1.5 rounded text-[12px] text-t2 outline-none"
-                    style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
-                  />
-                  <button
-                    onClick={() => setProposed(proposed.filter((_, j) => j !== i))}
-                    className="text-t5 hover:text-red-400 transition-colors"
-                  >
-                    <X size={12} />
-                  </button>
+                <div key={i} className="flex flex-col gap-0.5">
+                  {s.category && (
+                    <span className="text-[10px] text-t5 pl-1">#{s.category}</span>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      value={s.text}
+                      onChange={e => {
+                        const next = [...proposed];
+                        next[i] = { ...next[i], text: e.target.value };
+                        setProposed(next);
+                      }}
+                      className="flex-1 px-2.5 py-1.5 rounded text-[12px] text-t2 outline-none"
+                      style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+                    />
+                    <button
+                      onClick={() => setProposed(proposed.filter((_, j) => j !== i))}
+                      className="text-t5 hover:text-red-400 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -138,11 +143,11 @@ export default function AISubtasksModal({ taskText, taskDescription, existing, o
           </button>
           <button
             onClick={handleApply}
-            disabled={proposed.filter(s => s.trim()).length === 0}
+            disabled={proposed.filter(s => s.text.trim()).length === 0}
             className="px-4 py-1.5 rounded text-[12px] text-white hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:pointer-events-none"
             style={{ background: "rgba(99,102,241,0.9)" }}
           >
-            Apply ({proposed.filter(s => s.trim()).length})
+            Apply ({proposed.filter(s => s.text.trim()).length})
           </button>
         </div>
       </div>
