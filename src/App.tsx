@@ -358,8 +358,8 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         <div className="flex flex-col shrink-0">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-1.5">
-              <FileText size={10} className="text-t4 shrink-0" />
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Notes</span>
+              <FileText size={11} className="text-t2 shrink-0" />
+              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Notes</span>
             </div>
             {desc.trim().length === 0 && (
               <TipBtn
@@ -389,8 +389,8 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         <div className="flex flex-col border-t border-s shrink-0">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="flex items-center gap-1.5 shrink-0">
-              <CheckSquare size={10} className="text-t4 shrink-0" />
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Subtasks</span>
+              <CheckSquare size={11} className="text-t2 shrink-0" />
+              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Subtasks</span>
             </div>
             {todo.subtasks.length > 0 && (
               <SubtaskProgressBar subtasks={todo.subtasks} showCount className="flex-1 max-w-[180px]" />
@@ -468,8 +468,8 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         <div className="flex flex-col border-t border-s shrink-0">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-1.5">
-              <Images size={10} className="text-t4 shrink-0" />
-              <span className="text-[10px] text-t4 uppercase tracking-wider">Images</span>
+              <Images size={11} className="text-t2 shrink-0" />
+              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Images</span>
             </div>
             <div className="flex items-center gap-1.5">
               {taskImages.length > 0 && <span className="text-[10px] text-t5 font-mono">{taskImages.length}</span>}
