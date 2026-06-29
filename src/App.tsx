@@ -31,6 +31,7 @@ import {
   Images,
   Bell,
   Sparkles,
+  GripVertical,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -83,6 +84,7 @@ import {
   verticalListSortingStrategy,
   horizontalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -170,6 +172,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [breakdownLoading, setBreakdownLoading] = useState(false);
   const [showSubtasksAiModal, setShowSubtasksAiModal] = useState(false);
   const [descGenLoading, setDescGenLoading] = useState(false);
+  const subtaskDndSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const handleGenerateDescription = async () => {
     if (descGenLoading || desc.trim().length > 0) return;
@@ -410,15 +413,54 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               }} />
             </div>
             <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
-              {todo.subtasks.map((sub) => (
-                <SubtaskRow
-                  key={sub.id}
-                  sub={sub}
-                  onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
-                  onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
-                  onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
-                />
-              ))}
+              <DndContext
+                sensors={subtaskDndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(event: DragEndEvent) => {
+                  const { active, over } = event;
+                  if (!over || active.id === over.id) return;
+                  const oldIdx = todo.subtasks.findIndex(s => s.id === active.id);
+                  const newIdx = todo.subtasks.findIndex(s => s.id === over.id);
+                  if (oldIdx === -1 || newIdx === -1) return;
+                  const reordered = arrayMove(todo.subtasks, oldIdx, newIdx);
+                  // auto-adopt category of surrounding items when dropped into a different group
+                  const moved = reordered[newIdx];
+                  const prev = reordered[newIdx - 1];
+                  const next = reordered[newIdx + 1];
+                  const neighborCat = prev?.category ?? next?.category;
+                  if (neighborCat !== undefined && neighborCat !== moved.category) {
+                    reordered[newIdx] = { ...moved, category: neighborCat };
+                  }
+                  setSubtasks(todo.id, reordered);
+                }}
+              >
+                <SortableContext items={todo.subtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  {todo.subtasks.map((sub, idx) => {
+                    const prevCat = idx > 0 ? todo.subtasks[idx - 1].category : undefined;
+                    const showHeader = sub.category && sub.category !== prevCat;
+                    const catItems = sub.category ? todo.subtasks.filter(s => s.category === sub.category) : [];
+                    const catDone = catItems.filter(s => s.done).length;
+                    return (
+                      <div key={sub.id}>
+                        {showHeader && (
+                          <div className="flex items-center gap-2 pt-3 pb-1 select-none">
+                            <span className="text-[10px] text-t4 uppercase tracking-wider font-semibold truncate">{sub.category}</span>
+                            <span className="text-[9px] text-t5 font-mono shrink-0">{catDone}/{catItems.length}</span>
+                            <div className="flex-1 h-px" style={{ background: "var(--c-border-subtle)" }} />
+                          </div>
+                        )}
+                        <SubtaskRow
+                          sub={sub}
+                          onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+                          onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+                          onCategoryEdit={(cat) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, category: cat || undefined } : s))}
+                          onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
+                        />
+                      </div>
+                    );
+                  })}
+                </SortableContext>
+              </DndContext>
             </div>
           </div>
         </div>
@@ -749,12 +791,24 @@ function SubtaskProgressBar({ subtasks, className, showCount }: { subtasks: SubT
   return <div className={`h-[3px] rounded-full overflow-hidden ${className ?? ""}`} style={{ background: "var(--c-border)" }}>{fill}</div>;
 }
 
-function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggle: () => void; onEdit: (text: string) => void; onDelete: () => void }) {
+function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
+  sub: SubTask;
+  onToggle: () => void;
+  onEdit: (text: string) => void;
+  onCategoryEdit: (cat: string) => void;
+  onDelete: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(sub.text);
+  const [editingCat, setEditingCat] = useState(false);
+  const [catVal, setCatVal] = useState(sub.category ?? "");
   const [hovered, setHovered] = useState(false);
+  const dragStarted = useRef(false);
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sub.id });
 
   useEffect(() => { if (!editing) setVal(sub.text); }, [sub.text, editing]);
+  useEffect(() => { if (!editingCat) setCatVal(sub.category ?? ""); }, [sub.category, editingCat]);
 
   const commit = () => {
     const trimmed = val.trim();
@@ -763,40 +817,80 @@ function SubtaskRow({ sub, onToggle, onEdit, onDelete }: { sub: SubTask; onToggl
     setEditing(false);
   };
 
+  const commitCat = () => {
+    onCategoryEdit(catVal.trim());
+    setEditingCat(false);
+  };
+
   return (
     <div
-      className="flex items-start gap-2 py-0.5 min-h-[22px]"
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      className="flex items-start gap-2 py-0.5 min-h-[22px] group/subrow"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
-        onClick={onToggle}
+        className="mt-[3px] shrink-0 text-t5 hover:text-t3 transition-colors cursor-grab active:cursor-grabbing touch-none"
+        style={{ opacity: hovered || isDragging ? 1 : 0 }}
+        {...attributes}
+        {...listeners}
+        onPointerDown={(e) => { dragStarted.current = false; listeners?.onPointerDown?.(e as any); }}
+        onPointerMove={(e) => { if (e.buttons > 0) dragStarted.current = true; }}
+        tabIndex={-1}
+      >
+        <GripVertical size={10} />
+      </button>
+      <button
+        onClick={() => { if (!dragStarted.current) onToggle(); dragStarted.current = false; }}
         className={`w-3.5 h-3.5 mt-[2px] rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
         style={sub.done ? { background: "rgba(16,185,129,0.15)" } : {}}
       >
         {sub.done && <Check size={8} className="text-emerald-400" />}
       </button>
-      {editing ? (
-        <input
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(sub.text); setEditing(false); } e.stopPropagation(); }}
-          className="flex-1 text-[12px] bg-transparent outline-none text-t1 border-b"
-          style={{ borderColor: "var(--c-border)" }}
-          autoFocus
-        />
-      ) : (
-        <span
-          onDoubleClick={() => setEditing(true)}
-          className={`flex-1 text-[12px] cursor-default select-none ${sub.done ? "line-through text-t5" : "text-t2"}`}
-        >
-          {sub.text}
-        </span>
-      )}
+      <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+        {editing ? (
+          <input
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(sub.text); setEditing(false); } e.stopPropagation(); }}
+            className="text-[12px] bg-transparent outline-none text-t1 border-b w-full"
+            style={{ borderColor: "var(--c-border)" }}
+            autoFocus
+          />
+        ) : (
+          <span
+            onDoubleClick={() => setEditing(true)}
+            className={`text-[12px] cursor-default select-none leading-relaxed ${sub.done ? "line-through text-t5" : "text-t2"}`}
+          >
+            {sub.text}
+          </span>
+        )}
+        {editingCat ? (
+          <input
+            value={catVal}
+            onChange={(e) => setCatVal(e.target.value)}
+            onBlur={commitCat}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCat(); } if (e.key === "Escape") { setCatVal(sub.category ?? ""); setEditingCat(false); } e.stopPropagation(); }}
+            placeholder="Category name…"
+            className="text-[10px] bg-transparent outline-none text-indigo-400 border-b w-full max-w-[140px]"
+            style={{ borderColor: "var(--c-border)" }}
+            autoFocus
+          />
+        ) : (sub.category || hovered) ? (
+          <button
+            onClick={() => setEditingCat(true)}
+            className="text-[10px] text-t5 hover:text-indigo-400 transition-colors text-left w-fit"
+            style={{ opacity: sub.category ? 1 : 0.4 }}
+          >
+            {sub.category ? `# ${sub.category}` : "+ category"}
+          </button>
+        ) : null}
+      </div>
       <button
         onClick={onDelete}
-        className="transition-opacity text-t5 hover:text-red-400 shrink-0"
+        className="transition-opacity text-t5 hover:text-red-400 shrink-0 mt-[2px]"
         style={{ opacity: hovered ? 1 : 0 }}
       >
         <X size={9} />

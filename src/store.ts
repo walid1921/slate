@@ -10,6 +10,7 @@ export interface SubTask {
   id: number;
   text: string;
   done: boolean;
+  category?: string;
 }
 
 export interface TaskCategory {
