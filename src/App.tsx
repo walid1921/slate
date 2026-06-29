@@ -836,8 +836,8 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
       <button
         onClick={(e) => { e.stopPropagation(); if (!dragStarted.current) onToggle(); dragStarted.current = false; }}
         onPointerDown={(e) => e.stopPropagation()}
-        className={`w-3.5 h-3.5 mt-[2px] rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t4 hover:border-t2"}`}
-        style={{ ...sub.done ? { background: "rgba(16,185,129,0.15)" } : {}, cursor: "pointer" }}
+        className={`w-3.5 h-3.5 mt-[2px] rounded shrink-0 border flex items-center justify-center transition-colors`}
+        style={{ cursor: "pointer", ...(sub.done ? { background: "rgba(16,185,129,0.15)", borderColor: "rgba(16,185,129,0.5)" } : { borderColor: "var(--c-text-3)" }) }}
       >
         {sub.done && <Check size={8} className="text-emerald-400" />}
       </button>
