@@ -31,7 +31,6 @@ import {
   Images,
   Bell,
   Sparkles,
-  GripVertical,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -825,26 +824,20 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
   return (
     <div
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, cursor: isDragging ? "grabbing" : "grab" }}
       className="flex items-start gap-2 py-0.5 min-h-[22px] group/subrow"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      {...attributes}
+      {...listeners}
+      onPointerDown={(e) => { dragStarted.current = false; if (listeners?.onPointerDown) listeners.onPointerDown(e as any); }}
+      onPointerMove={(e) => { if (e.buttons > 0) dragStarted.current = true; if ((listeners as any)?.onPointerMove) (listeners as any).onPointerMove(e); }}
     >
       <button
-        className="mt-[3px] shrink-0 text-t5 hover:text-t3 transition-colors cursor-grab active:cursor-grabbing touch-none"
-        style={{ opacity: hovered || isDragging ? 1 : 0 }}
-        {...attributes}
-        {...listeners}
-        onPointerDown={(e) => { dragStarted.current = false; listeners?.onPointerDown?.(e as any); }}
-        onPointerMove={(e) => { if (e.buttons > 0) dragStarted.current = true; }}
-        tabIndex={-1}
-      >
-        <GripVertical size={10} />
-      </button>
-      <button
-        onClick={() => { if (!dragStarted.current) onToggle(); dragStarted.current = false; }}
+        onClick={(e) => { e.stopPropagation(); if (!dragStarted.current) onToggle(); dragStarted.current = false; }}
+        onPointerDown={(e) => e.stopPropagation()}
         className={`w-3.5 h-3.5 mt-[2px] rounded shrink-0 border flex items-center justify-center transition-colors ${sub.done ? "border-emerald-500/50" : "border-t5/50 hover:border-t3"}`}
-        style={sub.done ? { background: "rgba(16,185,129,0.15)" } : {}}
+        style={{ ...sub.done ? { background: "rgba(16,185,129,0.15)" } : {}, cursor: "pointer" }}
       >
         {sub.done && <Check size={8} className="text-emerald-400" />}
       </button>
@@ -854,6 +847,7 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
             value={val}
             onChange={(e) => setVal(e.target.value)}
             onBlur={commit}
+            onPointerDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setVal(sub.text); setEditing(false); } e.stopPropagation(); }}
             className="text-[12px] bg-transparent outline-none text-t1 border-b w-full"
             style={{ borderColor: "var(--c-border)" }}
@@ -872,6 +866,7 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
             value={catVal}
             onChange={(e) => setCatVal(e.target.value)}
             onBlur={commitCat}
+            onPointerDown={(e) => e.stopPropagation()}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitCat(); } if (e.key === "Escape") { setCatVal(sub.category ?? ""); setEditingCat(false); } e.stopPropagation(); }}
             placeholder="Category name…"
             className="text-[10px] bg-transparent outline-none text-indigo-400 border-b w-full max-w-[140px]"
@@ -880,18 +875,20 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
           />
         ) : (sub.category || hovered) ? (
           <button
-            onClick={() => setEditingCat(true)}
+            onClick={(e) => { e.stopPropagation(); setEditingCat(true); }}
+            onPointerDown={(e) => e.stopPropagation()}
             className="text-[10px] text-t5 hover:text-indigo-400 transition-colors text-left w-fit"
-            style={{ opacity: sub.category ? 1 : 0.4 }}
+            style={{ opacity: sub.category ? 1 : 0.4, cursor: "pointer" }}
           >
             {sub.category ? `# ${sub.category}` : "+ category"}
           </button>
         ) : null}
       </div>
       <button
-        onClick={onDelete}
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        onPointerDown={(e) => e.stopPropagation()}
         className="transition-opacity text-t5 hover:text-red-400 shrink-0 mt-[2px]"
-        style={{ opacity: hovered ? 1 : 0 }}
+        style={{ opacity: hovered ? 1 : 0, cursor: "pointer" }}
       >
         <X size={9} />
       </button>
