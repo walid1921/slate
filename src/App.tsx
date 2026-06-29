@@ -878,7 +878,7 @@ function SubtaskRow({ sub, onToggle, onEdit, onCategoryEdit, onDelete }: {
             onClick={(e) => { e.stopPropagation(); setEditingCat(true); }}
             onPointerDown={(e) => e.stopPropagation()}
             className="text-[10px] text-t5 hover:text-indigo-400 transition-colors text-left w-fit"
-            style={{ opacity: sub.category ? 1 : 0.4, cursor: "pointer" }}
+            style={{ opacity: hovered ? 1 : 0, cursor: "pointer" }}
           >
             {sub.category ? `# ${sub.category}` : "+ category"}
           </button>
