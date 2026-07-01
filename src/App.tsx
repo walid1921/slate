@@ -1774,11 +1774,16 @@ export default function App() {
 
   useEffect(() => {
     const win = getCurrentWindow();
-    if (windowMode === "compact") {
-      win.setSize({ type: "Logical", width: 640, height: 480 } as any);
-    } else {
-      win.setSize({ type: "Logical", width: 1000, height: 800 } as any);
-    }
+    const applySize = () => {
+      if (windowMode === "compact") {
+        win.setSize({ type: "Logical", width: 640, height: 480 } as any);
+      } else {
+        win.setSize({ type: "Logical", width: 1000, height: 800 } as any);
+      }
+    };
+    applySize();
+    const unlisten = win.onFocusChanged(({ payload: focused }) => { if (focused) applySize(); });
+    return () => { unlisten.then(f => f()); };
   }, [windowMode]);
 
   // Load todos on mount + request notification permission early
