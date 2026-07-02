@@ -213,6 +213,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       setBreakdownLoading(false);
     }
   };
+  const [notesOpen, setNotesOpen] = useState(false);
   const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
   const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
@@ -348,32 +349,43 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       <div className="flex flex-col flex-1 min-w-0 overflow-y-auto overflow-x-hidden border-r border-s" style={{ scrollbarWidth: "none" }}>
         {/* Notes */}
         <div className="flex flex-col shrink-0">
-          <div className="flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => setNotesOpen(v => !v)}
+            className="flex items-center justify-between px-4 py-3 w-full text-left hover:bg-s1 transition-colors"
+          >
             <div className="flex items-center gap-1.5">
               <FileText size={11} className="text-t2 shrink-0" />
               <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Notes</span>
+              {desc.trim().length > 0 && !notesOpen && (
+                <span className="text-[10px] text-t4 font-normal normal-case ml-1">has content</span>
+              )}
             </div>
-            {desc.trim().length === 0 && (
-              <TipBtn
-                label={descGenLoading ? "Generating…" : "Generate description (AI)"}
-                side="bottom"
-                onClick={handleGenerateDescription}
-                className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
-              >
-                <Sparkles size={10} className={descGenLoading ? "animate-pulse text-indigo-400" : ""} />
-              </TipBtn>
-            )}
-          </div>
-          <div className="px-4 pb-4">
-            <RichTextEditor
-              key={todo.id}
-              value={desc}
-              onChange={setDesc}
-              onBlur={saveDesc}
-              placeholder="Add notes…"
-              minHeight={80}
-            />
-          </div>
+            <div className="flex items-center gap-1.5">
+              {desc.trim().length === 0 && notesOpen && (
+                <TipBtn
+                  label={descGenLoading ? "Generating…" : "Generate description (AI)"}
+                  side="bottom"
+                  onClick={e => { e.stopPropagation(); handleGenerateDescription(); }}
+                  className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
+                >
+                  <Sparkles size={10} className={descGenLoading ? "animate-pulse text-indigo-400" : ""} />
+                </TipBtn>
+              )}
+              {notesOpen ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
+            </div>
+          </button>
+          {notesOpen && (
+            <div className="px-4 pb-4">
+              <RichTextEditor
+                key={todo.id}
+                value={desc}
+                onChange={setDesc}
+                onBlur={saveDesc}
+                placeholder="Add notes…"
+                minHeight={80}
+              />
+            </div>
+          )}
         </div>
 
         {/* Subtasks */}
