@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Plus, PanelLeft, Trash2 } from "lucide-react";
 import { useNotesStore, Note } from "../notesStore";
+import RichTextEditor, { htmlToPlainText } from "./RichTextEditor";
 
 function relativeDate(iso: string): string {
   const d = new Date(iso);
@@ -132,7 +133,7 @@ export default function NotesPage({ onDeleteRequest }: {
               >
                 <p className="text-[13px] text-t1 truncate leading-snug">{note.title}</p>
                 <p className="text-[11px] text-t4 truncate mt-0.5 leading-snug">
-                  {note.content.split("\n")[0] || "No content"}
+                  {htmlToPlainText(note.content).slice(0, 80) || "No content"}
                 </p>
                 <p className="text-[10px] text-t5 mt-0.5">{relativeDate(note.updated_at)}</p>
               </div>
@@ -159,12 +160,15 @@ export default function NotesPage({ onDeleteRequest }: {
               placeholder="Title"
               className="px-4 pt-1 pb-1 text-[15px] font-medium text-t1 bg-transparent outline-none placeholder-themed shrink-0"
             />
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write something…"
-              className="flex-1 px-4 py-2 text-[13px] text-t2 bg-transparent outline-none resize-none placeholder-themed leading-relaxed"
-            />
+            <div className="flex-1 px-4 py-2 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+              <RichTextEditor
+                key={selectedId}
+                value={content}
+                onChange={setContent}
+                placeholder="Write something…"
+                minHeight={240}
+              />
+            </div>
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
