@@ -231,10 +231,76 @@ body {
   text-decoration: line-through;
 }
 
+.rte-prosemirror a.rte-link {
+  color: rgba(99, 102, 241, 0.9);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.rte-prosemirror a.rte-link:hover {
+  color: rgba(129, 140, 248, 1);
+}
+
 .rte-prosemirror hr {
   border: none;
   border-top: 1px solid var(--c-border);
   margin: 10px 0;
+}
+
+/* Table */
+.rte-prosemirror table.rte-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 12px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--c-border);
+}
+.rte-prosemirror table.rte-table td,
+.rte-prosemirror table.rte-table th {
+  border: 1px solid var(--c-border);
+  padding: 5px 8px;
+  min-width: 60px;
+  vertical-align: top;
+  position: relative;
+}
+.rte-prosemirror table.rte-table th {
+  background: var(--c-surface-2);
+  color: var(--c-text-1);
+  font-weight: 600;
+  text-align: left;
+}
+.rte-prosemirror table.rte-table td {
+  background: transparent;
+  color: var(--c-text-2);
+}
+.rte-prosemirror table.rte-table tr:hover td {
+  background: var(--c-surface-1);
+}
+.rte-prosemirror table.rte-table .selectedCell {
+  background: rgba(99,102,241,0.12) !important;
+}
+.rte-prosemirror table.rte-table p { margin: 0; }
+
+/* ── end table ── */
+
+/* Mention chip */
+.rte-prosemirror .rte-mention {
+  display: inline;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(99, 102, 241, 0.18);
+  color: rgba(129, 140, 248, 0.95);
+  cursor: default;
+}
+
+/* Bubble menu */
+.rte-bubble {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .rte-prosemirror p.is-editor-empty:first-child::before {
