@@ -162,119 +162,114 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 
 function GroupInput({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
   const allTodos = useTodoStore(s => s.todos);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value ?? "");
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const existingGroups = Array.from(new Set(allTodos.map(t => t.group_name).filter(Boolean) as string[])).sort();
-  const filtered = existingGroups.filter(g => g.toLowerCase().includes(draft.toLowerCase()) && g !== value);
-  const showCreate = draft.trim() && !existingGroups.some(g => g.toLowerCase() === draft.trim().toLowerCase());
-  const options = filtered;
-
-  useEffect(() => { setDraft(value ?? ""); }, [value]);
-  useEffect(() => { setActiveIdx(0); }, [draft]);
-
-  const select = (name: string) => {
-    onChange(name.trim() || null);
-    setEditing(false);
-  };
-
-  const commit = () => {
-    onChange(draft.trim() || null);
-    setEditing(false);
-  };
+  const filtered = draft.trim()
+    ? existingGroups.filter(g => g.toLowerCase().includes(draft.toLowerCase()))
+    : existingGroups;
+  const showCreate = draft.trim() !== "" && !existingGroups.some(g => g.toLowerCase() === draft.trim().toLowerCase());
 
   useEffect(() => {
-    if (!editing) return;
+    if (!open) return;
+    setTimeout(() => inputRef.current?.focus(), 30);
     const handler = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) commit();
+      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [editing, draft]);
+  }, [open]);
 
-  if (!editing) {
-    const color = value ? catColor(value) : undefined;
-    return (
+  const select = (name: string | null) => { onChange(name); setOpen(false); setDraft(""); };
+
+  const color = value ? catColor(value) : undefined;
+
+  return (
+    <div className="relative">
       <button
-        onClick={() => { setDraft(""); setEditing(true); }}
+        onClick={() => { setDraft(""); setOpen(o => !o); }}
         className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
         style={{ color: color ?? "var(--c-text-4)" }}
       >
         {value ? (
           <>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
             <span>{value}</span>
           </>
         ) : (
-          <span className="text-t5">None</span>
+          <span className="text-t5">—</span>
         )}
+        <ChevronDown size={9} style={{ opacity: 0.5 }} />
       </button>
-    );
-  }
 
-  return (
-    <div ref={containerRef} className="relative flex flex-col items-end">
-      <input
-        ref={inputRef}
-        autoFocus
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onKeyDown={e => {
-          const total = options.length + (showCreate ? 1 : 0);
-          if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => (i + 1) % total); }
-          if (e.key === "ArrowUp")   { e.preventDefault(); setActiveIdx(i => (i - 1 + total) % total); }
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (total > 0 && activeIdx < options.length) select(options[activeIdx]);
-            else commit();
-          }
-          if (e.key === "Escape") { setDraft(value ?? ""); setEditing(false); }
-        }}
-        placeholder="Group name…"
-        className="text-[11px] text-t2 bg-transparent outline-none text-right"
-        style={{ maxWidth: 140 }}
-      />
-      {(options.length > 0 || showCreate) && (
+      {open && (
         <div
-          className="absolute right-0 top-full mt-1 dropdown rounded-lg shadow-xl py-1 z-50"
-          style={{ minWidth: 160, border: "1px solid var(--c-border)" }}
+          ref={menuRef}
+          className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl py-1 z-50"
+          style={{ minWidth: 180, border: "1px solid var(--c-border)" }}
         >
-          {options.map((g, i) => {
+          {/* Search / create input */}
+          <div className="px-2 pb-1">
+            <input
+              ref={inputRef}
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && draft.trim()) { e.preventDefault(); select(draft.trim()); }
+                if (e.key === "Escape") setOpen(false);
+              }}
+              placeholder="Search or create…"
+              className="w-full px-2 py-1 rounded text-[11px] text-t2 outline-none"
+              style={{ background: "var(--c-surface-2)", border: "1px solid var(--c-border)" }}
+            />
+          </div>
+
+          {/* Existing groups */}
+          {filtered.map(g => {
             const c = catColor(g);
+            const isActive = g === value;
             return (
               <button
                 key={g}
                 onMouseDown={e => { e.preventDefault(); select(g); }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
-                style={{ background: i === activeIdx ? "var(--c-surface-2)" : undefined, color: "var(--c-text-2)" }}
+                style={{ color: isActive ? c : "var(--c-text-2)" }}
               >
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c }} />
-                <span className="truncate">{g}</span>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c }} />
+                <span className="truncate flex-1">{g}</span>
+                {isActive && <Check size={10} className="ml-auto shrink-0" />}
               </button>
             );
           })}
+
+          {/* Create new */}
           {showCreate && (
             <button
               onMouseDown={e => { e.preventDefault(); select(draft.trim()); }}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
-              style={{ background: activeIdx === options.length ? "var(--c-surface-2)" : undefined, color: "var(--c-text-3)" }}
+              style={{ color: "var(--c-text-3)" }}
             >
-              <span className="text-[10px] px-1 rounded" style={{ background: "var(--c-surface-3)" }}>new</span>
-              <span className="truncate" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: catColor(draft.trim()) }} />
+              <span className="truncate flex-1" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
+              <span className="text-[10px] px-1 rounded ml-auto shrink-0" style={{ background: "var(--c-surface-3)", color: "var(--c-text-4)" }}>new</span>
             </button>
           )}
+
+          {/* Remove */}
           {value && (
-            <button
-              onMouseDown={e => { e.preventDefault(); onChange(null); setEditing(false); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-t4 hover:bg-s2 transition-colors border-t"
-              style={{ borderColor: "var(--c-border-subtle)" }}
-            >
-              <X size={10} />
-              <span>Remove group</span>
-            </button>
+            <>
+              <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
+              <button
+                onMouseDown={e => { e.preventDefault(); select(null); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-t4 hover:bg-s2 transition-colors"
+              >
+                <X size={10} />
+                <span>No group</span>
+              </button>
+            </>
           )}
         </div>
       )}
