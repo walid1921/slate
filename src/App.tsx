@@ -159,50 +159,124 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 }
 
 function GroupInput({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const allTodos = useTodoStore(s => s.todos);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
+  const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const existingGroups = Array.from(new Set(allTodos.map(t => t.group_name).filter(Boolean) as string[])).sort();
+  const filtered = existingGroups.filter(g => g.toLowerCase().includes(draft.toLowerCase()) && g !== value);
+  const showCreate = draft.trim() && !existingGroups.some(g => g.toLowerCase() === draft.trim().toLowerCase());
+  const options = filtered;
 
   useEffect(() => { setDraft(value ?? ""); }, [value]);
+  useEffect(() => { setActiveIdx(0); }, [draft]);
 
-  const commit = () => {
-    const trimmed = draft.trim();
-    onChange(trimmed || null);
+  const select = (name: string) => {
+    onChange(name.trim() || null);
     setEditing(false);
   };
 
-  if (editing) {
+  const commit = () => {
+    onChange(draft.trim() || null);
+    setEditing(false);
+  };
+
+  useEffect(() => {
+    if (!editing) return;
+    const handler = (e: MouseEvent) => {
+      if (!containerRef.current?.contains(e.target as Node)) commit();
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [editing, draft]);
+
+  if (!editing) {
+    const color = value ? catColor(value) : undefined;
     return (
+      <button
+        onClick={() => { setDraft(value ?? ""); setEditing(true); }}
+        className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
+        style={{ color: color ?? "var(--c-text-4)" }}
+      >
+        {value ? (
+          <>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+            <span>{value}</span>
+          </>
+        ) : (
+          <span className="text-t5">None</span>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="relative flex flex-col items-end">
       <input
         ref={inputRef}
         autoFocus
         value={draft}
         onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setDraft(value ?? ""); setEditing(false); } }}
+        onKeyDown={e => {
+          const total = options.length + (showCreate ? 1 : 0);
+          if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx(i => (i + 1) % total); }
+          if (e.key === "ArrowUp")   { e.preventDefault(); setActiveIdx(i => (i - 1 + total) % total); }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (total > 0 && activeIdx < options.length) select(options[activeIdx]);
+            else commit();
+          }
+          if (e.key === "Escape") { setDraft(value ?? ""); setEditing(false); }
+        }}
         placeholder="Group name…"
         className="text-[11px] text-t2 bg-transparent outline-none text-right"
         style={{ maxWidth: 140 }}
       />
-    );
-  }
-
-  const color = value ? catColor(value) : undefined;
-  return (
-    <button
-      onClick={() => { setDraft(value ?? ""); setEditing(true); }}
-      className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
-      style={{ color: color ?? "var(--c-text-4)" }}
-    >
-      {value ? (
-        <>
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
-          <span>{value}</span>
-        </>
-      ) : (
-        <span className="text-t5">None</span>
+      {(options.length > 0 || showCreate) && (
+        <div
+          className="absolute right-0 top-full mt-1 dropdown rounded-lg shadow-xl py-1 z-50"
+          style={{ minWidth: 160, border: "1px solid var(--c-border)" }}
+        >
+          {options.map((g, i) => {
+            const c = catColor(g);
+            return (
+              <button
+                key={g}
+                onMouseDown={e => { e.preventDefault(); select(g); }}
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
+                style={{ background: i === activeIdx ? "var(--c-surface-2)" : undefined, color: "var(--c-text-2)" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c }} />
+                <span className="truncate">{g}</span>
+              </button>
+            );
+          })}
+          {showCreate && (
+            <button
+              onMouseDown={e => { e.preventDefault(); select(draft.trim()); }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
+              style={{ background: activeIdx === options.length ? "var(--c-surface-2)" : undefined, color: "var(--c-text-3)" }}
+            >
+              <span className="text-[10px] px-1 rounded" style={{ background: "var(--c-surface-3)" }}>new</span>
+              <span className="truncate" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
+            </button>
+          )}
+          {value && (
+            <button
+              onMouseDown={e => { e.preventDefault(); onChange(null); setEditing(false); }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-t4 hover:bg-s2 transition-colors border-t"
+              style={{ borderColor: "var(--c-border-subtle)" }}
+            >
+              <X size={10} />
+              <span>Remove group</span>
+            </button>
+          )}
+        </div>
       )}
-    </button>
+    </div>
   );
 }
 
