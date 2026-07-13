@@ -80,7 +80,7 @@ import {
   useSensors,
   DragEndEvent,
   useDroppable,
-  useDraggable,
+  useDndContext,
   type CollisionDetection,
 } from "@dnd-kit/core";
 import {
@@ -994,25 +994,22 @@ function catColor(name: string): string {
 function groupTodosForDisplay(todos: Todo[]): Todo[] {
   if (todos.length === 0) return todos;
   const groupMap = new Map<string, Todo[]>();
-  const groupOrder: string[] = [];
-  const ungrouped: { pos: number; items: Todo[] }[] = [];
-  for (const t of todos) {
+  const groupFirstIdx = new Map<string, number>();
+  const blocks: { idx: number; items: Todo[] }[] = [];
+  for (let i = 0; i < todos.length; i++) {
+    const t = todos[i];
     const g = t.group_name ?? null;
     if (!g) {
-      ungrouped.push({ pos: t.position, items: [t] });
+      blocks.push({ idx: i, items: [t] });
     } else {
-      if (!groupMap.has(g)) { groupMap.set(g, []); groupOrder.push(g); }
+      if (!groupMap.has(g)) { groupMap.set(g, []); groupFirstIdx.set(g, i); }
       groupMap.get(g)!.push(t);
     }
   }
-  const blocks: { pos: number; items: Todo[] }[] = [
-    ...ungrouped,
-    ...groupOrder.map(g => {
-      const members = groupMap.get(g)!;
-      return { pos: Math.min(...members.map(t => t.position)), items: members };
-    }),
-  ];
-  blocks.sort((a, b) => a.pos - b.pos);
+  for (const [g, members] of groupMap) {
+    blocks.push({ idx: groupFirstIdx.get(g)!, items: members });
+  }
+  blocks.sort((a, b) => a.idx - b.idx);
   return blocks.flatMap(b => b.items);
 }
 
@@ -1426,7 +1423,7 @@ const KANBAN_COLS: { id: TodoStatus; label: string; color: string }[] = [
 
 const PRIORITY_DOT: Record<Priority, string> = { none: "var(--c-text-5)", low: "rgb(96,165,250)", medium: "rgb(250,204,21)", high: "rgb(248,113,113)" };
 
-function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void; onDelete: () => void }) {
+function KanbanCard({ todo, onOpen, onDelete, suppressSortTransform = false }: { todo: Todo; onOpen: () => void; onDelete: () => void; suppressSortTransform?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
   const now = useNow(todo.due_date, todo.due_time);
   const countdown = todo.due_date ? formatCountdown(todo.due_date, todo.due_time, now) : null;
@@ -1452,7 +1449,7 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
       {...attributes}
       {...listeners}
       className="group rounded-lg px-2.5 py-3 flex flex-col gap-1.5 select-none"
-      style={{ background: countdown?.overdue ? "rgba(239,68,68,0.07)" : "var(--c-surface-2)", border: countdown?.overdue ? "1px solid rgba(239,68,68,0.25)" : "1px solid var(--c-border)", transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, cursor: isDragging ? "grabbing" : "pointer" }}
+      style={{ background: countdown?.overdue ? "rgba(239,68,68,0.07)" : "var(--c-surface-2)", border: countdown?.overdue ? "1px solid rgba(239,68,68,0.25)" : "1px solid var(--c-border)", transform: suppressSortTransform ? undefined : CSS.Transform.toString(transform), transition: suppressSortTransform ? undefined : transition, opacity: isDragging ? 0.4 : 1, cursor: isDragging ? "grabbing" : "pointer" }}
       onClick={onOpen}
     >
       <div className="flex items-center gap-1.5">
@@ -1512,22 +1509,22 @@ function GroupBlock({ name, todos, onOpen, onDelete }: {
 }) {
   const color = catColor(name);
   const done = todos.filter(t => t.done).length;
-  const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({ id: `${GROUP_DRAG_PREFIX}${name}` });
-  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `${GROUP_DRAG_PREFIX}${name}` });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `${GROUP_DRAG_PREFIX}${name}` });
+  const { active } = useDndContext();
+  const anyGroupDragged = typeof active?.id === "string" && (active.id as string).startsWith(GROUP_DRAG_PREFIX);
 
   return (
     <div
-      ref={el => { setDragRef(el); setDropRef(el); }}
+      ref={setNodeRef}
       style={{
-        transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined,
+        transform: CSS.Transform.toString(transform),
+        transition,
         opacity: isDragging ? 0.4 : 1,
-        outline: isOver && !isDragging ? `1px dashed ${color}` : undefined,
         borderRadius: 6,
-        transition: "opacity 0.15s",
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none" style={{ marginTop: 4 }}>
+      <div className="flex items-center gap-2 px-1 pt-1 select-none" style={{ marginTop: 4, marginBottom: 6 }}>
         <button
           {...attributes}
           {...listeners}
@@ -1545,7 +1542,7 @@ function GroupBlock({ name, todos, onOpen, onDelete }: {
       {/* Cards */}
       <div className="flex flex-col gap-2">
         {todos.map(t => (
-          <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
+          <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} suppressSortTransform={anyGroupDragged} />
         ))}
       </div>
     </div>
@@ -1612,7 +1609,16 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto"
         style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none", borderRadius: "0 0 12px 12px" }}
       >
-        <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={[
+            ...orderedGroupNames.flatMap(g => [
+              `${GROUP_DRAG_PREFIX}${g}` as string | number,
+              ...todos.filter(t => t.group_name === g).map(t => t.id as string | number),
+            ]),
+            ...ungrouped.map(t => t.id as string | number),
+          ]}
+          strategy={verticalListSortingStrategy}
+        >
           {orderedGroupNames.map(g => (
             <GroupBlock
               key={g}
