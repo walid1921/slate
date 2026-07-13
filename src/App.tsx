@@ -31,6 +31,7 @@ import {
   Images,
   Bell,
   Sparkles,
+  Rows2,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -157,8 +158,56 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
   );
 }
 
+function GroupInput({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? "");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(value ?? ""); }, [value]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    onChange(trimmed || null);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        autoFocus
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setDraft(value ?? ""); setEditing(false); } }}
+        placeholder="Group name…"
+        className="text-[11px] text-t2 bg-transparent outline-none text-right"
+        style={{ maxWidth: 140 }}
+      />
+    );
+  }
+
+  const color = value ? catColor(value) : undefined;
+  return (
+    <button
+      onClick={() => { setDraft(value ?? ""); setEditing(true); }}
+      className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
+      style={{ color: color ?? "var(--c-text-4)" }}
+    >
+      {value ? (
+        <>
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+          <span>{value}</span>
+        </>
+      ) : (
+        <span className="text-t5">None</span>
+      )}
+    </button>
+  );
+}
+
 function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClose: () => void; askConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
-  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks, moveToCategory, categories } = useTodoStore();
+  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks, moveToCategory, setTodoGroup, categories } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const { reminders: allReminders, remove: removeReminder } = useReminderStore();
   const taskReminders = allReminders.filter(r => r.task_id === todo.id);
@@ -620,6 +669,15 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
             </div>
           )}
         </div>
+      </div>
+
+      {/* Group */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Rows2 size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Group</span>
+        </div>
+        <GroupInput value={todo.group_name ?? null} onChange={v => setTodoGroup(todo.id, v)} />
       </div>
 
       {/* Priority */}
@@ -1403,9 +1461,31 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none", borderRadius: "0 0 12px 12px" }}
       >
         <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          {todos.map(t => (
-            <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
-          ))}
+          {(() => {
+            const items: React.ReactNode[] = [];
+            let lastGroup: string | null | undefined = undefined;
+            for (const t of todos) {
+              const g = t.group_name ?? null;
+              if (g !== lastGroup) {
+                lastGroup = g;
+                if (g) {
+                  const color = catColor(g);
+                  const groupTodos = todos.filter(x => (x.group_name ?? null) === g);
+                  const done = groupTodos.filter(x => x.done).length;
+                  items.push(
+                    <div key={`hdr-${g}`} className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none" style={{ marginTop: items.length > 0 ? 4 : 0 }}>
+                      <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
+                      <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{g}</span>
+                      <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{groupTodos.length}</span>
+                      <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
+                    </div>
+                  );
+                }
+              }
+              items.push(<KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />);
+            }
+            return items;
+          })()}
         </SortableContext>
       </div>
     </div>

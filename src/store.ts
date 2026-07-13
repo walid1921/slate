@@ -41,6 +41,7 @@ export interface Todo {
   show_timer: boolean;
   show_subtask_bar: boolean;
   subtasks: SubTask[];
+  group_name?: string | null;
 }
 
 export const PRESET_COLORS = [
@@ -96,6 +97,7 @@ interface State {
   setStatus: (id: number, status: TodoStatus) => Promise<void>;
   moveToCategory: (id: number, categoryId: number) => Promise<void>;
   setSubtasks: (id: number, subtasks: SubTask[]) => Promise<void>;
+  setTodoGroup: (id: number, groupName: string | null) => Promise<void>;
 }
 
 export const useTodoStore = create<State>((set, get) => ({
@@ -172,7 +174,7 @@ export const useTodoStore = create<State>((set, get) => ({
     try {
       const db = await getDb();
       const rows = await db.select<Todo[]>(
-        "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer, show_subtask_bar, subtasks FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
+        "SELECT id, text, done, priority, due_date, due_time, deadline_notified, position, created_at, description, category_id, status, show_created_at, show_timer, show_subtask_bar, subtasks, group_name FROM todos WHERE deleted_at IS NULL ORDER BY position ASC, created_at DESC"
       );
       set({ todos: rows.map((r) => ({ ...r, done: Boolean(r.done), deadline_notified: Boolean(r.deadline_notified), show_created_at: Boolean(r.show_created_at), show_timer: Boolean(r.show_timer), show_subtask_bar: Boolean(r.show_subtask_bar), status: (r.status as TodoStatus) || (r.done ? 'done' : 'todo'), subtasks: (() => { try { return JSON.parse((r.subtasks as unknown as string) || '[]'); } catch { return []; } })() })), loading: false });
     } catch (e) {
@@ -270,6 +272,12 @@ export const useTodoStore = create<State>((set, get) => ({
     const db = await getDb();
     await db.execute("UPDATE todos SET category_id = ? WHERE id = ?", [categoryId, id]);
     await get().load();
+  },
+
+  setTodoGroup: async (id, groupName) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET group_name = ? WHERE id = ?", [groupName || null, id]);
+    set(s => ({ todos: s.todos.map(t => t.id === id ? { ...t, group_name: groupName || null } : t) }));
   },
 
   // Soft delete

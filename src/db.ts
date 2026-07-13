@@ -70,6 +70,7 @@ export async function getDb(): Promise<Database> {
     )
   `);
   await _db.execute(`ALTER TABLE deleted_categories ADD COLUMN icon TEXT NOT NULL DEFAULT 'folder'`).catch(() => {});
+  await _db.execute(`ALTER TABLE todos ADD COLUMN group_name TEXT`).catch(() => {});
 
   await _db.execute(`
     CREATE TABLE IF NOT EXISTS reminders (
