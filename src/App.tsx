@@ -161,14 +161,15 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
   );
 }
 
-function GroupInput({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
+function GroupInput({ value, onChange, categoryId }: { value: string | null; onChange: (v: string | null) => void; categoryId?: number }) {
   const allTodos = useTodoStore(s => s.todos);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const existingGroups = Array.from(new Set(allTodos.map(t => t.group_name).filter(Boolean) as string[])).sort();
+  const scopedTodos = categoryId != null ? allTodos.filter(t => t.category_id === categoryId) : allTodos;
+  const existingGroups = Array.from(new Set(scopedTodos.map(t => t.group_name).filter(Boolean) as string[])).sort();
   const filtered = draft.trim()
     ? existingGroups.filter(g => g.toLowerCase().includes(draft.toLowerCase()))
     : existingGroups;
@@ -742,7 +743,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           <Rows2 size={10} className="text-t4 shrink-0" />
           <span className="text-[10px] text-t4 uppercase tracking-wider">Group</span>
         </div>
-        <GroupInput value={todo.group_name ?? null} onChange={v => setTodoGroup(todo.id, v)} />
+        <GroupInput value={todo.group_name ?? null} onChange={v => setTodoGroup(todo.id, v)} categoryId={todo.category_id} />
       </div>
 
       {/* Priority */}
