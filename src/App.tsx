@@ -1524,7 +1524,7 @@ function GroupBlock({ name, todos, onOpen, onDelete }: {
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-1 pt-1 select-none" style={{ marginTop: 4, marginBottom: 6 }}>
+      <div className="flex items-center gap-2 px-1 pt-1 select-none" style={{ marginTop: 4, marginBottom: 10 }}>
         <button
           {...attributes}
           {...listeners}
