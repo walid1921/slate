@@ -32,6 +32,7 @@ import {
   Bell,
   Sparkles,
   Rows2,
+  GripVertical,
 } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -79,6 +80,7 @@ import {
   useSensors,
   DragEndEvent,
   useDroppable,
+  useDraggable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -1511,6 +1513,43 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
   );
 }
 
+const GROUP_DRAG_PREFIX = "grp::";
+
+function DraggableGroupHeader({ name, done, total, isOver }: { name: string; done: number; total: number; isOver: boolean }) {
+  const color = catColor(name);
+  const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({ id: `${GROUP_DRAG_PREFIX}${name}` });
+  const { setNodeRef: setDropRef } = useDroppable({ id: `${GROUP_DRAG_PREFIX}${name}` });
+
+  return (
+    <div
+      ref={el => { setDragRef(el); setDropRef(el); }}
+      className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none rounded"
+      style={{
+        marginTop: 4,
+        transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined,
+        opacity: isDragging ? 0.4 : 1,
+        outline: isOver && !isDragging ? `1px solid ${color}` : undefined,
+        background: isOver && !isDragging ? `${color.replace("0.85", "0.08")}` : undefined,
+        transition: "background 0.1s",
+      }}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-t6 hover:text-t3 transition-colors shrink-0"
+        style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
+        tabIndex={-1}
+      >
+        <GripVertical size={10} />
+      </button>
+      <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
+      <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
+      <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{total}</span>
+      <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
+    </div>
+  );
+}
+
 function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn }: {
   col: typeof KANBAN_COLS[number];
   todos: Todo[];
@@ -1568,16 +1607,10 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               if (g !== lastGroup) {
                 lastGroup = g;
                 if (g) {
-                  const color = catColor(g);
                   const groupTodos = todos.filter(x => (x.group_name ?? null) === g);
                   const done = groupTodos.filter(x => x.done).length;
                   items.push(
-                    <div key={`hdr-${g}`} className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none" style={{ marginTop: items.length > 0 ? 4 : 0 }}>
-                      <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{g}</span>
-                      <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{groupTodos.length}</span>
-                      <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
-                    </div>
+                    <DraggableGroupHeader key={`hdr-${g}`} name={g} done={done} total={groupTodos.length} isOver={false} />
                   );
                 }
               }
@@ -2760,33 +2793,62 @@ export default function App() {
                 onDragEnd={(event: DragEndEvent) => {
                   const { active, over } = event;
                   if (!over) return;
-                  const activeId = active.id as number;
+                  const activeId = active.id;
                   const overId = over.id;
+
+                  // ── Group header drag ──────────────────────────────────
+                  if (typeof activeId === "string" && activeId.startsWith(GROUP_DRAG_PREFIX)) {
+                    if (typeof overId !== "string" || !overId.startsWith(GROUP_DRAG_PREFIX)) return;
+                    const activeGroup = activeId.slice(GROUP_DRAG_PREFIX.length);
+                    const overGroup = overId.slice(GROUP_DRAG_PREFIX.length);
+                    if (activeGroup === overGroup) return;
+                    // Find which column/status the group lives in
+                    const groupTodo = todos.find(t => t.group_name === activeGroup && t.category_id === activeCategoryId);
+                    if (!groupTodo) return;
+                    const status = groupTodo.status;
+                    const rawCol = todos.filter(t => t.category_id === activeCategoryId && t.status === status);
+                    const colDisplay = groupTodosForDisplay(rawCol);
+                    // Build current group order
+                    const groupOrder = Array.from(new Set(colDisplay.map(t => t.group_name ?? null).filter(Boolean) as string[]));
+                    const oldIdx = groupOrder.indexOf(activeGroup);
+                    const newIdx = groupOrder.indexOf(overGroup);
+                    if (oldIdx === -1 || newIdx === -1) return;
+                    const newGroupOrder = arrayMove([...groupOrder], oldIdx, newIdx);
+                    // Rebuild column: groups in new order, ungrouped at end
+                    const ungrouped = colDisplay.filter(t => !t.group_name);
+                    const reordered = [
+                      ...newGroupOrder.flatMap(g => colDisplay.filter(t => t.group_name === g)),
+                      ...ungrouped,
+                    ];
+                    const otherTodos = todos.filter(t => !(t.category_id === activeCategoryId && t.status === status));
+                    useTodoStore.getState().reorder([...otherTodos, ...reordered].map(t => t.id));
+                    return;
+                  }
+
+                  // ── Card drag ─────────────────────────────────────────
+                  const cardId = activeId as number;
                   // dropped on a column droppable
                   const col = KANBAN_COLS.find(c => c.id === overId);
-                  if (col) { setStatus(activeId, col.id); return; }
+                  if (col) { setStatus(cardId, col.id); return; }
                   // dropped on another card
                   const overTodo = todos.find(t => t.id === overId);
-                  const activeTodo = todos.find(t => t.id === activeId);
+                  const activeTodo = todos.find(t => t.id === cardId);
                   if (!overTodo || !activeTodo) return;
                   if (overTodo.status !== activeTodo.status) {
-                    setStatus(activeId, overTodo.status);
+                    setStatus(cardId, overTodo.status);
                   } else {
-                    // Use display order (grouped) so indexes match what the user sees
                     const rawCol = todos.filter(t => t.category_id === activeCategoryId && t.status === activeTodo.status);
                     const colTodos = groupTodosForDisplay(rawCol);
-                    const oldIdx = colTodos.findIndex(t => t.id === activeId);
+                    const oldIdx = colTodos.findIndex(t => t.id === cardId);
                     const newIdx = colTodos.findIndex(t => t.id === Number(overId));
                     if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
                     const reordered = arrayMove([...colTodos], oldIdx, newIdx);
-                    // Auto-adopt group from neighbors
                     const prevGroup = newIdx > 0 ? (reordered[newIdx - 1].group_name ?? null) : null;
                     const nextGroup = newIdx < reordered.length - 1 ? (reordered[newIdx + 1].group_name ?? null) : null;
                     const neighborGroup = prevGroup ?? nextGroup;
-                    const currentGroup = activeTodo.group_name ?? null;
-                    if (neighborGroup !== currentGroup) {
+                    if (neighborGroup !== (activeTodo.group_name ?? null)) {
                       reordered[newIdx] = { ...reordered[newIdx], group_name: neighborGroup };
-                      setTodoGroup(activeId, neighborGroup);
+                      setTodoGroup(cardId, neighborGroup);
                     }
                     const otherTodos = todos.filter(t => !(t.category_id === activeCategoryId && t.status === activeTodo.status));
                     useTodoStore.getState().reorder([...otherTodos, ...reordered].map(t => t.id));
