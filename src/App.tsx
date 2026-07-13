@@ -167,6 +167,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
@@ -225,7 +226,10 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   // Close category menu on outside click
   useEffect(() => {
     if (!showCategoryMenu) return;
-    const close = () => setShowCategoryMenu(false);
+    const close = (e: MouseEvent) => {
+      if (categoryMenuRef.current?.contains(e.target as Node)) return;
+      setShowCategoryMenu(false);
+    };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [showCategoryMenu]);
@@ -597,6 +601,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
           })()}
           {showCategoryMenu && (
             <div
+              ref={categoryMenuRef}
               className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl py-1 z-50"
               style={{ minWidth: 160, border: "1px solid var(--c-border)" }}
             >
