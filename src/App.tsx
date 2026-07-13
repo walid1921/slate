@@ -1504,37 +1504,50 @@ function KanbanCard({ todo, onOpen, onDelete }: { todo: Todo; onOpen: () => void
 
 const GROUP_DRAG_PREFIX = "grp::";
 
-function DraggableGroupHeader({ name, done, total, isOver }: { name: string; done: number; total: number; isOver: boolean }) {
+function GroupBlock({ name, todos, onOpen, onDelete }: {
+  name: string;
+  todos: Todo[];
+  onOpen: (id: number) => void;
+  onDelete: (id: number) => void;
+}) {
   const color = catColor(name);
+  const done = todos.filter(t => t.done).length;
   const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({ id: `${GROUP_DRAG_PREFIX}${name}` });
-  const { setNodeRef: setDropRef } = useDroppable({ id: `${GROUP_DRAG_PREFIX}${name}` });
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `${GROUP_DRAG_PREFIX}${name}` });
 
   return (
     <div
       ref={el => { setDragRef(el); setDropRef(el); }}
-      className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none rounded"
       style={{
-        marginTop: 4,
         transform: transform ? `translate(${transform.x}px,${transform.y}px)` : undefined,
         opacity: isDragging ? 0.4 : 1,
-        outline: isOver && !isDragging ? `1px solid ${color}` : undefined,
-        background: isOver && !isDragging ? `${color.replace("0.85", "0.08")}` : undefined,
-        transition: "background 0.1s",
+        outline: isOver && !isDragging ? `1px dashed ${color}` : undefined,
+        borderRadius: 6,
+        transition: "opacity 0.15s",
       }}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-t6 hover:text-t3 transition-colors shrink-0"
-        style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
-        tabIndex={-1}
-      >
-        <GripVertical size={10} />
-      </button>
-      <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
-      <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
-      <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{total}</span>
-      <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
+      {/* Header */}
+      <div className="flex items-center gap-2 px-1 pt-1 pb-0.5 select-none" style={{ marginTop: 4 }}>
+        <button
+          {...attributes}
+          {...listeners}
+          className="text-t6 hover:text-t3 transition-colors shrink-0"
+          style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
+          tabIndex={-1}
+        >
+          <GripVertical size={10} />
+        </button>
+        <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
+        <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
+        <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{todos.length}</span>
+        <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
+      </div>
+      {/* Cards */}
+      <div className="flex flex-col gap-2">
+        {todos.map(t => (
+          <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -1549,6 +1562,18 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+
+  // Build ordered group names and ungrouped cards from the pre-grouped todos array
+  const orderedGroupNames: string[] = [];
+  const seenGroups = new Set<string>();
+  for (const t of todos) {
+    if (t.group_name && !seenGroups.has(t.group_name)) {
+      seenGroups.add(t.group_name);
+      orderedGroupNames.push(t.group_name);
+    }
+  }
+  const ungrouped = todos.filter(t => !t.group_name);
+
   return (
     <div className="flex flex-col flex-1 min-w-0 rounded-xl overflow-visible" style={{ background: "var(--c-surface-0)", border: `1px solid rgba(${col.color},0.25)` }}>
       {/* Column header */}
@@ -1588,25 +1613,18 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
         style={{ minHeight: 60, background: isOver ? `rgba(${col.color},0.07)` : `rgba(${col.color},0.02)`, transition: "background 0.15s", scrollbarWidth: "none", borderRadius: "0 0 12px 12px" }}
       >
         <SortableContext items={todos.map(t => t.id)} strategy={verticalListSortingStrategy}>
-          {(() => {
-            const items: React.ReactNode[] = [];
-            let lastGroup: string | null | undefined = undefined;
-            for (const t of todos) {
-              const g = t.group_name ?? null;
-              if (g !== lastGroup) {
-                lastGroup = g;
-                if (g) {
-                  const groupTodos = todos.filter(x => (x.group_name ?? null) === g);
-                  const done = groupTodos.filter(x => x.done).length;
-                  items.push(
-                    <DraggableGroupHeader key={`hdr-${g}`} name={g} done={done} total={groupTodos.length} isOver={false} />
-                  );
-                }
-              }
-              items.push(<KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />);
-            }
-            return items;
-          })()}
+          {orderedGroupNames.map(g => (
+            <GroupBlock
+              key={g}
+              name={g}
+              todos={todos.filter(t => t.group_name === g)}
+              onOpen={onOpen}
+              onDelete={onDelete}
+            />
+          ))}
+          {ungrouped.map(t => (
+            <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
+          ))}
         </SortableContext>
       </div>
     </div>
@@ -2780,10 +2798,12 @@ export default function App() {
                 sensors={sensors}
                 collisionDetection={((args) => {
                   if (typeof args.active.id === "string" && (args.active.id as string).startsWith(GROUP_DRAG_PREFIX)) {
-                    // Only collide with other group droppables when dragging a group header
-                    const groupDroppables = args.droppableContainers.filter(
-                      c => typeof c.id === "string" && (c.id as string).startsWith(GROUP_DRAG_PREFIX) && c.id !== args.active.id
-                    );
+                    // Collide with other group blocks OR column drop zones when dragging a group
+                    const groupDroppables = args.droppableContainers.filter(c => {
+                      const id = c.id as string;
+                      return (typeof id === "string" && id.startsWith(GROUP_DRAG_PREFIX) && id !== args.active.id) ||
+                        KANBAN_COLS.some(col => col.id === id);
+                    });
                     return closestCenter({ ...args, droppableContainers: groupDroppables });
                   }
                   // Normal card collision — exclude group droppables so they don't interfere
@@ -2800,8 +2820,16 @@ export default function App() {
 
                   // ── Group header drag ──────────────────────────────────
                   if (typeof activeId === "string" && activeId.startsWith(GROUP_DRAG_PREFIX)) {
-                    if (typeof overId !== "string" || !overId.startsWith(GROUP_DRAG_PREFIX)) return;
                     const activeGroup = activeId.slice(GROUP_DRAG_PREFIX.length);
+                    // Dropped on a column → move all tasks in the group to that status
+                    const targetCol = KANBAN_COLS.find(c => c.id === overId);
+                    if (targetCol) {
+                      todos
+                        .filter(t => t.group_name === activeGroup && t.category_id === activeCategoryId)
+                        .forEach(t => setStatus(t.id, targetCol.id));
+                      return;
+                    }
+                    if (typeof overId !== "string" || !overId.startsWith(GROUP_DRAG_PREFIX)) return;
                     const overGroup = overId.slice(GROUP_DRAG_PREFIX.length);
                     if (activeGroup === overGroup) return;
                     // Find which column/status the group lives in
