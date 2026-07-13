@@ -197,7 +197,7 @@ function GroupInput({ value, onChange }: { value: string | null; onChange: (v: s
     const color = value ? catColor(value) : undefined;
     return (
       <button
-        onClick={() => { setDraft(value ?? ""); setEditing(true); }}
+        onClick={() => { setDraft(""); setEditing(true); }}
         className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
         style={{ color: color ?? "var(--c-text-4)" }}
       >
@@ -998,6 +998,31 @@ function catColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
   return CAT_COLORS[h % CAT_COLORS.length];
+}
+
+function groupTodosForDisplay(todos: Todo[]): Todo[] {
+  if (todos.length === 0) return todos;
+  const groupMap = new Map<string, Todo[]>();
+  const groupOrder: string[] = [];
+  const ungrouped: { pos: number; items: Todo[] }[] = [];
+  for (const t of todos) {
+    const g = t.group_name ?? null;
+    if (!g) {
+      ungrouped.push({ pos: t.position, items: [t] });
+    } else {
+      if (!groupMap.has(g)) { groupMap.set(g, []); groupOrder.push(g); }
+      groupMap.get(g)!.push(t);
+    }
+  }
+  const blocks: { pos: number; items: Todo[] }[] = [
+    ...ungrouped,
+    ...groupOrder.map(g => {
+      const members = groupMap.get(g)!;
+      return { pos: Math.min(...members.map(t => t.position)), items: members };
+    }),
+  ];
+  blocks.sort((a, b) => a.pos - b.pos);
+  return blocks.flatMap(b => b.items);
 }
 
 function SubtaskCategoryHeader({ name, done, total, onRename }: { name: string; done: number; total: number; onRename: (n: string) => void }) {
@@ -1903,7 +1928,7 @@ function IHKCard({ onNavigate }: { onNavigate: () => void }) {
 }
 
 export default function App() {
-  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus } = useTodoStore();
+  const { todos, trash, categories, deletedCategories, loading, load, add, loadCategories, addCategory, removeCategory, updateCategoryName, updateCategoryColor, updateCategoryIcon, reorderCategories, loadTrash, restore, deletePermanently, deleteAllPermanently, deleteGroupPermanently, checkDueTodos, hasUnread: todoHasUnread, clearUnread: clearTodoUnread, setQuery, setStatus, setTodoGroup } = useTodoStore();
   const { reminders: allReminders, checkDue, load: loadReminders, trash: reminderTrash, loadTrash: loadReminderTrash, restore: restoreReminder, deletePermanently: deleteReminderPermanently, deleteAllPermanently: deleteAllRemindersPermanently, hasUnread: reminderHasUnread, clearUnread: clearReminderUnread } = useReminderStore();
   const { notes, add: addNote, load: loadNotes, trash: noteTrash, loadTrash: loadNoteTrash, restore: restoreNote, deletePermanently: deleteNotePermanently, deleteAllPermanently: deleteAllNotesPermanently } = useNotesStore();
   const { entries: ihkEntries, load: loadIHK, modules: ihkModules } = useIHKStore();
@@ -2745,18 +2770,24 @@ export default function App() {
                   const activeTodo = todos.find(t => t.id === activeId);
                   if (!overTodo || !activeTodo) return;
                   if (overTodo.status !== activeTodo.status) {
-                    // cross-column: just update status
                     setStatus(activeId, overTodo.status);
                   } else {
-                    // same column: reorder within that column's slice
-                    const colTodos = todos.filter(t => t.category_id === activeCategoryId && t.status === activeTodo.status);
+                    // Use display order (grouped) so indexes match what the user sees
+                    const rawCol = todos.filter(t => t.category_id === activeCategoryId && t.status === activeTodo.status);
+                    const colTodos = groupTodosForDisplay(rawCol);
                     const oldIdx = colTodos.findIndex(t => t.id === activeId);
                     const newIdx = colTodos.findIndex(t => t.id === Number(overId));
                     if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
-                    const reordered = [...colTodos];
-                    reordered.splice(oldIdx, 1);
-                    reordered.splice(newIdx, 0, activeTodo);
-                    // rebuild full todos order: replace the column slice in place
+                    const reordered = arrayMove([...colTodos], oldIdx, newIdx);
+                    // Auto-adopt group from neighbors
+                    const prevGroup = newIdx > 0 ? (reordered[newIdx - 1].group_name ?? null) : null;
+                    const nextGroup = newIdx < reordered.length - 1 ? (reordered[newIdx + 1].group_name ?? null) : null;
+                    const neighborGroup = prevGroup ?? nextGroup;
+                    const currentGroup = activeTodo.group_name ?? null;
+                    if (neighborGroup !== currentGroup) {
+                      reordered[newIdx] = { ...reordered[newIdx], group_name: neighborGroup };
+                      setTodoGroup(activeId, neighborGroup);
+                    }
                     const otherTodos = todos.filter(t => !(t.category_id === activeCategoryId && t.status === activeTodo.status));
                     useTodoStore.getState().reorder([...otherTodos, ...reordered].map(t => t.id));
                   }
@@ -2766,7 +2797,7 @@ export default function App() {
                   <KanbanColumn
                     key={col.id}
                     col={col}
-                    todos={todos.filter(t => t.category_id === activeCategoryId && t.status === col.id)}
+                    todos={groupTodosForDisplay(todos.filter(t => t.category_id === activeCategoryId && t.status === col.id))}
                     onOpen={id => setSelectedTodoId(id)}
                     onDelete={id => askConfirm("Delete task?", `This task will be moved to trash.`, () => useTodoStore.getState().remove(id))}
                     onAddInline={(status, mode) => {
