@@ -235,6 +235,15 @@ Under the hood, `scripts/deploy.sh`:
 4. Replaces `/Applications/Slate.app` with the new build
 5. Reopens it
 
+**Manual update (without the script):**
+
+1. `pnpm tauri build`
+2. Quit the running Slate app
+3. Open Finder → Applications
+4. Drag `src-tauri/target/release/bundle/macos/Slate.app` into Applications → click **Replace**
+
+No need to delete the old app first — dragging over it and clicking Replace is enough.
+
 **Rolling back a bad deploy:**
 
 ```bash
