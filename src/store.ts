@@ -94,6 +94,7 @@ interface State {
   setShowTimer: (id: number, show: boolean) => Promise<void>;
   setShowSubtaskBar: (id: number, show: boolean) => Promise<void>;
   setStatus: (id: number, status: TodoStatus) => Promise<void>;
+  moveToCategory: (id: number, categoryId: number) => Promise<void>;
   setSubtasks: (id: number, subtasks: SubTask[]) => Promise<void>;
 }
 
@@ -262,6 +263,12 @@ export const useTodoStore = create<State>((set, get) => ({
     const done = status === 'done' ? 1 : 0;
     await db.execute("UPDATE todos SET status = ?, done = ? WHERE id = ?", [status, done, id]);
     logActivity();
+    await get().load();
+  },
+
+  moveToCategory: async (id, categoryId) => {
+    const db = await getDb();
+    await db.execute("UPDATE todos SET category_id = ? WHERE id = ?", [categoryId, id]);
     await get().load();
   },
 

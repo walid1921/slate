@@ -158,7 +158,7 @@ function TaskTitleInput({ todo }: { todo: Todo }) {
 }
 
 function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClose: () => void; askConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string, confirmClassName?: string) => void }) {
-  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks } = useTodoStore();
+  const { setPriority, setDescription, setDeadline, setShowCreatedAt, setShowTimer, setShowSubtaskBar, setStatus, setSubtasks, moveToCategory, categories } = useTodoStore();
   const { sessions, start, stop, finish } = useTimerStore();
   const { reminders: allReminders, remove: removeReminder } = useReminderStore();
   const taskReminders = allReminders.filter(r => r.task_id === todo.id);
@@ -166,6 +166,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const activeSession = taskSessions.find(s => !s.ended_at) ?? null;
   const [elapsed, setElapsed] = useState(0);
   const [desc, setDesc] = useState(todo.description);
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [breakdownLoading, setBreakdownLoading] = useState(false);
@@ -220,6 +221,14 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
   const [taskImages, setTaskImages] = useState<{ id: number; filename: string; path: string; src: string }[]>([]);
   const [lightbox, setLightbox] = useState<{ filename: string; data: string } | null>(null);
   const descTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close category menu on outside click
+  useEffect(() => {
+    if (!showCategoryMenu) return;
+    const close = () => setShowCategoryMenu(false);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [showCategoryMenu]);
 
   useEffect(() => {
     if (!activeSession) { setElapsed(0); return; }
@@ -563,6 +572,48 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               {c.label}
             </TipBtn>
           ))}
+        </div>
+      </div>
+
+      {/* Category */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-s shrink-0 relative">
+        <div className="flex items-center gap-1.5">
+          <FolderPlus size={10} className="text-t4 shrink-0" />
+          <span className="text-[10px] text-t4 uppercase tracking-wider">Category</span>
+        </div>
+        <div className="relative">
+          {(() => {
+            const cat = categories.find(c => c.id === todo.category_id);
+            return (
+              <button
+                onClick={() => setShowCategoryMenu(v => !v)}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
+                style={{ color: cat ? `rgb(${cat.color})` : "var(--c-text-3)" }}
+              >
+                <span>{cat?.name ?? "—"}</span>
+                <ChevronDown size={9} style={{ opacity: 0.5 }} />
+              </button>
+            );
+          })()}
+          {showCategoryMenu && (
+            <div
+              className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl py-1 z-50"
+              style={{ minWidth: 160, border: "1px solid var(--c-border)" }}
+            >
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => { moveToCategory(todo.id, cat.id); setShowCategoryMenu(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
+                  style={{ color: todo.category_id === cat.id ? `rgb(${cat.color})` : "var(--c-text-2)" }}
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgb(${cat.color})` }} />
+                  <span className="truncate">{cat.name}</span>
+                  {todo.category_id === cat.id && <Check size={10} className="ml-auto shrink-0" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
