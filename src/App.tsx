@@ -81,6 +81,7 @@ import {
   DragEndEvent,
   useDroppable,
   useDraggable,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -194,14 +195,7 @@ function GroupInput({ value, onChange }: { value: string | null; onChange: (v: s
         className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] transition-colors hover:bg-s2"
         style={{ color: color ?? "var(--c-text-4)" }}
       >
-        {value ? (
-          <>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-            <span>{value}</span>
-          </>
-        ) : (
-          <span className="text-t5">—</span>
-        )}
+        <span>{value ?? "—"}</span>
         <ChevronDown size={9} style={{ opacity: 0.5 }} />
       </button>
 
@@ -235,11 +229,11 @@ function GroupInput({ value, onChange }: { value: string | null; onChange: (v: s
               <button
                 key={g}
                 onMouseDown={e => { e.preventDefault(); select(g); }}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left transition-colors hover:bg-s2"
                 style={{ color: isActive ? c : "var(--c-text-2)" }}
               >
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c }} />
-                <span className="truncate flex-1">{g}</span>
+                <span className="truncate">{g}</span>
                 {isActive && <Check size={10} className="ml-auto shrink-0" />}
               </button>
             );
@@ -253,7 +247,7 @@ function GroupInput({ value, onChange }: { value: string | null; onChange: (v: s
               style={{ color: "var(--c-text-3)" }}
             >
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: catColor(draft.trim()) }} />
-              <span className="truncate flex-1" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
+              <span className="truncate" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
               <span className="text-[10px] px-1 rounded ml-auto shrink-0" style={{ background: "var(--c-surface-3)", color: "var(--c-text-4)" }}>new</span>
             </button>
           )}
@@ -2784,7 +2778,20 @@ export default function App() {
             ) : (
               <DndContext
                 sensors={sensors}
-                collisionDetection={closestCenter}
+                collisionDetection={((args) => {
+                  if (typeof args.active.id === "string" && (args.active.id as string).startsWith(GROUP_DRAG_PREFIX)) {
+                    // Only collide with other group droppables when dragging a group header
+                    const groupDroppables = args.droppableContainers.filter(
+                      c => typeof c.id === "string" && (c.id as string).startsWith(GROUP_DRAG_PREFIX) && c.id !== args.active.id
+                    );
+                    return closestCenter({ ...args, droppableContainers: groupDroppables });
+                  }
+                  // Normal card collision — exclude group droppables so they don't interfere
+                  const cardDroppables = args.droppableContainers.filter(
+                    c => typeof c.id !== "string" || !(c.id as string).startsWith(GROUP_DRAG_PREFIX)
+                  );
+                  return closestCenter({ ...args, droppableContainers: cardDroppables });
+                }) as CollisionDetection}
                 onDragEnd={(event: DragEndEvent) => {
                   const { active, over } = event;
                   if (!over) return;
