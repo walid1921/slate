@@ -234,10 +234,10 @@ export const useTodoStore = create<State>((set, get) => ({
     if (!trimmed) return undefined;
     try {
       const db = await getDb();
-      await db.execute("UPDATE todos SET position = position + 1 WHERE deleted_at IS NULL");
+      const [{ maxPos }] = await db.select<[{ maxPos: number }]>("SELECT COALESCE(MAX(position), -1) as maxPos FROM todos WHERE deleted_at IS NULL");
       const result = await db.execute(
-        "INSERT INTO todos (text, priority, due_date, due_time, position, category_id, description) VALUES (?, ?, ?, ?, 0, ?, ?)",
-        [trimmed, priority, due_date, due_time, category_id, description]
+        "INSERT INTO todos (text, priority, due_date, due_time, position, category_id, description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [trimmed, priority, due_date, due_time, maxPos + 1, category_id, description]
       );
       logActivity();
       await get().load();
