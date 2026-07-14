@@ -1502,11 +1502,13 @@ function KanbanCard({ todo, onOpen, onDelete, suppressSortTransform = false }: {
 
 const GROUP_DRAG_PREFIX = "grp::";
 
-function GroupBlock({ name, todos, onOpen, onDelete }: {
+function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   name: string;
   todos: Todo[];
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }) {
   const color = catColor(name);
   const done = todos.filter(t => t.done).length;
@@ -1525,13 +1527,18 @@ function GroupBlock({ name, todos, onOpen, onDelete }: {
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-1 pt-1 select-none" style={{ marginTop: 4, marginBottom: 10 }}>
+      <div
+        className="flex items-center gap-2 px-1 pt-1 select-none cursor-pointer"
+        style={{ marginTop: 4, marginBottom: isOpen ? 10 : 4 }}
+        onClick={onToggle}
+      >
         <button
           {...attributes}
           {...listeners}
           className="text-t6 hover:text-t3 transition-colors shrink-0"
           style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
           tabIndex={-1}
+          onClick={e => e.stopPropagation()}
         >
           <GripVertical size={10} />
         </button>
@@ -1539,13 +1546,16 @@ function GroupBlock({ name, todos, onOpen, onDelete }: {
         <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
         <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{todos.length}</span>
         <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
+        <ChevronDown size={10} style={{ color, opacity: 0.5, flexShrink: 0, transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
       </div>
       {/* Cards */}
-      <div className="flex flex-col gap-2">
-        {todos.map(t => (
-          <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} suppressSortTransform={anyGroupDragged} />
-        ))}
-      </div>
+      {isOpen && (
+        <div className="flex flex-col gap-2">
+          {todos.map(t => (
+            <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} suppressSortTransform={anyGroupDragged} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1560,6 +1570,8 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const toggleGroup = (g: string) => setOpenGroup(prev => prev === g ? null : g);
 
   // Build ordered group names and ungrouped cards from the pre-grouped todos array
   const orderedGroupNames: string[] = [];
@@ -1627,6 +1639,8 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               todos={todos.filter(t => t.group_name === g)}
               onOpen={onOpen}
               onDelete={onDelete}
+              isOpen={openGroup === g}
+              onToggle={() => toggleGroup(g)}
             />
           ))}
           {ungrouped.length > 0 && (
@@ -1636,6 +1650,8 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               todos={ungrouped}
               onOpen={onOpen}
               onDelete={onDelete}
+              isOpen={openGroup === "General"}
+              onToggle={() => toggleGroup("General")}
             />
           )}
         </SortableContext>
