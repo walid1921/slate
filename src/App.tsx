@@ -992,6 +992,19 @@ function catColor(name: string): string {
   return CAT_COLORS[h % CAT_COLORS.length];
 }
 
+const GROUP_PICKER_COLORS = [
+  "rgba(255,255,255,0.80)",  // white (default)
+  "rgba(99,102,241,0.85)",   // indigo
+  "rgba(16,185,129,0.85)",   // emerald
+  "rgba(245,158,11,0.85)",   // amber
+  "rgba(59,130,246,0.85)",   // blue
+  "rgba(168,85,247,0.85)",   // purple
+  "rgba(20,184,166,0.85)",   // teal
+  "rgba(251,146,60,0.85)",   // orange
+  "rgba(236,72,153,0.85)",   // pink
+];
+const GROUP_DEFAULT_COLOR = GROUP_PICKER_COLORS[0];
+
 const GROUP_COLOR_LS_KEY = "slate_group_colors";
 function loadGroupColors(): Record<string, string> {
   try { return JSON.parse(localStorage.getItem(GROUP_COLOR_LS_KEY) || "{}"); } catch { return {}; }
@@ -1002,7 +1015,7 @@ function saveGroupColor(name: string, color: string) {
   localStorage.setItem(GROUP_COLOR_LS_KEY, JSON.stringify(map));
 }
 function getGroupColor(name: string): string {
-  return loadGroupColors()[name] ?? catColor(name);
+  return loadGroupColors()[name] ?? GROUP_DEFAULT_COLOR;
 }
 
 function groupTodosForDisplay(todos: Todo[]): Todo[] {
@@ -1597,7 +1610,7 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
               style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}
               onClick={e => e.stopPropagation()}
             >
-              {CAT_COLORS.map(c => (
+              {GROUP_PICKER_COLORS.map(c => (
                 <button
                   key={c}
                   className="w-3.5 h-3.5 rounded-full shrink-0 transition-transform hover:scale-125"
