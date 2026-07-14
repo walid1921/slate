@@ -169,7 +169,15 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
   const inputRef = useRef<HTMLInputElement>(null);
 
   const scopedTodos = categoryId != null ? allTodos.filter(t => t.category_id === categoryId) : allTodos;
-  const existingGroups = Array.from(new Set(scopedTodos.map(t => t.group_name).filter(Boolean) as string[])).sort();
+  // Preserve kanban order (position-based) instead of alphabetical
+  const existingGroups: string[] = [];
+  const _seenGrp = new Set<string>();
+  for (const t of groupTodosForDisplay(scopedTodos)) {
+    if (t.group_name && !_seenGrp.has(t.group_name)) {
+      _seenGrp.add(t.group_name);
+      existingGroups.push(t.group_name);
+    }
+  }
   const filtered = draft.trim()
     ? existingGroups.filter(g => g.toLowerCase().includes(draft.toLowerCase()))
     : existingGroups;
