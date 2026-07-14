@@ -17,6 +17,7 @@ extern "C" {
     fn CGEventSourceSecondsSinceLastEventType(state_id: i32, event_type: u32) -> f64;
     fn CGMainDisplayID() -> u32;
     fn CGDisplayIsAsleep(display: u32) -> i32;
+    fn CGGetActiveDisplayList(max_displays: u32, active_displays: *mut u32, display_count: *mut u32) -> i32;
 }
 
 #[tauri::command]
@@ -36,7 +37,21 @@ fn get_idle_seconds() -> f64 {
 fn is_display_asleep() -> bool {
     #[cfg(target_os = "macos")]
     {
-        unsafe { CGDisplayIsAsleep(CGMainDisplayID()) != 0 }
+        unsafe {
+            // Get the count of active displays
+            let mut count: u32 = 0;
+            CGGetActiveDisplayList(0, std::ptr::null_mut(), &mut count);
+            if count == 0 {
+                // Fallback to main display if enumeration fails
+                return CGDisplayIsAsleep(CGMainDisplayID()) != 0;
+            }
+            let mut displays = vec![0u32; count as usize];
+            CGGetActiveDisplayList(count, displays.as_mut_ptr(), &mut count);
+            // Only report asleep when ALL displays are asleep.
+            // This handles clamshell mode (lid closed + external monitor active):
+            // the internal display shows as asleep but the external one doesn't.
+            displays[..count as usize].iter().all(|&d| CGDisplayIsAsleep(d) != 0)
+        }
     }
     #[cfg(not(target_os = "macos"))]
     {
