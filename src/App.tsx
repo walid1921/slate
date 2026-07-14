@@ -1629,9 +1629,15 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               onDelete={onDelete}
             />
           ))}
-          {ungrouped.map(t => (
-            <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} />
-          ))}
+          {ungrouped.length > 0 && (
+            <GroupBlock
+              key="__general__"
+              name="General"
+              todos={ungrouped}
+              onOpen={onOpen}
+              onDelete={onDelete}
+            />
+          )}
         </SortableContext>
       </div>
     </div>
@@ -2832,31 +2838,41 @@ export default function App() {
                     const targetCol = KANBAN_COLS.find(c => c.id === overId);
                     if (targetCol) {
                       todos
-                        .filter(t => t.group_name === activeGroup && t.category_id === activeCategoryId)
+                        .filter(t =>
+                          (activeGroup === "General" ? !t.group_name : t.group_name === activeGroup) &&
+                          t.category_id === activeCategoryId
+                        )
                         .forEach(t => setStatus(t.id, targetCol.id));
                       return;
                     }
                     if (typeof overId !== "string" || !overId.startsWith(GROUP_DRAG_PREFIX)) return;
                     const overGroup = overId.slice(GROUP_DRAG_PREFIX.length);
                     if (activeGroup === overGroup) return;
-                    // Find which column/status the group lives in
-                    const groupTodo = todos.find(t => t.group_name === activeGroup && t.category_id === activeCategoryId);
+                    // "General" is the display sentinel for tasks with group_name = null
+                    const groupTodo = todos.find(t =>
+                      (activeGroup === "General" ? !t.group_name : t.group_name === activeGroup) &&
+                      t.category_id === activeCategoryId
+                    );
                     if (!groupTodo) return;
                     const status = groupTodo.status;
                     const rawCol = todos.filter(t => t.category_id === activeCategoryId && t.status === status);
                     const colDisplay = groupTodosForDisplay(rawCol);
-                    // Build current group order
-                    const groupOrder = Array.from(new Set(colDisplay.map(t => t.group_name ?? null).filter(Boolean) as string[]));
+                    // Build ordered group list — map null to "General"
+                    const groupOrder: string[] = [];
+                    const seenG = new Set<string>();
+                    for (const t of colDisplay) {
+                      const g = t.group_name ?? "General";
+                      if (!seenG.has(g)) { seenG.add(g); groupOrder.push(g); }
+                    }
                     const oldIdx = groupOrder.indexOf(activeGroup);
                     const newIdx = groupOrder.indexOf(overGroup);
                     if (oldIdx === -1 || newIdx === -1) return;
                     const newGroupOrder = arrayMove([...groupOrder], oldIdx, newIdx);
-                    // Rebuild column: groups in new order, ungrouped at end
-                    const ungrouped = colDisplay.filter(t => !t.group_name);
-                    const reordered = [
-                      ...newGroupOrder.flatMap(g => colDisplay.filter(t => t.group_name === g)),
-                      ...ungrouped,
-                    ];
+                    const reordered = newGroupOrder.flatMap(g =>
+                      g === "General"
+                        ? colDisplay.filter(t => !t.group_name)
+                        : colDisplay.filter(t => t.group_name === g)
+                    );
                     const otherTodos = todos.filter(t => !(t.category_id === activeCategoryId && t.status === status));
                     useTodoStore.getState().reorder([...otherTodos, ...reordered].map(t => t.id));
                     return;
