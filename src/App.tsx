@@ -187,7 +187,7 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
 
   const select = (name: string | null) => { onChange(name); setOpen(false); setDraft(""); };
 
-  const color = value ? catColor(value) : undefined;
+  const color = value ? getGroupColor(value) : undefined;
 
   return (
     <div className="relative">
@@ -224,7 +224,7 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
 
           {/* Existing groups */}
           {filtered.map(g => {
-            const c = catColor(g);
+            const c = getGroupColor(g);
             const isActive = g === value;
             return (
               <button
@@ -247,8 +247,8 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
               className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] transition-colors hover:bg-s2"
               style={{ color: "var(--c-text-3)" }}
             >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: catColor(draft.trim()) }} />
-              <span className="truncate" style={{ color: catColor(draft.trim()) }}>{draft.trim()}</span>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getGroupColor(draft.trim()) }} />
+              <span className="truncate" style={{ color: getGroupColor(draft.trim()) }}>{draft.trim()}</span>
               <span className="text-[10px] px-1 rounded ml-auto shrink-0" style={{ background: "var(--c-surface-3)", color: "var(--c-text-4)" }}>new</span>
             </button>
           )}
