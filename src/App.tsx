@@ -1516,6 +1516,25 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   const { active } = useDndContext();
   const anyGroupDragged = typeof active?.id === "string" && (active.id as string).startsWith(GROUP_DRAG_PREFIX);
 
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraft(name);
+    setEditing(true);
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  };
+
+  const commitEdit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== name) {
+      todos.forEach(t => useTodoStore.getState().setTodoGroup(t.id, trimmed));
+    }
+    setEditing(false);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -1530,20 +1549,40 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
       <div
         className="flex items-center gap-2 px-1 pt-1 select-none cursor-pointer"
         style={{ marginTop: 4, marginBottom: isOpen ? 10 : 4 }}
-        onClick={onToggle}
+        onClick={editing ? undefined : onToggle}
+        onDoubleClick={editing ? undefined : startEdit}
       >
         <button
           {...attributes}
-          {...listeners}
+          {...(editing ? {} : listeners)}
           className="text-t6 hover:text-t3 transition-colors shrink-0"
           style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" }}
           tabIndex={-1}
           onClick={e => e.stopPropagation()}
+          onDoubleClick={e => e.stopPropagation()}
         >
           <GripVertical size={10} />
         </button>
         <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
-        <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
+        {editing ? (
+          <input
+            ref={nameInputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={e => {
+              if (e.key === "Enter") { e.preventDefault(); commitEdit(); }
+              if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
+            }}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+            className="bg-transparent outline-none border-none text-[10px] font-semibold uppercase tracking-wider w-[120px] min-w-0"
+            style={{ color, caretColor: color }}
+            autoFocus
+          />
+        ) : (
+          <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
+        )}
         <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{todos.length}</span>
         <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
         <ChevronDown size={10} style={{ color, opacity: 0.5, flexShrink: 0, transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
