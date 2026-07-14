@@ -203,11 +203,11 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
       {open && (
         <div
           ref={menuRef}
-          className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl py-1 z-50"
-          style={{ minWidth: 180, border: "1px solid var(--c-border)" }}
+          className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl z-50 flex flex-col"
+          style={{ minWidth: 180, border: "1px solid var(--c-border)", maxHeight: 280 }}
         >
-          {/* Search / create input */}
-          <div className="px-2 pb-1">
+          {/* Search / create input — always visible */}
+          <div className="px-2 pt-1 pb-1 shrink-0">
             <input
               ref={inputRef}
               value={draft}
@@ -222,6 +222,8 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
             />
           </div>
 
+          {/* Scrollable list */}
+          <div className="overflow-y-auto flex-1 py-1">
           {/* Existing groups */}
           {filtered.map(g => {
             const c = getGroupColor(g);
@@ -252,14 +254,15 @@ function GroupInput({ value, onChange, categoryId }: { value: string | null; onC
               <span className="text-[10px] px-1 rounded ml-auto shrink-0" style={{ background: "var(--c-surface-3)", color: "var(--c-text-4)" }}>new</span>
             </button>
           )}
+          </div>{/* end scrollable list */}
 
-          {/* Remove */}
+          {/* Remove — pinned at bottom */}
           {value && (
             <>
-              <div style={{ height: 1, background: "var(--c-border-subtle)", margin: "4px 0" }} />
+              <div style={{ height: 1, background: "var(--c-border-subtle)" }} />
               <button
                 onMouseDown={e => { e.preventDefault(); select(null); }}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-t4 hover:bg-s2 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-t4 hover:bg-s2 transition-colors shrink-0"
               >
                 <X size={10} />
                 <span>No group</span>
@@ -718,7 +721,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
             <div
               ref={categoryMenuRef}
               className="dropdown absolute right-0 top-full mt-1 rounded-lg shadow-xl py-1 z-50"
-              style={{ minWidth: 160, border: "1px solid var(--c-border)" }}
+              style={{ minWidth: 160, border: "1px solid var(--c-border)", maxHeight: 220, overflowY: "auto" }}
             >
               {categories.map(cat => (
                 <button
