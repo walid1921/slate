@@ -1666,13 +1666,34 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
   onClick: () => void; onContextMenu: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(cat.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraft(cat.name);
+    setEditing(true);
+    setTimeout(() => { inputRef.current?.select(); }, 0);
+  };
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== cat.name) {
+      useTodoStore.getState().updateCategoryName(cat.id, trimmed);
+    }
+    setEditing(false);
+  };
+
   return (
     <button
       ref={setNodeRef}
       {...attributes}
-      {...listeners}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
+      {...(editing ? {} : listeners)}
+      onClick={editing ? undefined : onClick}
+      onContextMenu={editing ? undefined : onContextMenu}
+      onDoubleClick={startEdit}
       className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-t text-[12px] shrink-0 select-none"
       style={{
         color: isActive ? `rgba(${cat.color},1)` : `rgba(${cat.color},0.5)`,
@@ -1681,11 +1702,29 @@ function SortableCategoryTab({ cat, isActive, pendingCount, hasOverdue, onClick,
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
-        cursor: isDragging ? "grabbing" : "pointer",
+        cursor: editing ? "text" : isDragging ? "grabbing" : "pointer",
       }}
     >
       <IconDisplay name={cat.icon ?? "folder"} size={11} />
-      {cat.name}
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === "Enter") { e.preventDefault(); commit(); }
+            if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
+          }}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          className="bg-transparent outline-none border-none text-[12px] w-[80px] min-w-0"
+          style={{ color: `rgba(${cat.color},1)`, caretColor: `rgba(${cat.color},1)` }}
+          autoFocus
+        />
+      ) : (
+        cat.name
+      )}
       <span className="text-[10px] opacity-60">{pendingCount}</span>
       {hasOverdue && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" style={{ zIndex: 10 }} />}
     </button>
