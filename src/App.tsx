@@ -2461,15 +2461,6 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { if (searchOpen) { setSearchOpen(false); return; } getCurrentWindow().hide(); return; }
       if ((e.metaKey || e.ctrlKey) && e.key === "f") { e.preventDefault(); setSearchOpen(o => !o); return; }
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const tabs: NavView[] = ["main", "todos", "reminders", "notes", "ihk", "dev", "settings"];
-        const cur = tabs.indexOf(lastNavView);
-        const next = e.key === "ArrowRight"
-          ? tabs[(cur + 1) % tabs.length]
-          : tabs[(cur - 1 + tabs.length) % tabs.length];
-        navigate(next);
-        return;
-      }
       if (document.activeElement === inputRef.current) return;
       if (view !== "todos") return;
       if (e.key === " ") {
