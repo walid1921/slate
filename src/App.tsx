@@ -992,6 +992,19 @@ function catColor(name: string): string {
   return CAT_COLORS[h % CAT_COLORS.length];
 }
 
+const GROUP_COLOR_LS_KEY = "slate_group_colors";
+function loadGroupColors(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(GROUP_COLOR_LS_KEY) || "{}"); } catch { return {}; }
+}
+function saveGroupColor(name: string, color: string) {
+  const map = loadGroupColors();
+  map[name] = color;
+  localStorage.setItem(GROUP_COLOR_LS_KEY, JSON.stringify(map));
+}
+function getGroupColor(name: string): string {
+  return loadGroupColors()[name] ?? catColor(name);
+}
+
 function groupTodosForDisplay(todos: Todo[]): Todo[] {
   if (todos.length === 0) return todos;
   const groupMap = new Map<string, Todo[]>();
@@ -1510,7 +1523,8 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const color = catColor(name);
+  const [colorOverride, setColorOverride] = useState(() => getGroupColor(name));
+  const color = colorOverride;
   const done = todos.filter(t => t.done).length;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `${GROUP_DRAG_PREFIX}${name}` });
   const { active } = useDndContext();
@@ -1519,6 +1533,17 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const h = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [pickerOpen]);
 
   const startEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1563,7 +1588,26 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
         >
           <GripVertical size={10} />
         </button>
-        <span className="w-1 h-3.5 rounded-full shrink-0" style={{ background: color }} />
+        {/* Color bar — click to change color */}
+        <div ref={pickerRef} className="relative shrink-0" onClick={e => { e.stopPropagation(); setPickerOpen(o => !o); }}>
+          <span className="block w-1 h-3.5 rounded-full cursor-pointer hover:opacity-75 transition-opacity" style={{ background: color }} />
+          {pickerOpen && (
+            <div
+              className="absolute left-3 top-0 z-50 flex gap-1 p-1.5 rounded-lg dropdown"
+              style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}
+              onClick={e => e.stopPropagation()}
+            >
+              {CAT_COLORS.map(c => (
+                <button
+                  key={c}
+                  className="w-3.5 h-3.5 rounded-full shrink-0 transition-transform hover:scale-125"
+                  style={{ background: c, outline: c === color ? "2px solid white" : "none", outlineOffset: 1 }}
+                  onClick={() => { saveGroupColor(name, c); setColorOverride(c); setPickerOpen(false); }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
         {editing ? (
           <input
             ref={nameInputRef}
