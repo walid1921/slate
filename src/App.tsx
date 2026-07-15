@@ -1677,7 +1677,7 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [openGroup, setOpenGroup] = useState<string | null>("General");
   const toggleGroup = (g: string) => setOpenGroup(prev => prev === g ? null : g);
 
   // Build ordered group names and ungrouped cards from the pre-grouped todos array
