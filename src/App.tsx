@@ -341,7 +341,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
       setBreakdownLoading(false);
     }
   };
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [leftTab, setLeftTab] = useState<"notes" | "subtasks" | "images">("notes");
   const [openSection, setOpenSection] = useState<"timelog" | "notes" | "subtasks" | "images" | null>(null);
   const [editingLog, setEditingLog] = useState(false);
   const toggleSection = (s: "timelog" | "notes" | "subtasks" | "images") => setOpenSection(v => v === s ? null : s);
@@ -484,157 +484,162 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
         />
       )}
 
-      {/* LEFT COLUMN: Notes, Images, Subtasks — always open */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-y-auto overflow-x-hidden border-r border-s" style={{ scrollbarWidth: "none" }}>
-        {/* Notes */}
-        <div className="flex flex-col shrink-0">
-          <button
-            onClick={() => setNotesOpen(v => !v)}
-            className="flex items-center justify-between px-4 py-3 w-full text-left hover:bg-s1 transition-colors"
-          >
-            <div className="flex items-center gap-1.5">
-              <FileText size={11} className="text-t2 shrink-0" />
-              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Notes</span>
-              {desc.trim().length > 0 && !notesOpen && (
-                <span className="text-[10px] text-t4 font-normal normal-case ml-1">has content</span>
+      {/* LEFT COLUMN: tabbed Notes / Subtasks / Images */}
+      <div className="flex flex-col flex-1 min-w-0 border-r border-s">
+        {/* Tab nav */}
+        <div className="flex items-center gap-0 border-b border-s shrink-0 px-2 pt-2">
+          {([
+            { id: "notes", icon: <FileText size={11} />, label: "Notes", badge: desc.trim().length > 0 ? "·" : null },
+            { id: "subtasks", icon: <CheckSquare size={11} />, label: "Subtasks", badge: todo.subtasks.length > 0 ? String(todo.subtasks.length) : null },
+            { id: "images", icon: <Images size={11} />, label: "Images", badge: taskImages.length > 0 ? String(taskImages.length) : null },
+          ] as const).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setLeftTab(tab.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-t transition-colors relative"
+              style={leftTab === tab.id
+                ? { color: "var(--c-text-1)", background: "var(--c-surface-2)", borderBottom: "2px solid var(--c-text-2)", marginBottom: -1 }
+                : { color: "var(--c-text-4)" }
+              }
+            >
+              {tab.icon}
+              {tab.label}
+              {tab.badge && (
+                <span className="text-[9px] font-mono" style={{ color: leftTab === tab.id ? "var(--c-text-3)" : "var(--c-text-5)" }}>
+                  {tab.badge}
+                </span>
               )}
-            </div>
-            <div className="flex items-center gap-1.5">
-              {desc.trim().length === 0 && notesOpen && (
-                <TipBtn
-                  label={descGenLoading ? "Generating…" : "Generate description (AI)"}
-                  side="bottom"
-                  onClick={e => { e.stopPropagation(); handleGenerateDescription(); }}
-                  className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
-                >
-                  <Sparkles size={10} className={descGenLoading ? "animate-pulse text-indigo-400" : ""} />
-                </TipBtn>
-              )}
-              {notesOpen ? <ChevronDown size={11} className="text-t5" /> : <ChevronRight size={11} className="text-t5" />}
-            </div>
-          </button>
-          {notesOpen && (
-            <div className="px-4 pb-4">
-              <RichTextEditor
-                key={todo.id}
-                value={desc}
-                onChange={setDesc}
-                onBlur={saveDesc}
-                placeholder="Add notes…"
-                minHeight={80}
-              />
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: "none" }}>
+          {/* Notes tab */}
+          {leftTab === "notes" && (
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-end px-4 pt-3 pb-1 shrink-0">
+                {desc.trim().length === 0 && (
+                  <TipBtn
+                    label={descGenLoading ? "Generating…" : "Generate description (AI)"}
+                    side="bottom"
+                    onClick={handleGenerateDescription}
+                    className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2"
+                  >
+                    <Sparkles size={10} className={descGenLoading ? "animate-pulse text-indigo-400" : ""} />
+                  </TipBtn>
+                )}
+              </div>
+              <div className="px-4 pb-4">
+                <RichTextEditor
+                  key={todo.id}
+                  value={desc}
+                  onChange={setDesc}
+                  onBlur={saveDesc}
+                  placeholder="Add notes…"
+                  minHeight={120}
+                />
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Subtasks */}
-        <div className="flex flex-col border-t border-s shrink-0">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <CheckSquare size={11} className="text-t2 shrink-0" />
-              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Subtasks</span>
-            </div>
-            {todo.subtasks.length > 0 && (
-              <SubtaskProgressBar subtasks={todo.subtasks} showCount className="flex-1 max-w-[180px]" />
-            )}
-            <div className="flex items-center gap-1.5 ml-auto shrink-0">
-              <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
-                <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
-              </TipBtn>
-              <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
-                {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
-              </TipBtn>
-            </div>
-          </div>
-          <div>
-            <div className="px-4 pt-1 pb-2">
-              <AddSubtaskRow onAdd={(text) => {
-                const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-                setSubtasks(todo.id, [{ id: newId, text, done: false }, ...todo.subtasks]);
-              }} />
-            </div>
-            <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
-              <DndContext
-                sensors={subtaskDndSensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(event: DragEndEvent) => {
-                  const { active, over } = event;
-                  if (!over || active.id === over.id) return;
-                  const oldIdx = todo.subtasks.findIndex(s => s.id === active.id);
-                  const newIdx = todo.subtasks.findIndex(s => s.id === over.id);
-                  if (oldIdx === -1 || newIdx === -1) return;
-                  const reordered = arrayMove(todo.subtasks, oldIdx, newIdx);
-                  // auto-adopt category of surrounding items when dropped into a different group
-                  const moved = reordered[newIdx];
-                  const prev = reordered[newIdx - 1];
-                  const next = reordered[newIdx + 1];
-                  const neighborCat = prev?.category ?? next?.category;
-                  if (neighborCat !== undefined && neighborCat !== moved.category) {
-                    reordered[newIdx] = { ...moved, category: neighborCat };
-                  }
-                  setSubtasks(todo.id, reordered);
-                }}
-              >
-                <SortableContext items={todo.subtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {todo.subtasks.map((sub, idx) => {
-                    const prevCat = idx > 0 ? todo.subtasks[idx - 1].category : undefined;
-                    const showHeader = sub.category && sub.category !== prevCat;
-                    const catItems = sub.category ? todo.subtasks.filter(s => s.category === sub.category) : [];
-                    const catDone = catItems.filter(s => s.done).length;
-                    return (
-                      <div key={sub.id}>
-                        {showHeader && (
-                          <SubtaskCategoryHeader
-                            name={sub.category!}
-                            done={catDone}
-                            total={catItems.length}
-                            onRename={(newName) => setSubtasks(todo.id, todo.subtasks.map(s =>
-                              s.category === sub.category ? { ...s, category: newName || undefined } : s
-                            ))}
+          {/* Subtasks tab */}
+          {leftTab === "subtasks" && (
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 px-4 pt-3 pb-2 shrink-0">
+                {todo.subtasks.length > 0 && (
+                  <SubtaskProgressBar subtasks={todo.subtasks} showCount className="flex-1 max-w-[180px]" />
+                )}
+                <div className="flex items-center gap-1.5 ml-auto shrink-0">
+                  <TipBtn label={breakdownLoading ? "Generating…" : "Break down into subtasks (AI)"} side="bottom" onClick={handleBreakdown} className="p-1 rounded text-t5 hover:text-indigo-400 transition-colors hover:bg-s2 disabled:opacity-40">
+                    <Sparkles size={10} className={breakdownLoading ? "animate-pulse text-indigo-400" : ""} />
+                  </TipBtn>
+                  <TipBtn label={todo.show_subtask_bar ? "Hide bar on card" : "Show bar on card"} side="bottom" onClick={() => setShowSubtaskBar(todo.id, !todo.show_subtask_bar)} className="p-1 rounded text-t5 hover:text-t2 transition-colors hover:bg-s2">
+                    {todo.show_subtask_bar ? <EyeOff size={9} /> : <Eye size={9} />}
+                  </TipBtn>
+                </div>
+              </div>
+              <div className="px-4 pt-1 pb-2">
+                <AddSubtaskRow onAdd={(text) => {
+                  const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
+                  setSubtasks(todo.id, [{ id: newId, text, done: false }, ...todo.subtasks]);
+                }} />
+              </div>
+              <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
+                <DndContext
+                  sensors={subtaskDndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event: DragEndEvent) => {
+                    const { active, over } = event;
+                    if (!over || active.id === over.id) return;
+                    const oldIdx = todo.subtasks.findIndex(s => s.id === active.id);
+                    const newIdx = todo.subtasks.findIndex(s => s.id === over.id);
+                    if (oldIdx === -1 || newIdx === -1) return;
+                    const reordered = arrayMove(todo.subtasks, oldIdx, newIdx);
+                    const moved = reordered[newIdx];
+                    const prev = reordered[newIdx - 1];
+                    const next = reordered[newIdx + 1];
+                    const neighborCat = prev?.category ?? next?.category;
+                    if (neighborCat !== undefined && neighborCat !== moved.category) {
+                      reordered[newIdx] = { ...moved, category: neighborCat };
+                    }
+                    setSubtasks(todo.id, reordered);
+                  }}
+                >
+                  <SortableContext items={todo.subtasks.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                    {todo.subtasks.map((sub, idx) => {
+                      const prevCat = idx > 0 ? todo.subtasks[idx - 1].category : undefined;
+                      const showHeader = sub.category && sub.category !== prevCat;
+                      const catItems = sub.category ? todo.subtasks.filter(s => s.category === sub.category) : [];
+                      const catDone = catItems.filter(s => s.done).length;
+                      return (
+                        <div key={sub.id}>
+                          {showHeader && (
+                            <SubtaskCategoryHeader
+                              name={sub.category!}
+                              done={catDone}
+                              total={catItems.length}
+                              onRename={(newName) => setSubtasks(todo.id, todo.subtasks.map(s =>
+                                s.category === sub.category ? { ...s, category: newName || undefined } : s
+                              ))}
+                            />
+                          )}
+                          <SubtaskRow
+                            sub={sub}
+                            onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
+                            onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
+                            onCategoryEdit={(cat) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, category: cat || undefined } : s))}
+                            onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
                           />
-                        )}
-                        <SubtaskRow
-                          sub={sub}
-                          onToggle={() => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, done: !s.done } : s))}
-                          onEdit={(text) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, text } : s))}
-                          onCategoryEdit={(cat) => setSubtasks(todo.id, todo.subtasks.map(s => s.id === sub.id ? { ...s, category: cat || undefined } : s))}
-                          onDelete={() => setSubtasks(todo.id, todo.subtasks.filter(s => s.id !== sub.id))}
-                        />
-                      </div>
-                    );
-                  })}
-                </SortableContext>
-              </DndContext>
+                        </div>
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Images */}
-        <div className="flex flex-col border-t border-s shrink-0">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-1.5">
-              <Images size={11} className="text-t2 shrink-0" />
-              <span className="text-[11px] text-t2 font-semibold uppercase tracking-wider">Images</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {taskImages.length > 0 && <span className="text-[10px] text-t5 font-mono">{taskImages.length}</span>}
-              <button
-                onMouseDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); uploadImage(); }}
-                className="p-1 rounded text-t5 hover:text-blue-400 transition-colors hover:bg-s2"
-              >
-                <ImagePlus size={10} />
-              </button>
-            </div>
-          </div>
-          <div className="px-4 pb-4">
-            {taskImages.length === 0 ? (
-              <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors">
-                <ImagePlus size={12} /><span>Upload a reference image…</span>
-              </button>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {taskImages.map(img => (
+          {/* Images tab */}
+          {leftTab === "images" && (
+            <div className="flex flex-col px-4 py-3 gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-t4">{taskImages.length > 0 ? `${taskImages.length} image${taskImages.length > 1 ? "s" : ""}` : "No images yet"}</span>
+                <button
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); uploadImage(); }}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded text-[11px] text-t3 hover:text-t1 hover:bg-s2 transition-colors"
+                >
+                  <ImagePlus size={11} /><span>Upload</span>
+                </button>
+              </div>
+              {taskImages.length === 0 ? (
+                <button onClick={uploadImage} className="flex items-center gap-2 text-[11px] text-t5 hover:text-t3 transition-colors mt-1">
+                  <ImagePlus size={12} /><span>Upload a reference image…</span>
+                </button>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {taskImages.map(img => (
                     <div key={img.id} className="group relative" style={{ width: 72, height: 72 }}>
                       <img
                         src={img.src}
@@ -650,13 +655,14 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
                         <X size={8} className="text-white" />
                       </button>
                     </div>
-                ))}
-                <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
-                  <ImagePlus size={16} />
-                </button>
-              </div>
-            )}
-          </div>
+                  ))}
+                  <button onClick={uploadImage} className="flex items-center justify-center rounded-lg text-t6 hover:text-t4 hover:bg-s2 transition-colors" style={{ width: 72, height: 72, border: "1px dashed var(--c-border)" }}>
+                    <ImagePlus size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
