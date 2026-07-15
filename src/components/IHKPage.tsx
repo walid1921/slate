@@ -41,9 +41,9 @@ function getWeekRange(year: number, kw: number): { start: Date; end: Date } {
   const jan4 = new Date(year, 0, 4);
   const mon = new Date(jan4);
   mon.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + (kw - 1) * 7);
-  const fri = new Date(mon);
-  fri.setDate(mon.getDate() + 4);
-  return { start: mon, end: fri };
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { start: mon, end: sun };
 }
 
 function fmtWeekRange(year: number, kw: number): string {
