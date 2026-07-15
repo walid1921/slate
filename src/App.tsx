@@ -1539,6 +1539,33 @@ function KanbanCard({ todo, onOpen, onDelete, suppressSortTransform = false }: {
 
 const GROUP_DRAG_PREFIX = "grp::";
 
+function AnimatedGroupCards({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(isOpen);
+  const [visible, setVisible] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMounted(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+    } else {
+      setVisible(false);
+      const t = setTimeout(() => setMounted(false), 180);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
+
+  if (!mounted) return null;
+  return (
+    <div style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(-6px)",
+      transition: "opacity 0.18s ease, transform 0.18s ease",
+    }}>
+      {children}
+    </div>
+  );
+}
+
 function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   name: string;
   todos: Todo[];
@@ -1655,14 +1682,14 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
         <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
         <ChevronDown size={10} style={{ color, opacity: 0.5, flexShrink: 0, transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
       </div>
-      {/* Cards */}
-      {isOpen && (
+      {/* Cards — animated mount/unmount */}
+      <AnimatedGroupCards isOpen={isOpen}>
         <div className="flex flex-col gap-2">
           {todos.map(t => (
             <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} suppressSortTransform={anyGroupDragged} />
           ))}
         </div>
-      )}
+      </AnimatedGroupCards>
     </div>
   );
 }
