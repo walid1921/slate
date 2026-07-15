@@ -171,13 +171,6 @@ pub fn run() {
                 #[cfg(target_os = "macos")]
                 apply_vibrancy(&window, NSVisualEffectMaterial::HudWindow, None, Some(12.0))
                     .ok();
-                let win = window.clone();
-                let auto_hide_flag = app.state::<AutoHide>().0.clone();
-                window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::Focused(false) = event {
-                        if auto_hide_flag.load(Ordering::Relaxed) { let _ = win.hide(); }
-                    }
-                });
             }
 
 
