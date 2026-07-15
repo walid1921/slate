@@ -2535,26 +2535,6 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { if (searchOpen) { setSearchOpen(false); return; } getCurrentWindow().hide(); return; }
       if ((e.metaKey || e.ctrlKey) && e.key === "f") { e.preventDefault(); setSearchOpen(o => !o); return; }
-      if (document.activeElement === inputRef.current) return;
-      if (view !== "todos") return;
-      if (e.key === " ") {
-        const todo = filtered[focusedIdx];
-        if (todo) { e.preventDefault(); useTodoStore.getState().toggle(todo.id); }
-        return;
-      }
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setFocusedIdx((i) => Math.min(i + 1, filtered.length - 1));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setFocusedIdx((i) => {
-          if (i <= 0) { return -1; }
-          return i - 1;
-        });
-        return;
-      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
