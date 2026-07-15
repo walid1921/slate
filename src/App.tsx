@@ -1539,58 +1539,6 @@ function KanbanCard({ todo, onOpen, onDelete, suppressSortTransform = false }: {
 
 const GROUP_DRAG_PREFIX = "grp::";
 
-function AnimatedGroupCards({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(isOpen);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const skipFirst = useRef(true);
-
-  // Mount immediately when opening so the DOM exists before animation
-  useEffect(() => {
-    if (isOpen) setMounted(true);
-  }, [isOpen]);
-
-  // Animate after mount state settles
-  useEffect(() => {
-    if (!mounted) return;
-    const el = wrapperRef.current;
-    if (!el) return;
-
-    // Skip the very first render (already in open state, no animation needed)
-    if (skipFirst.current) { skipFirst.current = false; return; }
-
-    if (isOpen) {
-      // Expand: 0 → natural height
-      el.style.overflow = "hidden";
-      el.style.height = "0px";
-      const target = el.scrollHeight;
-      const raf = requestAnimationFrame(() => {
-        el.style.transition = "height 0.22s cubic-bezier(0.4,0,0.2,1)";
-        el.style.height = target + "px";
-      });
-      const t = setTimeout(() => {
-        el.style.height = "";
-        el.style.overflow = "";
-        el.style.transition = "";
-      }, 230);
-      return () => { cancelAnimationFrame(raf); clearTimeout(t); };
-    } else {
-      // Collapse: natural height → 0
-      const h = el.scrollHeight;
-      el.style.overflow = "hidden";
-      el.style.transition = "";
-      el.style.height = h + "px";
-      const raf = requestAnimationFrame(() => requestAnimationFrame(() => {
-        el.style.transition = "height 0.2s cubic-bezier(0.4,0,0.6,1)";
-        el.style.height = "0px";
-      }));
-      const t = setTimeout(() => setMounted(false), 200);
-      return () => { cancelAnimationFrame(raf); clearTimeout(t); };
-    }
-  }, [isOpen, mounted]);
-
-  if (!mounted) return null;
-  return <div ref={wrapperRef}>{children}</div>;
-}
 
 function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   name: string;
@@ -1708,14 +1656,14 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
         <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
         <ChevronDown size={10} style={{ color, opacity: 0.5, flexShrink: 0, transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
       </div>
-      {/* Cards — animated mount/unmount */}
-      <AnimatedGroupCards isOpen={isOpen}>
+      {/* Cards */}
+      {isOpen && (
         <div className="flex flex-col gap-2">
           {todos.map(t => (
             <KanbanCard key={t.id} todo={t} onOpen={() => onOpen(t.id)} onDelete={() => onDelete(t.id)} suppressSortTransform={anyGroupDragged} />
           ))}
         </div>
-      </AnimatedGroupCards>
+      )}
     </div>
   );
 }
