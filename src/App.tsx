@@ -1550,7 +1550,6 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
 }) {
   const [colorOverride, setColorOverride] = useState(() => getGroupColor(name));
   const color = colorOverride;
-  const done = todos.filter(t => t.done).length;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `${GROUP_DRAG_PREFIX}${name}` });
   const { active } = useDndContext();
   const anyGroupDragged = typeof active?.id === "string" && (active.id as string).startsWith(GROUP_DRAG_PREFIX);
@@ -1652,7 +1651,7 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
         ) : (
           <span className="text-[10px] font-semibold uppercase tracking-wider truncate" style={{ color }}>{name}</span>
         )}
-        <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{done}/{todos.length}</span>
+        <span className="text-[10px] shrink-0" style={{ color, opacity: 0.55 }}>{todos.length}</span>
         <div className="flex-1 h-px" style={{ background: color, opacity: 0.2 }} />
         <ChevronDown size={10} style={{ color, opacity: 0.5, flexShrink: 0, transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.15s" }} />
       </div>
