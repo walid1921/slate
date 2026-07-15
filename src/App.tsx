@@ -2156,7 +2156,7 @@ export default function App() {
   const { defaultSort, defaultPriority, theme, textSize, windowMode } = useSettingsStore();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputVal, setInputVal] = useState("");
-  const [focusedIdx, setFocusedIdx] = useState<number>(-1);
+
   const [visible, setVisible] = useState(false);
   const [preTrashView, setPreTrashView] = useState<View>("main");
   type View = "main" | "todos" | "trash" | "reminders" | "notes" | "ihk" | "dev" | "settings";
@@ -2538,7 +2538,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filtered, focusedIdx, lastNavView, view, searchOpen]);
+  }, [filtered, lastNavView, view, searchOpen]);
 
   const BackButton = () => (
     <button onClick={() => navigate(preTrashView)} className="text-t3 hover:text-t2 transition-colors mr-3">
