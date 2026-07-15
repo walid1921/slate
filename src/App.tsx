@@ -1546,9 +1546,11 @@ function KanbanCard({ todo, onOpen, onDelete, suppressSortTransform = false }: {
 const GROUP_DRAG_PREFIX = "grp::";
 
 
-function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
+function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle, currentStatus, onMoveGroup }: {
   name: string;
   todos: Todo[];
+  currentStatus: TodoStatus;
+  onMoveGroup: (targetStatus: TodoStatus) => void;
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
   isOpen: boolean;
@@ -1565,6 +1567,8 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const ctxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -1574,6 +1578,15 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [pickerOpen]);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const h = (e: MouseEvent) => {
+      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) setCtxMenu(null);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [ctxMenu]);
 
   const startEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1602,11 +1615,33 @@ function GroupBlock({ name, todos, onOpen, onDelete, isOpen, onToggle }: {
     >
       {/* Header */}
       <div
-        className="flex items-center gap-2 px-1 pt-1 select-none cursor-pointer"
+        className="flex items-center gap-2 px-1 pt-1 select-none cursor-pointer relative"
         style={{ marginTop: 4, marginBottom: isOpen ? 10 : 4 }}
         onClick={editing ? undefined : onToggle}
         onDoubleClick={editing ? undefined : startEdit}
+        onContextMenu={e => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }); }}
       >
+        {ctxMenu && (
+          <div
+            ref={ctxRef}
+            className="fixed z-50 dropdown rounded-lg overflow-hidden"
+            style={{ left: ctxMenu.x, top: ctxMenu.y, minWidth: 160, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-3 py-1.5 text-[10px] text-t4 uppercase tracking-wider border-b border-s">Move group to…</div>
+            {KANBAN_COLS.filter(c => c.id !== currentStatus).map(c => (
+              <button
+                key={c.id}
+                className="w-full text-left px-3 py-2 text-[12px] text-t2 hover:bg-s2 transition-colors flex items-center gap-2"
+                onClick={() => { onMoveGroup(c.id); setCtxMenu(null); }}
+              >
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: `rgba(${c.color},0.8)` }} />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <button
           {...attributes}
           {...(editing ? {} : listeners)}
@@ -1754,6 +1789,11 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               onDelete={onDelete}
               isOpen={openGroup === g}
               onToggle={() => toggleGroup(g)}
+              currentStatus={col.id}
+              onMoveGroup={(targetStatus) => {
+                const { setStatus } = useTodoStore.getState();
+                todos.filter(t => t.group_name === g).forEach(t => setStatus(t.id, targetStatus));
+              }}
             />
           ))}
           {ungrouped.length > 0 && (
@@ -1765,6 +1805,11 @@ function KanbanColumn({ col, todos, onOpen, onDelete, onAddInline, onClearColumn
               onDelete={onDelete}
               isOpen={openGroup === "General"}
               onToggle={() => toggleGroup("General")}
+              currentStatus={col.id}
+              onMoveGroup={(targetStatus) => {
+                const { setStatus } = useTodoStore.getState();
+                ungrouped.forEach(t => setStatus(t.id, targetStatus));
+              }}
             />
           )}
         </SortableContext>
