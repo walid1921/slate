@@ -562,7 +562,7 @@ function TaskDetail({ todo, onClose: _onClose, askConfirm }: { todo: Todo; onClo
               <div className="px-4 pt-1 pb-2">
                 <AddSubtaskRow onAdd={(text) => {
                   const newId = todo.subtasks.length > 0 ? Math.max(...todo.subtasks.map(s => s.id)) + 1 : 1;
-                  setSubtasks(todo.id, [{ id: newId, text, done: false }, ...todo.subtasks]);
+                  setSubtasks(todo.id, [...todo.subtasks, { id: newId, text, done: false }]);
                 }} />
               </div>
               <div className="overflow-y-auto px-4 pb-3" style={{ maxHeight: "60vh", scrollbarWidth: "none" }}>
